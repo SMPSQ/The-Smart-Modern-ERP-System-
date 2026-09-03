@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>FKC Group — Sign In</title>
+<meta name="theme-color" content="#0B1D3A" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="auth-body">
+
+  <div class="brand-mark">
+    <div class="brand-mark__crest">FKC</div>
+    <div class="brand-mark__lines">
+      <span>THE SMART MODERN</span>
+      <strong>GROUP ERP</strong>
+    </div>
+  </div>
+
+  <main class="auth-card" role="main">
+    <h1>Reception Sign In</h1>
+    <p class="auth-sub">One login for School · Trading Academy · Educational Academy</p>
+
+    <form id="login-form" novalidate>
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" autocomplete="username" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required />
+
+      <button type="submit" id="login-btn">Sign in</button>
+      <p class="auth-error" id="auth-error" role="alert" aria-live="polite"></p>
+    </form>
+
+    <p class="auth-offline-note" id="offline-note" hidden>
+      You're offline. If you've signed in on this device before, you can still get in — new sign-ins need a connection.
+    </p>
+  </main>
+
+  <p class="auth-status" id="conn-status">● checking connection…</p>
+
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/db.js"></script>
+  <script type="module" src="js/auth.js"></script>
+  <script src="js/sw-register.js"></script>
+</body>
+</html>

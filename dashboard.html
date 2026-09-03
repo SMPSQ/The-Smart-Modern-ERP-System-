@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>FKC Group ERP — Reception</title>
+<meta name="theme-color" content="#0B1D3A" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="dash-body">
+
+  <header class="dash-header">
+    <div class="dash-header__brand">
+      <span class="crest-sm">FKC</span>
+      <span>Group ERP — Reception</span>
+    </div>
+    <div class="dash-header__right">
+      <span class="sync-pill" id="sync-pill">● syncing…</span>
+      <span class="user-chip" id="user-chip">—</span>
+      <button class="ghost-btn" id="logout-btn">Sign out</button>
+    </div>
+  </header>
+
+  <main class="dash-main">
+    <section class="dash-hero">
+      <h1>Educating Minds · Building Futures · Empowering Traders</h1>
+      <p>Pick a module to continue, or log a walk-in visitor below.</p>
+    </section>
+
+    <section class="module-grid">
+      <a class="module-card module-card--school" href="modules/school/index.html" data-module="school">
+        <span class="module-card__eyebrow">Module</span>
+        <h2>The Smart Modern Public School</h2>
+        <p>Students, attendance, fee challans, class records.</p>
+      </a>
+
+      <a class="module-card module-card--trading" href="modules/trading-academy/index.html" data-module="trading">
+        <span class="module-card__eyebrow">Module</span>
+        <h2>FKC Trading Academy</h2>
+        <p>Batches, enrollments, trading class schedules.</p>
+      </a>
+
+      <a class="module-card module-card--academy" href="modules/educational-academy/index.html" data-module="academy">
+        <span class="module-card__eyebrow">Module</span>
+        <h2>The Smart Modern Educational Academy</h2>
+        <p>Tuition classes, tutors, timetables.</p>
+      </a>
+    </section>
+
+    <section class="visitor-log">
+      <h3>Walk-in Log</h3>
+      <form id="visitor-form">
+        <input type="text" id="visitor-name" placeholder="Visitor name" required />
+        <select id="visitor-for">
+          <option value="school">School</option>
+          <option value="trading">Trading Academy</option>
+          <option value="academy">Educational Academy</option>
+          <option value="general">General inquiry</option>
+        </select>
+        <input type="text" id="visitor-reason" placeholder="Reason for visit" />
+        <button type="submit">Log visit</button>
+      </form>
+      <ul id="visitor-list" class="visitor-list"></ul>
+      <p class="hint">Logged visits save on this device instantly and sync to the cloud when you're online.</p>
+    </section>
+  </main>
+
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/db.js"></script>
+  <script type="module" src="js/sync.js"></script>
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/dashboard.js"></script>
+  <script src="js/sw-register.js"></script>
+</body>
+</html>
