@@ -15,7 +15,11 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const path = window.location.pathname;
-const isLoginPage = path.endsWith("index.html") || path === "/" || path.endsWith("/fkc-erp/");
+// Every page uses one of two body classes (see style.css) — the
+// login screen is auth-body, everything else (dashboard + all
+// module pages) is dash-body. Path-based checks broke here
+// because module pages are also named index.html.
+const isLoginPage = document.body.classList.contains("auth-body");
 
 function updateConnStatus() {
   const el = document.getElementById("conn-status");
@@ -78,10 +82,12 @@ if (isLoginPage) {
 }
 
 function resolveLoginPath() {
-  // Module pages live one or two levels deep (modules/school/index.html),
-  // so walk back up to the repo root's index.html.
-  const depth = path.split("/").filter(Boolean).length;
-  return depth > 1 ? "../".repeat(depth - 1) + "index.html" : "index.html";
+  // dashboard.html sits at the repo root; every module page sits
+  // two levels below it (modules/<name>/index.html). We know this
+  // from our own file layout, so hardcode it rather than trying
+  // to infer depth from window.location (unreliable across
+  // localhost, a project subpath, and a custom domain).
+  return path.includes("/modules/") ? "../../index.html" : "index.html";
 }
 
 function friendlyAuthError(code) {

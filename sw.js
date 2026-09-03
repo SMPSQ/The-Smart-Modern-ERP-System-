@@ -3,7 +3,7 @@
 // separately by js/db.js (IndexedDB) + Firestore's own
 // offline cache — this file is only about the UI files.
 
-const CACHE_NAME = "fkc-erp-shell-v1";
+const CACHE_NAME = "fkc-erp-shell-v2";
 const SHELL_FILES = [
   "./",
   "./index.html",
@@ -17,6 +17,12 @@ const SHELL_FILES = [
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  "./modules/school/index.html",
+  "./modules/school/school.js",
+  "./modules/trading-academy/index.html",
+  "./modules/trading-academy/trading.js",
+  "./modules/educational-academy/index.html",
+  "./modules/educational-academy/academy.js",
 ];
 
 self.addEventListener("install", (event) => {

@@ -8,11 +8,24 @@
 // ---------------------------------------------------------
 
 const DB_NAME = "fkc_erp_local";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 // One store per collection we sync, plus a queue of pending
 // outbound writes. Add new stores here as modules grow.
-const STORES = ["visitors", "students", "fees", "batches", "tuition_classes", "sync_queue"];
+const STORES = [
+  "visitors",
+  // School
+  "students",
+  "fee_challans",
+  // FKC Trading Academy
+  "batches",
+  "trading_enrollments",
+  // Educational Academy
+  "tuition_classes",
+  "tutors",
+  "academy_enrollments",
+  "sync_queue",
+];
 
 let dbPromise = null;
 
@@ -95,6 +108,10 @@ export async function getPendingSyncItems() {
 export async function clearSyncItem(queueId) {
   const store = await tx("sync_queue", "readwrite");
   store.delete(queueId);
+}
+
+export async function deleteLocal(collection, id) {
+  return saveLocal(collection, { id }, "delete");
 }
 
 export async function markRecordSynced(collection, recordId) {
