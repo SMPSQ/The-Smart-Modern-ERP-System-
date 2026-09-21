@@ -1,4 +1,4 @@
-// modules/school/js/school.js — students + fee challans.
+// modules/school/js/school.js — students, complete admission, fee challans.
 import { saveLocal, getAllLocal } from '../../../js/db.js';
 import { drainQueue } from '../../../js/sync.js';
 
@@ -20,9 +20,14 @@ const feeStructureForm = document.getElementById('fee-structure-form');
 const feeStructureList = document.getElementById('fee-structure-list');
 
 function esc(str) {
-  return String(str).replace(/[&<>"']/g, (c) => ({
+  return String(str ?? '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
+}
+
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
 }
 
 async function renderStudents() {
@@ -37,43 +42,50 @@ async function renderStudents() {
     </li>
   `).join('') || '<li class="muted">No students yet.</li>';
 
-  const prevSelected = studentSelect.value;
-  studentSelect.innerHTML = students.map((s) =>
-    `<option value="${s.id}">${esc(s.name)}${s.className ? ' — ' + esc(s.className) : ''}</option>`
-  ).join('');
-  if (prevSelected) studentSelect.value = prevSelected;
+  if (studentSelect) {
+    const prevSelected = studentSelect.value;
+    studentSelect.innerHTML = students.map((s) =>
+      `<option value="${s.id}">${esc(s.name)}${s.className ? ' — ' + esc(s.className) : ''}</option>`
+    ).join('') || '<option value="">Add a student first</option>';
+    if (prevSelected) studentSelect.value = prevSelected;
+  }
 
   return students;
 }
 
 async function renderChallans() {
   let challans = await getAllLocal('feeChallans');
-  const month = monthFilter.value;
-  const status = statusFilter.value;
+  const month = monthFilter?.value;
+  const status = statusFilter?.value;
   if (month) challans = challans.filter((c) => c.month === month);
-  if (status !== 'all') challans = challans.filter((c) => c.status === status);
-  challans.sort((a, b) => b.updatedAt - a.updatedAt);
+  if (status && status !== 'all') challans = challans.filter((c) => c.status === status);
+  challans.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
   challanList.innerHTML = challans.map((c) => `
     <li>
       <strong>${esc(c.studentName)}</strong>
       <span class="tag">${esc(c.month)}</span>
       <span class="amount">Rs ${esc(c.amount)}</span>
-      <button type="button" class="status-btn status-btn--${c.status.toLowerCase()}" data-id="${c.id}">${esc(c.status)}</button>
+      <button type="button" class="status-btn status-btn--${(c.status || 'unpaid').toLowerCase()}" data-id="${c.id}">${esc(c.status)}</button>
     </li>
   `).join('') || '<li class="muted">No challans for this filter.</li>';
 }
 
-// ---------- Admissions (separate from enrolled students) ----------
+// ---------- Admissions (complete details) ----------
 async function renderAdmissions() {
   const admissions = await getAllLocal('admissions');
-  admissions.sort((a, b) => b.updatedAt - a.updatedAt);
+  admissions.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
   admissionList.innerHTML = admissions.map((a) => `
     <li>
       <strong>${esc(a.name)}</strong>
       <span class="tag">${esc(a.className)}</span>
-      <span class="muted">${esc(a.fatherName)} · ${esc(a.phone)}</span>
+      <span class="muted">${esc(a.gender)} · DOB ${esc(a.dob)} · ${esc(a.fatherName)} · ${esc(a.phone)}</span>
+      <div class="admission-detail">
+        B-Form: ${esc(a.bform || '—')} · Father CNIC: ${esc(a.fatherCnic || '—')}<br>
+        ${esc(a.address)}${a.city ? ', ' + esc(a.city) : ''} · Session: ${esc(a.session || '—')}
+        ${a.medical ? '<br>Medical: ' + esc(a.medical) : ''}
+      </div>
       <button type="button" class="status-btn status-btn--${a.status === 'Approved' ? 'paid' : 'unpaid'}" data-approve="${a.id}">
         ${a.status === 'Approved' ? 'Approved' : 'Approve'}
       </button>
@@ -84,23 +96,54 @@ async function renderAdmissions() {
 if (admissionForm) {
   admissionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('adm-name').value.trim();
-    const dob = document.getElementById('adm-dob').value;
-    const gender = document.getElementById('adm-gender').value;
-    const fatherName = document.getElementById('adm-father').value.trim();
-    const cnic = document.getElementById('adm-cnic').value.trim();
-    const address = document.getElementById('adm-address').value.trim();
-    const phone = document.getElementById('adm-phone').value.trim();
-    const prevSchool = document.getElementById('adm-prev-school').value.trim();
-    const className = document.getElementById('adm-class').value.trim();
-    const admissionDate = document.getElementById('adm-date').value;
+    const name = val('adm-name');
+    const className = val('adm-class');
     if (!name || !className) return;
 
     await saveLocal('admissions', {
-      name, dob, gender, fatherName, cnic, address, phone,
-      prevSchool, className, admissionDate, status: 'Pending'
+      // Personal
+      name,
+      dob: val('adm-dob'),
+      gender: val('adm-gender'),
+      bform: val('adm-bform'),
+      blood: val('adm-blood'),
+      religion: val('adm-religion'),
+      nationality: val('adm-nationality'),
+      placeBirth: val('adm-place-birth'),
+      // Class
+      className,
+      section: val('adm-section'),
+      admissionDate: val('adm-date'),
+      session: val('adm-session'),
+      prevSchool: val('adm-prev-school'),
+      prevClass: val('adm-prev-class'),
+      // Father / Mother / Guardian
+      fatherName: val('adm-father'),
+      fatherCnic: val('adm-father-cnic'),
+      fatherOcc: val('adm-father-occ'),
+      fatherPhone: val('adm-father-phone'),
+      motherName: val('adm-mother'),
+      motherPhone: val('adm-mother-phone'),
+      guardian: val('adm-guardian'),
+      guardianRel: val('adm-guardian-rel'),
+      // Contact
+      address: val('adm-address'),
+      city: val('adm-city'),
+      phone: val('adm-phone'),
+      email: val('adm-email'),
+      emergency: val('adm-emergency'),
+      emergencyPhone: val('adm-emergency-phone'),
+      // Medical & other
+      medical: val('adm-medical'),
+      transport: val('adm-transport'),
+      siblings: val('adm-siblings'),
+      remarks: val('adm-remarks'),
+      status: 'Pending'
     });
     admissionForm.reset();
+    // restore nationality default
+    const nat = document.getElementById('adm-nationality');
+    if (nat) nat.value = 'Pakistani';
     await renderAdmissions();
     drainQueue();
   });
@@ -117,9 +160,17 @@ if (admissionList) {
 
     rec.status = 'Approved';
     await saveLocal('admissions', rec);
-    // Enroll as a student too — admission and enrollment stay separate records.
+    // Enroll as student with key fields from admission
     await saveLocal('students', {
-      name: rec.name, className: rec.className, guardian: rec.fatherName, phone: rec.phone
+      name: rec.name,
+      className: rec.className,
+      guardian: rec.fatherName || rec.guardian,
+      phone: rec.phone || rec.fatherPhone,
+      dob: rec.dob,
+      gender: rec.gender,
+      bform: rec.bform,
+      address: rec.address,
+      city: rec.city
     });
     await renderAdmissions();
     await renderStudents();
@@ -127,10 +178,10 @@ if (admissionList) {
   });
 }
 
-// ---------- Subjects (per class) ----------
+// ---------- Subjects ----------
 async function renderSubjects() {
   const subjects = await getAllLocal('subjects');
-  subjects.sort((a, b) => a.className.localeCompare(b.className) || a.name.localeCompare(b.name));
+  subjects.sort((a, b) => (a.className || '').localeCompare(b.className || '') || a.name.localeCompare(b.name));
 
   subjectList.innerHTML = subjects.map((s) => `
     <li>
@@ -143,10 +194,9 @@ async function renderSubjects() {
 if (subjectForm) {
   subjectForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('subject-name').value.trim();
-    const className = document.getElementById('subject-class').value.trim();
+    const name = val('subject-name');
+    const className = val('subject-class');
     if (!name || !className) return;
-
     await saveLocal('subjects', { name, className });
     subjectForm.reset();
     await renderSubjects();
@@ -154,10 +204,10 @@ if (subjectForm) {
   });
 }
 
-// ---------- Fee structure (monthly fee per class) ----------
+// ---------- Fee structure ----------
 async function renderFeeStructure() {
   const structure = await getAllLocal('feeStructure');
-  structure.sort((a, b) => a.className.localeCompare(b.className));
+  structure.sort((a, b) => (a.className || '').localeCompare(b.className || ''));
 
   feeStructureList.innerHTML = structure.map((f) => `
     <li>
@@ -172,11 +222,9 @@ async function renderFeeStructure() {
 if (feeStructureForm) {
   feeStructureForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const className = document.getElementById('fs-class').value.trim();
-    const amount = document.getElementById('fs-amount').value;
+    const className = val('fs-class');
+    const amount = val('fs-amount');
     if (!className || !amount) return;
-
-    // One fee row per class — reuse existing record's id if this class already has one.
     const existing = (await getAllLocal('feeStructure')).find((f) => f.className === className);
     await saveLocal('feeStructure', { id: existing?.id, className, amount });
     feeStructureForm.reset();
@@ -188,13 +236,14 @@ if (feeStructureForm) {
 if (studentForm) {
   studentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('student-name').value.trim();
-    const className = document.getElementById('student-class').value.trim();
-    const guardian = document.getElementById('student-guardian').value.trim();
-    const phone = document.getElementById('student-phone').value.trim();
+    const name = val('student-name');
     if (!name) return;
-
-    await saveLocal('students', { name, className, guardian, phone });
+    await saveLocal('students', {
+      name,
+      className: val('student-class'),
+      guardian: val('student-guardian'),
+      phone: val('student-phone')
+    });
     studentForm.reset();
     await renderStudents();
     drainQueue();
@@ -218,8 +267,8 @@ if (challanForm) {
     e.preventDefault();
     const studentId = studentSelect.value;
     const studentName = studentSelect.options[studentSelect.selectedIndex]?.textContent.split(' — ')[0] || '';
-    const month = document.getElementById('challan-month').value;
-    const amount = document.getElementById('challan-amount').value;
+    const month = val('challan-month');
+    const amount = val('challan-amount');
     if (!studentId || !month || !amount) return;
 
     await saveLocal('feeChallans', { studentId, studentName, month, amount, status: 'Unpaid' });
