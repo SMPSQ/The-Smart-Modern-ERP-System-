@@ -2,138 +2,86 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>The Smart Modern Educational Academy — FKC Group ERP</title>
+<meta name="theme-color" content="#0B1D3A" />
 <link rel="manifest" href="../../manifest.json" />
+<link rel="icon" href="../../icons/icon.svg" />
 <link rel="stylesheet" href="../../css/style.css" />
 </head>
-<body class="dash-body">
+<body class="dash-body" data-root="../../">
 
-  <header class="dash-header">
-    <div class="dash-header__brand">
-      <span class="crest-sm">FKC</span>
-      <span>The Smart Modern Educational Academy</span>
+<header class="dash-header">
+  <div class="dash-header__brand">
+    <span class="crest-sm">FKC</span>
+    <span>The Smart Modern Educational Academy</span>
+  </div>
+  <div class="dash-header__right">
+    <span class="sync-pill" id="sync-pill">● checking connection…</span>
+    <span class="user-chip" id="user-chip">—</span>
+    <button class="ghost-btn" id="logout-btn">Sign out</button>
+  </div>
+</header>
+
+<main class="module-main">
+  <p><a class="back-link" href="../../dashboard.html">&larr; Back to reception</a></p>
+
+  <section class="panel">
+    <h3>Add Tutor</h3>
+    <form id="tutor-form" class="inline-form">
+      <input type="text" id="tutor-name" placeholder="Tutor name" required />
+      <input type="text" id="tutor-subject" placeholder="Subject" />
+      <input type="text" id="tutor-phone" placeholder="Phone" />
+      <button type="submit">Add tutor</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h3>Tutors</h3>
+    <ul id="tutor-list" class="data-list"></ul>
+  </section>
+
+  <section class="panel">
+    <h3>Add Tuition Class</h3>
+    <form id="class-form" class="inline-form">
+      <input type="text" id="class-subject" placeholder="Subject" required />
+      <input type="text" id="class-room" placeholder="Room" />
+      <input type="text" id="class-timing" placeholder="Timing (e.g. 4–5 PM)" />
+      <select id="class-tutor" required></select>
+      <button type="submit">Add class</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h3>Timetable</h3>
+    <ul id="class-list" class="data-list"></ul>
+  </section>
+
+  <section class="panel">
+    <h3>Enroll Student</h3>
+    <form id="enrollment-form" class="inline-form">
+      <select id="enrollment-class" required></select>
+      <input type="text" id="student-name" placeholder="Student name" required />
+      <button type="submit">Enroll</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h3>Class Enrollments</h3>
+    <div class="filter-row">
+      <select id="class-filter">
+        <option value="">All classes</option>
+      </select>
     </div>
-    <div class="dash-header__right">
-      <span class="sync-pill" id="sync-pill">● syncing…</span>
-      <span class="user-chip" id="user-chip">—</span>
-      <button class="ghost-btn" id="logout-btn">Sign out</button>
-    </div>
-  </header>
+    <ul id="enrollment-list" class="data-list"></ul>
+  </section>
+</main>
 
-  <main class="dash-main">
-    <a class="module-back" href="../../dashboard.html">← Back to reception</a>
-
-    <div class="tab-row">
-      <button class="tab-btn active" data-tab="classes">Classes & Timetable</button>
-      <button class="tab-btn" data-tab="tutors">Tutors</button>
-      <button class="tab-btn" data-tab="enrollments">Enrollments</button>
-    </div>
-
-    <!-- CLASSES TAB -->
-    <section id="tab-classes" class="tab-panel">
-      <div class="panel">
-        <h3>Add Tuition Class</h3>
-        <form id="class-form" class="panel-form">
-          <div>
-            <label for="c-subject">Subject / class name</label>
-            <input type="text" id="c-subject" placeholder="e.g. Class 9 — Mathematics" required />
-          </div>
-          <div>
-            <label for="c-room">Room</label>
-            <input type="text" id="c-room" placeholder="e.g. Room 3" required />
-          </div>
-          <div>
-            <label for="c-timing">Timing</label>
-            <input type="text" id="c-timing" placeholder="e.g. Mon/Wed/Fri 4–5pm" required />
-          </div>
-          <div>
-            <label for="c-tutor">Tutor</label>
-            <select id="c-tutor"><option value="">Unassigned</option></select>
-          </div>
-          <button type="submit">Add class</button>
-        </form>
-      </div>
-
-      <div class="panel">
-        <h3>Timetable</h3>
-        <table class="data-table">
-          <thead><tr><th>Class</th><th>Room</th><th>Timing</th><th>Tutor</th><th>Enrolled</th><th></th></tr></thead>
-          <tbody id="classes-tbody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- TUTORS TAB -->
-    <section id="tab-tutors" class="tab-panel" hidden>
-      <div class="panel">
-        <h3>Add Tutor</h3>
-        <form id="tutor-form" class="panel-form">
-          <div>
-            <label for="t-name">Tutor name</label>
-            <input type="text" id="t-name" required />
-          </div>
-          <div>
-            <label for="t-subject">Subject specialty</label>
-            <input type="text" id="t-subject" />
-          </div>
-          <div>
-            <label for="t-contact">Contact</label>
-            <input type="text" id="t-contact" />
-          </div>
-          <button type="submit">Add tutor</button>
-        </form>
-      </div>
-
-      <div class="panel">
-        <h3>All Tutors</h3>
-        <table class="data-table">
-          <thead><tr><th>Name</th><th>Specialty</th><th>Contact</th><th></th></tr></thead>
-          <tbody id="tutors-tbody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- ENROLLMENTS TAB -->
-    <section id="tab-enrollments" class="tab-panel" hidden>
-      <div class="panel">
-        <h3>Enroll a Student</h3>
-        <form id="enroll-form" class="panel-form">
-          <div>
-            <label for="e-name">Student name</label>
-            <input type="text" id="e-name" required />
-          </div>
-          <div>
-            <label for="e-contact">Contact</label>
-            <input type="text" id="e-contact" />
-          </div>
-          <div>
-            <label for="e-class">Class</label>
-            <select id="e-class" required></select>
-          </div>
-          <button type="submit">Enroll</button>
-        </form>
-      </div>
-
-      <div class="panel">
-        <h3>All Enrollments</h3>
-        <div class="month-filter">
-          <label for="e-filter">Show class:</label>
-          <select id="e-filter"><option value="all">All classes</option></select>
-        </div>
-        <table class="data-table">
-          <thead><tr><th>Student</th><th>Contact</th><th>Class</th><th>Enrolled on</th><th></th></tr></thead>
-          <tbody id="enrollments-tbody"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <script type="module" src="../../js/firebase-config.js"></script>
-  <script type="module" src="../../js/db.js"></script>
-  <script type="module" src="../../js/sync.js"></script>
-  <script type="module" src="../../js/auth.js"></script>
-  <script type="module" src="academy.js"></script>
-  <script src="../../js/sw-register.js"></script>
+<script type="module" src="../../js/firebase-config.js"></script>
+<script type="module" src="../../js/db.js"></script>
+<script type="module" src="../../js/sync.js"></script>
+<script type="module" src="../../js/auth.js"></script>
+<script type="module" src="js/academy.js"></script>
+<script src="../../js/sw-register.js"></script>
 </body>
 </html>

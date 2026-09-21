@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0B1D3A"/>
+  <rect x="24" y="24" width="464" height="464" rx="80" fill="#11274d"/>
+  <text x="256" y="300" font-family="-apple-system, Segoe UI, Arial, sans-serif" font-size="180" font-weight="700" fill="#3d8bfd" text-anchor="middle">FKC</text>
+</svg>

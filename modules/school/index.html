@@ -2,117 +2,76 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>The Smart Modern Public School — FKC Group ERP</title>
+<meta name="theme-color" content="#0B1D3A" />
 <link rel="manifest" href="../../manifest.json" />
+<link rel="icon" href="../../icons/icon.svg" />
 <link rel="stylesheet" href="../../css/style.css" />
 </head>
-<body class="dash-body">
+<body class="dash-body" data-root="../../">
 
-  <header class="dash-header">
-    <div class="dash-header__brand">
-      <span class="crest-sm">FKC</span>
-      <span>The Smart Modern Public School</span>
+<header class="dash-header">
+  <div class="dash-header__brand">
+    <span class="crest-sm">FKC</span>
+    <span>The Smart Modern Public School</span>
+  </div>
+  <div class="dash-header__right">
+    <span class="sync-pill" id="sync-pill">● checking connection…</span>
+    <span class="user-chip" id="user-chip">—</span>
+    <button class="ghost-btn" id="logout-btn">Sign out</button>
+  </div>
+</header>
+
+<main class="module-main">
+  <p><a class="back-link" href="../../dashboard.html">&larr; Back to reception</a></p>
+
+  <section class="panel">
+    <h3>Add Student</h3>
+    <form id="student-form" class="inline-form">
+      <input type="text" id="student-name" placeholder="Student name" required />
+      <input type="text" id="student-class" placeholder="Class (e.g. 6-B)" />
+      <input type="text" id="student-guardian" placeholder="Guardian name" />
+      <input type="text" id="student-phone" placeholder="Phone" />
+      <button type="submit">Add student</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h3>Students</h3>
+    <ul id="student-list" class="data-list"></ul>
+  </section>
+
+  <section class="panel">
+    <h3>New Fee Challan</h3>
+    <form id="challan-form" class="inline-form">
+      <select id="challan-student" required></select>
+      <input type="month" id="challan-month" required />
+      <input type="number" id="challan-amount" placeholder="Amount (Rs)" min="0" required />
+      <button type="submit">Create challan</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h3>Fee Challans</h3>
+    <div class="filter-row">
+      <input type="month" id="month-filter" />
+      <select id="status-filter">
+        <option value="all">All statuses</option>
+        <option value="Paid">Paid</option>
+        <option value="Unpaid">Unpaid</option>
+      </select>
     </div>
-    <div class="dash-header__right">
-      <span class="sync-pill" id="sync-pill">● syncing…</span>
-      <span class="user-chip" id="user-chip">—</span>
-      <button class="ghost-btn" id="logout-btn">Sign out</button>
-    </div>
-  </header>
+    <ul id="challan-list" class="data-list"></ul>
+    <p class="hint">Tap a challan's status badge to toggle Paid / Unpaid.</p>
+  </section>
+</main>
 
-  <main class="dash-main">
-    <a class="module-back" href="../../dashboard.html">← Back to reception</a>
-
-    <div class="tab-row">
-      <button class="tab-btn active" data-tab="students">Students</button>
-      <button class="tab-btn" data-tab="fees">Fee Challans</button>
-    </div>
-
-    <!-- STUDENTS TAB -->
-    <section id="tab-students" class="tab-panel">
-      <div class="panel">
-        <h3>Add Student</h3>
-        <form id="student-form" class="panel-form">
-          <div>
-            <label for="s-name">Student name</label>
-            <input type="text" id="s-name" required />
-          </div>
-          <div>
-            <label for="s-class">Class</label>
-            <input type="text" id="s-class" placeholder="e.g. 6-A" required />
-          </div>
-          <div>
-            <label for="s-guardian">Guardian name</label>
-            <input type="text" id="s-guardian" />
-          </div>
-          <div>
-            <label for="s-contact">Guardian contact</label>
-            <input type="text" id="s-contact" />
-          </div>
-          <button type="submit">Add student</button>
-        </form>
-      </div>
-
-      <div class="panel">
-        <h3>All Students</h3>
-        <table class="data-table">
-          <thead>
-            <tr><th>Name</th><th>Class</th><th>Guardian</th><th>Contact</th><th></th></tr>
-          </thead>
-          <tbody id="students-tbody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- FEE CHALLANS TAB -->
-    <section id="tab-fees" class="tab-panel" hidden>
-      <div class="panel">
-        <h3>Issue Fee Challan</h3>
-        <form id="fee-form" class="panel-form">
-          <div>
-            <label for="f-student">Student</label>
-            <select id="f-student" required></select>
-          </div>
-          <div>
-            <label for="f-month">Month</label>
-            <input type="month" id="f-month" required />
-          </div>
-          <div>
-            <label for="f-amount">Amount</label>
-            <input type="number" id="f-amount" min="0" required />
-          </div>
-          <button type="submit">Issue challan</button>
-        </form>
-      </div>
-
-      <div class="panel">
-        <h3>Fee Records</h3>
-        <div class="month-filter">
-          <label for="f-filter">Show month:</label>
-          <select id="f-filter"><option value="all">All months</option></select>
-        </div>
-
-        <p style="font-size:0.8rem;font-weight:600;color:#B3432B;margin:0 0 0.5rem;">Unpaid</p>
-        <table class="data-table">
-          <thead><tr><th>Student</th><th>Class</th><th>Month</th><th>Amount</th><th>Status</th><th></th></tr></thead>
-          <tbody id="unpaid-tbody"></tbody>
-        </table>
-
-        <p style="font-size:0.8rem;font-weight:600;color:var(--up-green);margin:1.2rem 0 0.5rem;">Paid</p>
-        <table class="data-table">
-          <thead><tr><th>Student</th><th>Class</th><th>Month</th><th>Amount</th><th>Status</th><th></th></tr></thead>
-          <tbody id="paid-tbody"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <script type="module" src="../../js/firebase-config.js"></script>
-  <script type="module" src="../../js/db.js"></script>
-  <script type="module" src="../../js/sync.js"></script>
-  <script type="module" src="../../js/auth.js"></script>
-  <script type="module" src="school.js"></script>
-  <script src="../../js/sw-register.js"></script>
+<script type="module" src="../../js/firebase-config.js"></script>
+<script type="module" src="../../js/db.js"></script>
+<script type="module" src="../../js/sync.js"></script>
+<script type="module" src="../../js/auth.js"></script>
+<script type="module" src="js/school.js"></script>
+<script src="../../js/sw-register.js"></script>
 </body>
 </html>

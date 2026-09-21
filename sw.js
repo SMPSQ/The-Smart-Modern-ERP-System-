@@ -1,60 +1,63 @@
-// App-shell cache so the ERP itself (not just its data) opens
-// with no connection. Data offline-support is handled
-// separately by js/db.js (IndexedDB) + Firestore's own
-// offline cache — this file is only about the UI files.
+// sw.js — installable app shell. Caches every page/module so the whole
+// ERP keeps working with no connection at all.
+const CACHE_VERSION = 'fkc-erp-v1';
 
-const CACHE_NAME = "fkc-erp-shell-v2";
-const SHELL_FILES = [
-  "./",
-  "./index.html",
-  "./dashboard.html",
-  "./css/style.css",
-  "./js/firebase-config.js",
-  "./js/db.js",
-  "./js/sync.js",
-  "./js/auth.js",
-  "./js/dashboard.js",
-  "./manifest.json",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./modules/school/index.html",
-  "./modules/school/school.js",
-  "./modules/trading-academy/index.html",
-  "./modules/trading-academy/trading.js",
-  "./modules/educational-academy/index.html",
-  "./modules/educational-academy/academy.js",
+const PRECACHE_URLS = [
+  './',
+  'index.html',
+  'dashboard.html',
+  'manifest.json',
+  'css/style.css',
+  'icons/icon.svg',
+  'js/firebase-config.js',
+  'js/db.js',
+  'js/sync.js',
+  'js/auth.js',
+  'js/dashboard.js',
+  'js/sw-register.js',
+  'modules/school/index.html',
+  'modules/school/js/school.js',
+  'modules/trading-academy/index.html',
+  'modules/trading-academy/js/trading.js',
+  'modules/educational-academy/index.html',
+  'modules/educational-academy/js/academy.js'
 ];
 
-self.addEventListener("install", (event) => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_FILES))
+    caches.open(CACHE_VERSION).then((cache) => cache.addAll(PRECACHE_URLS))
   );
   self.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-// Network-first for navigations (so staff get fresh module
-// pages when online), falling back to cache when offline.
-// Cache-first for static assets.
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
 
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(request).then((r) => r || caches.match("./index.html")))
-    );
+  // Never cache Firebase/Firestore/Auth network calls — always go live for those.
+  if (req.url.includes('googleapis.com') || req.url.includes('gstatic.com') || req.url.includes('firebaseio.com')) {
     return;
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request))
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
+      return fetch(req)
+        .then((res) => {
+          const resClone = res.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(req, resClone));
+          return res;
+        })
+        .catch(() => cached);
+    })
   );
 });

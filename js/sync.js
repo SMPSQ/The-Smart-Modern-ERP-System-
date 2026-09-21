@@ -1,71 +1,66 @@
-// ---------------------------------------------------------
-// SYNC ENGINE
-// Drains the local sync_queue into Firestore whenever we
-// have a connection: on load, whenever the browser fires
-// "online", and on a 30s heartbeat in case "online" fires
-// falsely (captive portals, flaky wifi).
-// ---------------------------------------------------------
+// js/sync.js — drains the local sync_queue into Firestore whenever online.
+import { db } from './firebase-config.js';
+import { doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
+import { getQueue, removeFromQueue, markSynced } from './db.js';
 
-import { dbFirestore } from "./firebase-config.js";
-import {
-  doc,
-  setDoc,
-  deleteDoc,
-  collection as fsCollection,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getPendingSyncItems, clearSyncItem, markRecordSynced } from "./db.js";
-
-let syncing = false;
-
-function setPillState(state) {
-  const pill = document.getElementById("sync-pill");
+function setPill(state) {
+  const pill = document.getElementById('sync-pill');
   if (!pill) return;
-  pill.classList.remove("is-online", "is-offline");
-  if (state === "online") {
-    pill.textContent = "● synced";
-    pill.classList.add("is-online");
-  } else if (state === "syncing") {
-    pill.textContent = "● syncing…";
+  if (state === 'synced') {
+    pill.textContent = '● synced';
+    pill.className = 'sync-pill sync-pill--ok';
+  } else if (state === 'syncing') {
+    pill.textContent = '● syncing…';
+    pill.className = 'sync-pill sync-pill--busy';
   } else {
-    pill.textContent = "● offline — saved on device";
-    pill.classList.add("is-offline");
+    pill.textContent = '● offline — saved on device';
+    pill.className = 'sync-pill sync-pill--offline';
   }
 }
 
-export async function runSync() {
-  if (syncing) return;
-  if (!navigator.onLine) {
-    setPillState("offline");
-    return;
-  }
+let draining = false;
 
-  syncing = true;
-  setPillState("syncing");
-
+export async function drainQueue() {
+  if (draining) return;
+  draining = true;
   try {
-    const pending = await getPendingSyncItems();
-    for (const item of pending) {
-      const ref = doc(fsCollection(dbFirestore, item.collection), item.recordId);
-      if (item.op === "delete") {
-        await deleteDoc(ref);
-      } else {
-        await setDoc(ref, item.payload, { merge: true });
-        await markRecordSynced(item.collection, item.recordId);
-      }
-      await clearSyncItem(item.id);
+    if (!navigator.onLine) {
+      setPill('offline');
+      return;
     }
-    setPillState("online");
-  } catch (err) {
-    // Network blip mid-sync — leave the queue intact, we'll
-    // retry on the next trigger.
-    console.warn("Sync paused, will retry:", err.message);
-    setPillState("offline");
+    const queue = await getQueue();
+    if (queue.length === 0) {
+      setPill('synced');
+      return;
+    }
+    setPill('syncing');
+    for (const item of queue) {
+      try {
+        const ref = doc(db, item.storeName, item.recordId);
+        if (item.action === 'delete') {
+          await deleteDoc(ref);
+        } else {
+          await setDoc(ref, item.data, { merge: true });
+          await markSynced(item.storeName, item.recordId);
+        }
+        await removeFromQueue(item.id);
+      } catch (err) {
+        // Flaky connection or not signed in yet — stop here, keep order, retry later.
+        console.warn('Sync paused, will retry:', err.message || err);
+        break;
+      }
+    }
+    const remaining = await getQueue();
+    setPill(remaining.length === 0 ? 'synced' : (navigator.onLine ? 'syncing' : 'offline'));
   } finally {
-    syncing = false;
+    draining = false;
   }
 }
 
-window.addEventListener("online", runSync);
-window.addEventListener("offline", () => setPillState("offline"));
-document.addEventListener("DOMContentLoaded", runSync);
-setInterval(runSync, 30_000);
+window.addEventListener('online', drainQueue);
+window.addEventListener('offline', () => setPill('offline'));
+
+// Kick off immediately, then on load, then every 30s as a safety net.
+drainQueue();
+window.addEventListener('load', drainQueue);
+setInterval(drainQueue, 30000);

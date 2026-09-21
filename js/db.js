@@ -1,127 +1,124 @@
-// ---------------------------------------------------------
-// LOCAL DATABASE (IndexedDB)
-// Every module (school / trading academy / educational
-// academy) reads and writes through this file first. Writes
-// land here instantly, then get pushed to Firestore by
-// sync.js the moment we're online. Nothing in the UI ever
-// has to wait on a network round trip.
-// ---------------------------------------------------------
+// js/db.js — offline-first IndexedDB engine + sync outbox queue
+// Every module reads/writes through saveLocal()/getAllLocal()/deleteLocal().
 
-const DB_NAME = "fkc_erp_local";
-const DB_VERSION = 2;
-
-// One store per collection we sync, plus a queue of pending
-// outbound writes. Add new stores here as modules grow.
+const DB_NAME = 'fkc-erp';
+const DB_VERSION = 1;
 const STORES = [
-  "visitors",
-  // School
-  "students",
-  "fee_challans",
-  // FKC Trading Academy
-  "batches",
-  "trading_enrollments",
-  // Educational Academy
-  "tuition_classes",
-  "tutors",
-  "academy_enrollments",
-  "sync_queue",
+  'visitors', 'students', 'feeChallans',
+  'batches', 'tradingEnrollments',
+  'tutors', 'classes', 'academyEnrollments',
+  'sync_queue'
 ];
 
-let dbPromise = null;
-
-function openDb() {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
+function openDatabase() {
+  return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
-      const db = req.result;
-      for (const store of STORES) {
-        if (!db.objectStoreNames.contains(store)) {
-          db.createObjectStore(store, { keyPath: "id" });
+      const dbx = req.result;
+      STORES.forEach((store) => {
+        if (!dbx.objectStoreNames.contains(store)) {
+          dbx.createObjectStore(store, { keyPath: 'id' });
         }
-      }
+      });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
-  return dbPromise;
 }
 
-function uid() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+const dbPromise = openDatabase();
+
+export function uid() {
+  return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
 }
 
-async function tx(store, mode) {
-  const db = await openDb();
-  return db.transaction(store, mode).objectStore(store);
+async function storeOf(storeName, mode) {
+  const dbx = await dbPromise;
+  return dbx.transaction(storeName, mode).objectStore(storeName);
 }
 
-/**
- * Save a record locally and enqueue it for sync.
- * @param {string} collection - e.g. "visitors"
- * @param {object} record - must include an id, or one is generated
- * @param {"create"|"update"|"delete"} op
- */
-export async function saveLocal(collection, record, op = "create") {
-  if (!record.id) record.id = uid();
-  record._updatedAt = Date.now();
-  record._synced = false;
-
-  const store = await tx(collection, "readwrite");
-  if (op === "delete") {
-    store.delete(record.id);
-  } else {
-    store.put(record);
-  }
-
-  const queue = await tx("sync_queue", "readwrite");
-  queue.put({
-    id: uid(),
-    collection,
-    op,
-    recordId: record.id,
-    payload: op === "delete" ? null : record,
-    createdAt: Date.now(),
+async function queueSync(storeName, recordId, action, data) {
+  const store = await storeOf('sync_queue', 'readwrite');
+  const item = { id: uid(), storeName, recordId, action, data, createdAt: Date.now() };
+  return new Promise((res, rej) => {
+    const r = store.put(item);
+    r.onsuccess = () => res(item);
+    r.onerror = () => rej(r.error);
   });
-
-  return record;
 }
 
-export async function getAllLocal(collection) {
-  const store = await tx(collection, "readonly");
+// Create or update a record. Assigns an id if missing.
+export async function saveLocal(storeName, record) {
+  const store = await storeOf(storeName, 'readwrite');
+  const id = record.id || uid();
+  const full = { ...record, id, updatedAt: Date.now(), synced: false };
+  await new Promise((res, rej) => {
+    const r = store.put(full);
+    r.onsuccess = res;
+    r.onerror = () => rej(r.error);
+  });
+  await queueSync(storeName, id, 'upsert', full);
+  return full;
+}
+
+export async function getAllLocal(storeName) {
+  const store = await storeOf(storeName, 'readonly');
   return new Promise((resolve, reject) => {
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    const r = store.getAll();
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
   });
 }
 
-export async function getPendingSyncItems() {
-  const store = await tx("sync_queue", "readonly");
+export async function getLocal(storeName, id) {
+  const store = await storeOf(storeName, 'readonly');
   return new Promise((resolve, reject) => {
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    const r = store.get(id);
+    r.onsuccess = () => resolve(r.result || null);
+    r.onerror = () => reject(r.error);
   });
 }
 
-export async function clearSyncItem(queueId) {
-  const store = await tx("sync_queue", "readwrite");
-  store.delete(queueId);
+export async function deleteLocal(storeName, id) {
+  const store = await storeOf(storeName, 'readwrite');
+  await new Promise((res, rej) => {
+    const r = store.delete(id);
+    r.onsuccess = res;
+    r.onerror = () => rej(r.error);
+  });
+  await queueSync(storeName, id, 'delete', { id });
 }
 
-export async function deleteLocal(collection, id) {
-  return saveLocal(collection, { id }, "delete");
+export async function getQueue() {
+  const store = await storeOf('sync_queue', 'readonly');
+  return new Promise((resolve, reject) => {
+    const r = store.getAll();
+    r.onsuccess = () => resolve(r.result.sort((a, b) => a.createdAt - b.createdAt));
+    r.onerror = () => reject(r.error);
+  });
 }
 
-export async function markRecordSynced(collection, recordId) {
-  const store = await tx(collection, "readwrite");
-  const getReq = store.get(recordId);
-  getReq.onsuccess = () => {
-    const record = getReq.result;
-    if (record) {
-      record._synced = true;
-      store.put(record);
-    }
-  };
+export async function removeFromQueue(id) {
+  const store = await storeOf('sync_queue', 'readwrite');
+  return new Promise((res, rej) => {
+    const r = store.delete(id);
+    r.onsuccess = res;
+    r.onerror = () => rej(r.error);
+  });
+}
+
+export async function markSynced(storeName, id) {
+  const store = await storeOf(storeName, 'readwrite');
+  return new Promise((resolve, reject) => {
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const rec = getReq.result;
+      if (!rec) return resolve();
+      rec.synced = true;
+      const putReq = store.put(rec);
+      putReq.onsuccess = resolve;
+      putReq.onerror = () => reject(putReq.error);
+    };
+    getReq.onerror = () => reject(getReq.error);
+  });
 }
