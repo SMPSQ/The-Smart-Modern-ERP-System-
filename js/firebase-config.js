@@ -1,44 +1,21 @@
-// ---------------------------------------------------------
-// FIREBASE CONFIG
-// Replace with your own project's config (Firebase Console →
-// Project settings → General → Your apps → SDK setup and
-// config). Do NOT commit real production keys to a public
-// repo — Firebase web config is not secret by itself, but
-// pair it with Firestore Security Rules (see /README.md).
-// ---------------------------------------------------------
+// js/firebase-config.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth,
-  setPersistence,
-  browserLocalPersistence,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.appspot.com",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME",
+  apiKey: "AIzaSyB-bpoh6--vMuwcYoLMRdiew5f3tYaZC3c",
+  authDomain: "erp-full-system.firebaseapp.com",
+  projectId: "erp-full-system",
+  storageBucket: "erp-full-system.firebasestorage.app",
+  messagingSenderId: "87383209313",
+  appId: "1:87383209313:web:431b78a57a73e477968120"
 };
 
-export const app = initializeApp(firebaseConfig);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-export const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence);
-
-// Firestore's own offline cache (separate from our IndexedDB
-// queue in db.js). This lets reads work offline too; db.js
-// handles offline WRITES with a sync queue so we control
-// exactly what/when gets pushed.
-export const dbFirestore = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
-});
+export { app, auth, db };
