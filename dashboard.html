@@ -378,13 +378,18 @@
       <ul id="visitor-list" class="visitor-list"></ul>
       <p class="hint">Logged visits save on this device instantly and sync to the cloud when you're online.</p>
     </section>
+  
+    <section class="panel feature-panel" id="activity-log-section" style="margin-top:1.25rem">
+      <h3>Activity Log — Automatic Tracking</h3>
+      <p class="hint" style="margin-bottom:0.75rem">Every create, edit and delete is recorded automatically (user + time).</p>
+      <ul id="activity-list" class="data-list" style="max-height:280px;overflow:auto;font-size:0.85rem"></ul>
+    </section>
+
   </main>
 </div>
 
 <footer class="dash-footer">
   Educating Minds  •  Building Futures  •  Empowering Traders
-  &nbsp;|&nbsp;
-  <a href="https://github.com/SMPSQ/The-Smart-Modern-ERP-System-" style="color:inherit" target="_blank">GitHub</a>
 </footer>
 
 <script type="module" src="js/firebase-config.js"></script>
@@ -393,5 +398,26 @@
 <script type="module" src="js/auth.js"></script>
 <script type="module" src="js/dashboard.js"></script>
 <script src="js/sw-register.js"></script>
+
+<script type="module">
+  import { getActivityLogs } from './js/db.js';
+  async function renderActivity() {
+    const el = document.getElementById('activity-list');
+    if (!el) return;
+    try {
+      const logs = await getActivityLogs(50);
+      el.innerHTML = logs.length ? logs.map(l => {
+        const t = new Date(l.createdAt).toLocaleString();
+        const act = (l.action || '').toUpperCase();
+        return '<li><strong>' + act + '</strong> · ' + (l.storeName||'') +
+          ' · ' + (l.summary||l.recordId||'') +
+          ' <span class="muted">by ' + (l.user||'system') + ' · ' + t + '</span></li>';
+      }).join('') : '<li class="muted">No activity yet.</li>';
+    } catch(e) { el.innerHTML = '<li class="muted">Activity log loading…</li>'; }
+  }
+  renderActivity();
+  setInterval(renderActivity, 15000);
+</script>
+
 </body>
 </html>

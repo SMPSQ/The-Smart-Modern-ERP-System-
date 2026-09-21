@@ -1,6 +1,6 @@
-// sw.js — installable app shell. Caches every page/module so the whole
-// ERP keeps working with no connection at all.
-const CACHE_VERSION = 'fkc-erp-v1';
+// sw.js — auto-updating cache. Bump CACHE_VERSION on every release.
+// Network-first for HTML/JS so users always get the latest after deploy.
+const CACHE_VERSION = 'fkc-erp-v3';
 
 const PRECACHE_URLS = [
   './',
@@ -27,6 +27,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION).then((cache) => cache.addAll(PRECACHE_URLS))
   );
+  // Activate new SW immediately — no waiting for old tabs to close
   self.skipWaiting();
 });
 
@@ -34,30 +35,62 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
+});
+
+// Tell all open tabs that a new version is live
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
-  // Never cache Firebase/Firestore/Auth network calls — always go live for those.
-  if (req.url.includes('googleapis.com') || req.url.includes('gstatic.com') || req.url.includes('firebaseio.com')) {
+  // Never cache Firebase / Google APIs
+  if (
+    req.url.includes('googleapis.com') ||
+    req.url.includes('gstatic.com') ||
+    req.url.includes('firebaseio.com') ||
+    req.url.includes('firestore.googleapis.com')
+  ) {
     return;
   }
 
-  event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req)
+  const url = new URL(req.url);
+  const isDoc =
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('/') ||
+    url.pathname.endsWith('sw.js');
+
+  if (isDoc) {
+    // Network-first: always try live file, fall back to cache offline
+    event.respondWith(
+      fetch(req)
         .then((res) => {
-          const resClone = res.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(req, resClone));
+          if (res && res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(req, clone));
+          }
           return res;
         })
-        .catch(() => cached);
-    })
-  );
+        .catch(() => caches.match(req))
+    );
+  } else {
+    // Cache-first for CSS, icons, images
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        if (cached) return cached;
+        return fetch(req).then((res) => {
+          const clone = res.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(req, clone));
+          return res;
+        });
+      })
+    );
+  }
 });

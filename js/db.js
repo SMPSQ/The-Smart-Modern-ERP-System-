@@ -1,14 +1,15 @@
-// js/db.js — offline-first IndexedDB engine + sync outbox queue
-// Every module reads/writes through saveLocal()/getAllLocal()/deleteLocal().
+// js/db.js — offline-first IndexedDB + sync queue + automatic activity tracking
+// Every create / update / delete is logged automatically.
 
 const DB_NAME = 'fkc-erp';
-const DB_VERSION = 2;
+const DB_VERSION = 3; // bumped for activity_logs store
 const STORES = [
   'visitors', 'students', 'feeChallans',
   'admissions', 'subjects', 'feeStructure',
   'batches', 'tradingEnrollments',
   'tutors', 'classes', 'academyEnrollments',
-  'sync_queue'
+  'sync_queue',
+  'activity_logs' // automatic edit / delete / create tracking
 ];
 
 function openDatabase() {
@@ -38,6 +39,15 @@ async function storeOf(storeName, mode) {
   return dbx.transaction(storeName, mode).objectStore(storeName);
 }
 
+function currentUser() {
+  try {
+    // Firebase auth email if available, else anonymous session tag
+    const chip = document.getElementById('user-chip');
+    if (chip && chip.textContent && chip.textContent !== '—') return chip.textContent.trim();
+  } catch (_) {}
+  return 'system';
+}
+
 async function queueSync(storeName, recordId, action, data) {
   const store = await storeOf('sync_queue', 'readwrite');
   const item = { id: uid(), storeName, recordId, action, data, createdAt: Date.now() };
@@ -48,10 +58,55 @@ async function queueSync(storeName, recordId, action, data) {
   });
 }
 
-// Create or update a record. Assigns an id if missing.
+/** Automatic activity log — create / update / delete */
+async function logActivity(action, storeName, recordId, summary, before, after) {
+  // Don't log the logs themselves
+  if (storeName === 'activity_logs' || storeName === 'sync_queue') return;
+  try {
+    const store = await storeOf('activity_logs', 'readwrite');
+    const entry = {
+      id: uid(),
+      action,          // 'create' | 'update' | 'delete'
+      storeName,
+      recordId,
+      summary: summary || '',
+      before: before || null,
+      after: after || null,
+      user: currentUser(),
+      createdAt: Date.now()
+    };
+    await new Promise((res, rej) => {
+      const r = store.put(entry);
+      r.onsuccess = res;
+      r.onerror = () => rej(r.error);
+    });
+    // Also queue for cloud sync
+    await queueSync('activity_logs', entry.id, 'upsert', entry);
+  } catch (err) {
+    console.warn('activity log failed', err);
+  }
+}
+
+function summarize(record) {
+  if (!record) return '';
+  return record.name || record.studentName || record.title || record.className || record.id || '';
+}
+
+// Create or update a record. Assigns an id if missing. Auto-logs.
 export async function saveLocal(storeName, record) {
   const store = await storeOf(storeName, 'readwrite');
   const id = record.id || uid();
+  const isUpdate = !!record.id;
+
+  let before = null;
+  if (isUpdate) {
+    before = await new Promise((resolve) => {
+      const g = store.get(id);
+      g.onsuccess = () => resolve(g.result || null);
+      g.onerror = () => resolve(null);
+    });
+  }
+
   const full = { ...record, id, updatedAt: Date.now(), synced: false };
   await new Promise((res, rej) => {
     const r = store.put(full);
@@ -59,6 +114,16 @@ export async function saveLocal(storeName, record) {
     r.onerror = () => rej(r.error);
   });
   await queueSync(storeName, id, 'upsert', full);
+
+  await logActivity(
+    isUpdate && before ? 'update' : 'create',
+    storeName,
+    id,
+    summarize(full),
+    before,
+    full
+  );
+
   return full;
 }
 
@@ -81,6 +146,12 @@ export async function getLocal(storeName, id) {
 }
 
 export async function deleteLocal(storeName, id) {
+  // Capture record before delete for the log
+  let before = null;
+  try {
+    before = await getLocal(storeName, id);
+  } catch (_) {}
+
   const store = await storeOf(storeName, 'readwrite');
   await new Promise((res, rej) => {
     const r = store.delete(id);
@@ -88,6 +159,8 @@ export async function deleteLocal(storeName, id) {
     r.onerror = () => rej(r.error);
   });
   await queueSync(storeName, id, 'delete', { id });
+
+  await logActivity('delete', storeName, id, summarize(before), before, null);
 }
 
 export async function getQueue() {
@@ -122,4 +195,11 @@ export async function markSynced(storeName, id) {
     };
     getReq.onerror = () => reject(getReq.error);
   });
+}
+
+/** Recent activity logs (newest first). Limit optional. */
+export async function getActivityLogs(limit = 100) {
+  const all = await getAllLocal('activity_logs');
+  all.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  return limit ? all.slice(0, limit) : all;
 }
