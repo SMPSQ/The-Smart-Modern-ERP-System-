@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Smart Modern ERP System — Login</title>
+  <style>
+    :root {
+      --navy: #0A1628;
+      --dark-navy: #06101C;
+      --blue: #1A4B8C;
+      --gold: #C9A227;
+      --light-gold: #E8D48B;
+      --cream: #F5F0E6;
+      --light-bg: #F8F6F1;
+      --white: #FFFFFF;
+      --soft: #F0F0F0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      background: var(--light-bg);
+    }
+    .left {
+      width: 38%;
+      min-width: 320px;
+      background: var(--navy);
+      color: white;
+      padding: 2.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      border-right: 4px solid var(--gold);
+      position: relative;
+    }
+    .left::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: var(--gold);
+    }
+    .brand {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .brand .sub {
+      color: var(--gold);
+      font-size: 0.85rem;
+      letter-spacing: 3px;
+      font-weight: 600;
+    }
+    .brand h1 {
+      font-size: 1.75rem;
+      margin: 0.3rem 0;
+      letter-spacing: 1px;
+    }
+    .brand .line {
+      width: 80px;
+      height: 3px;
+      background: var(--gold);
+      margin: 0.6rem auto;
+    }
+    .tagline {
+      text-align: center;
+      color: var(--light-gold);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+    .inst {
+      background: #0F2A4A;
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 0.9rem;
+      text-align: center;
+      border: 1px solid rgba(201,162,39,0.25);
+    }
+    .inst h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+    }
+    .inst p {
+      font-size: 0.78rem;
+      color: var(--light-gold);
+    }
+    .github {
+      margin-top: auto;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--gold);
+      padding-top: 1.5rem;
+    }
+    .github a { color: var(--gold); text-decoration: none; }
+    .github a:hover { text-decoration: underline; }
+
+    .right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+    }
+    .right::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: var(--gold);
+    }
+    .card {
+      background: white;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .card-top {
+      height: 6px;
+      background: var(--gold);
+    }
+    .card-body {
+      padding: 2rem 2rem 1.75rem;
+    }
+    .welcome {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .welcome .small {
+      color: var(--gold);
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      font-weight: 600;
+    }
+    .welcome h2 {
+      color: var(--navy);
+      font-size: 1.4rem;
+      margin-top: 0.3rem;
+    }
+    label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #666;
+      letter-spacing: 1px;
+      margin-bottom: 0.35rem;
+      margin-top: 1rem;
+    }
+    .roles {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .role-btn {
+      flex: 1;
+      min-width: 100px;
+      padding: 0.5rem 0.4rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--soft);
+      color: #555;
+      transition: 0.2s;
+    }
+    .role-btn.active {
+      background: var(--navy);
+      color: white;
+    }
+    .role-btn:hover:not(.active) {
+      background: #e0e0e0;
+    }
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #f7f7f7;
+      outline: none;
+      transition: 0.2s;
+    }
+    input:focus {
+      border-color: var(--gold);
+      background: white;
+      box-shadow: 0 0 0 3px rgba(201,162,39,0.15);
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .row a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+    .row a:hover { text-decoration: underline; }
+    .login-btn {
+      width: 100%;
+      margin-top: 1.4rem;
+      padding: 0.85rem;
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .login-btn:hover {
+      background: #0f2540;
+      transform: translateY(-1px);
+    }
+    .secure {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.75rem;
+      color: #999;
+    }
+    @media (max-width: 800px) {
+      body { flex-direction: column; }
+      .left { width: 100%; min-width: unset; border-right: none; border-bottom: 4px solid var(--gold); }
+    }
+  </style>
+</head>
+<body>
+  <div class="left">
+    <div class="brand">
+      <div class="sub">THE SMART MODERN</div>
+      <h1>ERP SYSTEM</h1>
+      <div class="line"></div>
+    </div>
+    <p class="tagline">Educating Minds  •  Building Futures<br>Empowering Traders</p>
+
+    <div class="inst">
+      <h3>🏫  THE SMART MODERN<br>PUBLIC SCHOOL</h3>
+      <p>Nurturing Minds, Building Futures</p>
+    </div>
+    <div class="inst">
+      <h3>📈  FKC TRADING ACADEMY</h3>
+      <p>Learn  |  Trade  |  Succeed</p>
+    </div>
+    <div class="inst">
+      <h3>📚  THE SMART MODERN<br>EDUCATIONAL ACADEMY</h3>
+      <p>Skills  |  Knowledge  |  Excellence</p>
+    </div>
+
+    <div class="github">
+      🔗 <a href="https://github.com/SMPSQ/The-Smart-Modern-ERP-System-" target="_blank">github.com/SMPSQ/The-Smart-Modern-ERP-System-</a>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="card">
+      <div class="card-top"></div>
+      <div class="card-body">
+        <div class="welcome">
+          <div class="small">WELCOME BACK</div>
+          <h2>Sign in to your ERP Dashboard</h2>
+        </div>
+
+        <label>SELECT ROLE</label>
+        <div class="roles">
+          <button class="role-btn active" onclick="selectRole(this)">Super Admin</button>
+          <button class="role-btn" onclick="selectRole(this)">School Admin</button>
+          <button class="role-btn" onclick="selectRole(this)">Academy Admin</button>
+        </div>
+
+        <label>EMAIL / USERNAME</label>
+        <input type="text" placeholder="admin@smartmodern.edu" value="admin@smartmodern.edu" />
+
+        <label>PASSWORD</label>
+        <input type="password" placeholder="••••••••••••" value="password123" />
+
+        <div class="row">
+          <label style="margin:0; display:flex; align-items:center; gap:6px; font-size:0.85rem; letter-spacing:0; font-weight:400; color:#555;">
+            <input type="checkbox" checked /> Remember me
+          </label>
+          <a href="#">Forgot Password?</a>
+        </div>
+
+        <button class="login-btn" onclick="alert('Demo only — connect to your backend login API')">LOGIN TO DASHBOARD</button>
+        <p class="secure">Secure Role-Based Access  •  Encrypted Connection</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function selectRole(btn) {
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>
