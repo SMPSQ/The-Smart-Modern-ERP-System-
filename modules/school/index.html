@@ -27,6 +27,57 @@
   <p><a class="back-link" href="../../dashboard.html">&larr; Back to reception</a></p>
 
   <section class="panel">
+    <h3>Admission Form</h3>
+    <form id="admission-form" class="inline-form">
+      <input type="text" id="adm-name" placeholder="Applicant name" required />
+      <input type="date" id="adm-dob" required />
+      <select id="adm-gender">
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+      <input type="text" id="adm-father" placeholder="Father / Guardian name" required />
+      <input type="text" id="adm-cnic" placeholder="B-Form / CNIC No." />
+      <input type="text" id="adm-address" placeholder="Address" />
+      <input type="text" id="adm-phone" placeholder="Phone" required />
+      <input type="text" id="adm-prev-school" placeholder="Previous school (if any)" />
+      <input type="text" id="adm-class" placeholder="Class applying for" required />
+      <input type="date" id="adm-date" required />
+      <button type="submit">Submit admission</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h3>Admissions</h3>
+    <ul id="admission-list" class="data-list"></ul>
+    <p class="hint">Approve an admission to add the applicant as an enrolled student below.</p>
+  </section>
+
+  <section class="panel">
+    <h3>Add Subject</h3>
+    <form id="subject-form" class="inline-form">
+      <input type="text" id="subject-name" placeholder="Subject name" required />
+      <input type="text" id="subject-class" placeholder="Class (e.g. 6-B)" required />
+      <button type="submit">Add subject</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h3>Subjects</h3>
+    <ul id="subject-list" class="data-list"></ul>
+  </section>
+
+  <section class="panel">
+    <h3>Fee Structure</h3>
+    <form id="fee-structure-form" class="inline-form">
+      <input type="text" id="fs-class" placeholder="Class (e.g. 6-B)" required />
+      <input type="number" id="fs-amount" placeholder="Monthly fee (Rs)" min="0" required />
+      <button type="submit">Save fee structure</button>
+    </form>
+    <ul id="fee-structure-list" class="data-list"></ul>
+    <p class="hint">Setting a class's fee here auto-fills the amount when you create a challan for that class.</p>
+  </section>
+
+  <section class="panel">
     <h3>Add Student</h3>
     <form id="student-form" class="inline-form">
       <input type="text" id="student-name" placeholder="Student name" required />

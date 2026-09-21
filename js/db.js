@@ -2,9 +2,10 @@
 // Every module reads/writes through saveLocal()/getAllLocal()/deleteLocal().
 
 const DB_NAME = 'fkc-erp';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORES = [
   'visitors', 'students', 'feeChallans',
+  'admissions', 'subjects', 'feeStructure',
   'batches', 'tradingEnrollments',
   'tutors', 'classes', 'academyEnrollments',
   'sync_queue'
