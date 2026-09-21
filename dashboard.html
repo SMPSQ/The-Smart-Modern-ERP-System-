@@ -3,18 +3,204 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>FKC Group ERP — Reception</title>
-<meta name="theme-color" content="#0B1D3A" />
+<title>The Smart Modern ERP — Master Dashboard</title>
+<meta name="theme-color" content="#0A1628" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon.svg" />
 <link rel="stylesheet" href="css/style.css" />
+<style>
+  :root {
+    --navy: #0A1628;
+    --dark-navy: #06101C;
+    --gold: #C9A227;
+    --light-gold: #E8D48B;
+  }
+  body.dash-body { margin: 0; background: #F4F6F9; font-family: 'Segoe UI', system-ui, Arial, sans-serif; }
+  .dash-header {
+    background: var(--navy);
+    color: #fff;
+    padding: 0.7rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--gold);
+  }
+  .dash-header__brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 600; }
+  .crest-sm {
+    background: var(--gold);
+    color: var(--navy);
+    font-weight: 800;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.45rem;
+    border-radius: 4px;
+  }
+  .dash-header__right { display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; }
+  .sync-pill { color: var(--light-gold); }
+  .user-chip { opacity: 0.9; }
+  .ghost-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .ghost-btn:hover { background: rgba(255,255,255,0.1); }
+
+  .dash-layout { display: flex; min-height: calc(100vh - 52px); }
+  .sidebar {
+    width: 220px;
+    background: var(--dark-navy);
+    color: #AAB;
+    padding: 1rem 0;
+    flex-shrink: 0;
+  }
+  .sidebar a {
+    display: block;
+    padding: 0.65rem 1.1rem;
+    color: #AAB;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border-left: 3px solid transparent;
+  }
+  .sidebar a:hover, .sidebar a.active {
+    background: #1A3A5C;
+    color: var(--gold);
+    border-left-color: var(--gold);
+  }
+  .dash-main { flex: 1; padding: 1.25rem 1.5rem; overflow-x: auto; }
+  .dash-hero h1 {
+    color: var(--navy);
+    font-size: 1.4rem;
+    margin: 0 0 0.25rem;
+  }
+  .dash-hero p { color: #666; margin: 0 0 1.25rem; font-size: 0.9rem; }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .kpi-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    border-left: 4px solid var(--navy);
+  }
+  .kpi-card.green { border-left-color: #2D6A4F; }
+  .kpi-card.gold { border-left-color: var(--gold); }
+  .kpi-card.red { border-left-color: #9B2226; }
+  .kpi-card .label { font-size: 0.75rem; color: #777; margin-bottom: 0.25rem; }
+  .kpi-card .value { font-size: 1.45rem; font-weight: 700; color: var(--navy); }
+  .kpi-card .sub { font-size: 0.75rem; color: #888; margin-top: 0.2rem; }
+
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .module-card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.15s;
+  }
+  .module-card:hover { transform: translateY(-2px); }
+  .module-card__head {
+    background: var(--navy);
+    color: #fff;
+    padding: 0.7rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .module-card__body { padding: 0.9rem 1rem 1rem; font-size: 0.85rem; color: #444; line-height: 1.55; }
+  .module-card__body ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+  .module-card__body li { margin-bottom: 0.15rem; }
+
+  .feature-panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    margin-bottom: 1.5rem;
+  }
+  .feature-panel h3 {
+    margin: 0 0 0.75rem;
+    color: var(--navy);
+    font-size: 1rem;
+    border-bottom: 2px solid var(--gold);
+    padding-bottom: 0.4rem;
+    display: inline-block;
+  }
+  .feature-cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    font-size: 0.8rem;
+    color: #444;
+  }
+  .feature-cols ul { margin: 0.3rem 0 0; padding-left: 1.1rem; }
+  .feature-cols li { margin-bottom: 0.2rem; }
+
+  .visitor-log.panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  }
+  .visitor-log h3 { margin: 0 0 0.75rem; color: var(--navy); }
+  .inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .inline-form input, .inline-form select {
+    padding: 0.5rem 0.7rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+  .inline-form button {
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .visitor-list { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; }
+  .visitor-list li { padding: 0.4rem 0; border-bottom: 1px solid #eee; }
+  .hint { font-size: 0.75rem; color: #888; margin-top: 0.5rem; }
+
+  .dash-footer {
+    background: var(--navy);
+    color: var(--light-gold);
+    text-align: center;
+    padding: 0.6rem;
+    font-size: 0.8rem;
+    border-top: 2px solid var(--gold);
+  }
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+  }
+</style>
 </head>
 <body class="dash-body" data-root="">
 
 <header class="dash-header">
   <div class="dash-header__brand">
     <span class="crest-sm">FKC</span>
-    <span>Group ERP — Reception</span>
+    <span>THE SMART MODERN ERP — Master Dashboard</span>
   </div>
   <div class="dash-header__right">
     <span class="sync-pill" id="sync-pill">● checking connection…</span>
@@ -23,47 +209,183 @@
   </div>
 </header>
 
-<main class="dash-main">
-  <section class="dash-hero">
-    <h1>Educating Minds · Building Futures · Empowering Traders</h1>
-    <p>Pick a module to continue, or log a walk-in visitor below.</p>
-  </section>
+<div class="dash-layout">
+  <nav class="sidebar">
+    <a href="dashboard.html" class="active">📊  Master Dashboard</a>
+    <a href="modules/school/index.html">🏫  Public School</a>
+    <a href="modules/trading-academy/index.html">📈  FKC Trading</a>
+    <a href="modules/educational-academy/index.html">📚  Edu Academy</a>
+    <a href="#finance">💰  Finance</a>
+    <a href="#staff">👥  Staff & Users</a>
+    <a href="#reports">📋  Reports</a>
+    <a href="#settings">⚙️  System Settings</a>
+  </nav>
 
-  <section class="module-grid">
-    <a class="module-card module-card--school" href="modules/school/index.html" data-module="school">
-      <span class="module-card__eyebrow">Module</span>
-      <h2>The Smart Modern Public School</h2>
-      <p>Students, attendance, fee challans, class records.</p>
-    </a>
-    <a class="module-card module-card--trading" href="modules/trading-academy/index.html" data-module="trading">
-      <span class="module-card__eyebrow">Module</span>
-      <h2>FKC Trading Academy</h2>
-      <p>Batches, enrollments, trading class schedules.</p>
-    </a>
-    <a class="module-card module-card--academy" href="modules/educational-academy/index.html" data-module="academy">
-      <span class="module-card__eyebrow">Module</span>
-      <h2>The Smart Modern Educational Academy</h2>
-      <p>Tuition classes, tutors, timetables.</p>
-    </a>
-  </section>
+  <main class="dash-main">
+    <section class="dash-hero">
+      <h1>Master ERP Dashboard</h1>
+      <p>Educating Minds · Building Futures · Empowering Traders — Real-time overview of all institutions</p>
+    </section>
 
-  <section class="visitor-log panel">
-    <h3>Walk-in Log</h3>
-    <form id="visitor-form" class="inline-form">
-      <input type="text" id="visitor-name" placeholder="Visitor name" required />
-      <select id="visitor-for">
-        <option value="school">School</option>
-        <option value="trading">Trading Academy</option>
-        <option value="academy">Educational Academy</option>
-        <option value="general">General inquiry</option>
-      </select>
-      <input type="text" id="visitor-reason" placeholder="Reason for visit" />
-      <button type="submit">Log visit</button>
-    </form>
-    <ul id="visitor-list" class="visitor-list"></ul>
-    <p class="hint">Logged visits save on this device instantly and sync to the cloud when you're online.</p>
-  </section>
-</main>
+    <section class="kpi-row">
+      <div class="kpi-card">
+        <div class="label">Total Students</div>
+        <div class="value" id="kpi-students">—</div>
+        <div class="sub">School + Trading + Academy</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="label">Active Batches / Classes</div>
+        <div class="value" id="kpi-batches">—</div>
+        <div class="sub">Across all modules</div>
+      </div>
+      <div class="kpi-card gold">
+        <div class="label">Today's Collection</div>
+        <div class="value" id="kpi-collection">—</div>
+        <div class="sub">Pending fees tracked</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="label">Pending Fees</div>
+        <div class="value" id="kpi-pending">—</div>
+        <div class="sub">All institutions</div>
+      </div>
+    </section>
+
+    <section class="module-grid">
+      <a class="module-card" href="modules/school/index.html">
+        <div class="module-card__head">🏫  The Smart Modern Public School</div>
+        <div class="module-card__body">
+          Students, attendance, fee challans, exams, timetable, ID cards, promotions.
+          <ul>
+            <li>Registration & Admission</li>
+            <li>Fee Management & Challans</li>
+            <li>Exams, Marks & Results</li>
+            <li>Teacher & Student Attendance</li>
+          </ul>
+        </div>
+      </a>
+      <a class="module-card" href="modules/trading-academy/index.html">
+        <div class="module-card__head">📈  FKC Trading Academy</div>
+        <div class="module-card__body">
+          Batches, enrollments, trading journal, P/L tracking, risk & strategy progress.
+          <ul>
+            <li>Course & Batch Management</li>
+            <li>Trading Journal & Trade Logs</li>
+            <li>Profit/Loss & Risk Records</li>
+            <li>Certificates & Progress</li>
+          </ul>
+        </div>
+      </a>
+      <a class="module-card" href="modules/educational-academy/index.html">
+        <div class="module-card__head">📚  Educational Academy</div>
+        <div class="module-card__body">
+          Tutors, tuition classes, timetable, fee installments, homework & certificates.
+          <ul>
+            <li>Tutor & Course Management</li>
+            <li>Timetable & Attendance</li>
+            <li>Fee & Installment System</li>
+            <li>Progress & Certificates</li>
+          </ul>
+        </div>
+      </a>
+    </section>
+
+    <section class="feature-panel" id="features">
+      <h3>Full System Feature List</h3>
+      <div class="feature-cols">
+        <div>
+          <strong>🏫 Public School</strong>
+          <ul>
+            <li>Student Registration & Admission</li>
+            <li>Profile & Documents</li>
+            <li>Classes & Sections</li>
+            <li>Teacher Management</li>
+            <li>Student / Teacher Attendance</li>
+            <li>Fee Management & Challans</li>
+            <li>Exams, Marks & Result Cards</li>
+            <li>Timetable & Promotion</li>
+            <li>Leave Management</li>
+            <li>ID Cards & Notifications</li>
+            <li>Homework & Assignments</li>
+            <li>Income/Expense & Reports</li>
+          </ul>
+        </div>
+        <div>
+          <strong>📈 FKC Trading Academy</strong>
+          <ul>
+            <li>Course & Batch Management</li>
+            <li>Student Enrollment</li>
+            <li>Trainer Management</li>
+            <li>Trading Class Schedule</li>
+            <li>Fee / Installment System</li>
+            <li>Quiz, Tests & Assignments</li>
+            <li>Progress Tracking</li>
+            <li>Certificates & ID Cards</li>
+            <li>Trading Journal</li>
+            <li>Trade Entry/Exit & P/L</li>
+            <li>Risk & Strategy Tracking</li>
+            <li>Performance Dashboard</li>
+          </ul>
+        </div>
+        <div>
+          <strong>📚 Educational Academy</strong>
+          <ul>
+            <li>Student & Tutor Management</li>
+            <li>Course & Subject Setup</li>
+            <li>Classes & Batches</li>
+            <li>Timetable Management</li>
+            <li>Attendance (Student/Tutor)</li>
+            <li>Monthly Fee & Installments</li>
+            <li>Tests, Marks & Results</li>
+            <li>Homework & Progress</li>
+            <li>Tutor Salary Management</li>
+            <li>Certificates</li>
+            <li>Reports & Dashboard</li>
+          </ul>
+        </div>
+        <div>
+          <strong>💰 Finance + Users + System</strong>
+          <ul>
+            <li>Central Fee Collection</li>
+            <li>Daily/Monthly Income & Expenses</li>
+            <li>Salaries, Rent, Utilities</li>
+            <li>Profit & Loss Reports</li>
+            <li>Role-based Access Control</li>
+            <li>Super / School / Academy Admin</li>
+            <li>Student & Parent Login</li>
+            <li>PDF / Excel Export</li>
+            <li>Data Backup & Restore</li>
+            <li>Dark/Light Mode</li>
+            <li>Mobile Responsive + PWA</li>
+            <li>Audit Logs</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="visitor-log panel">
+      <h3>Walk-in Log</h3>
+      <form id="visitor-form" class="inline-form">
+        <input type="text" id="visitor-name" placeholder="Visitor name" required />
+        <select id="visitor-for">
+          <option value="school">School</option>
+          <option value="trading">Trading Academy</option>
+          <option value="academy">Educational Academy</option>
+          <option value="general">General inquiry</option>
+        </select>
+        <input type="text" id="visitor-reason" placeholder="Reason for visit" />
+        <button type="submit">Log visit</button>
+      </form>
+      <ul id="visitor-list" class="visitor-list"></ul>
+      <p class="hint">Logged visits save on this device instantly and sync to the cloud when you're online.</p>
+    </section>
+  </main>
+</div>
+
+<footer class="dash-footer">
+  Educating Minds  •  Building Futures  •  Empowering Traders
+  &nbsp;|&nbsp;
+  <a href="https://github.com/SMPSQ/The-Smart-Modern-ERP-System-" style="color:inherit" target="_blank">GitHub</a>
+</footer>
 
 <script type="module" src="js/firebase-config.js"></script>
 <script type="module" src="js/db.js"></script>

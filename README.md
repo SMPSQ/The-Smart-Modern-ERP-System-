@@ -4,11 +4,7 @@
 
 🔗 **Repository:** [https://github.com/SMPSQ/The-Smart-Modern-ERP-System-](https://github.com/SMPSQ/The-Smart-Modern-ERP-System-)
 
----
-
-## Overview
-
-A unified **Enterprise Resource Planning (ERP)** system designed for three institutions under one brand:
+Unified, offline-first ERP for three brands sharing one reception:
 
 | Institution | Focus |
 |-------------|-------|
@@ -16,19 +12,37 @@ A unified **Enterprise Resource Planning (ERP)** system designed for three insti
 | 📈 **FKC Trading Academy** | Trading education + performance tracking |
 | 📚 **The Smart Modern Educational Academy** | Courses, tutors & skill development |
 
-All modules share **Central Finance**, **Staff & User Management**, and a **Master ERP Dashboard**.
+Built as a **PWA**: works fully offline, syncs to Firebase whenever there's a connection, deploys free on GitHub Pages.
 
 ---
 
-## Modules
+## What's included
 
-### 1. The Smart Modern Public School
+| File / Folder | Description |
+|---------------|-------------|
+| `index.html` | **Branded staff login** (navy + gold, role selector, reception style) |
+| `dashboard.html` | **Master ERP Dashboard** — KPIs, 3 module cards, full feature list, walk-in log |
+| `modules/school/` | Students, fee challans (Paid/Unpaid, filterable by month) |
+| `modules/trading-academy/` | Batches (male/female, timing, instructor), trader enrollments |
+| `modules/educational-academy/` | Tutors, tuition classes/timetable, student enrollments |
+| `js/db.js` | IndexedDB offline engine + sync outbox queue |
+| `js/sync.js` | Pushes the queue to Firestore whenever online |
+| `js/auth.js` | Shared login + route-guard (wired to your Firebase project) |
+| `js/firebase-config.js` | **Your real Firebase keys are already in this file** |
+| `sw.js` + `manifest.json` | Installable app shell, caches every module for full offline use |
+| `.github/workflows/deploy.yml` | Auto-deploys to GitHub Pages on every push to `main` |
+
+---
+
+## Full Feature List
+
+### 🏫 1. THE SMART MODERN PUBLIC SCHOOL
 - Student Registration & Admission
 - Student Profile & Documents
 - Classes & Sections
 - Teacher Management
 - Student Attendance / Teacher Attendance
-- Fee Management, Monthly Fee Challans, Collection & Pending Fees, Fee Receipts
+- Fee Management, Monthly Fee Challans, Fee Collection & Pending Fees, Fee Receipts
 - Exams & Tests, Marks & Result Cards
 - Class Timetable / Teacher Timetable
 - Student Promotion, Leave Management
@@ -40,7 +54,7 @@ All modules share **Central Finance**, **Staff & User Management**, and a **Mast
 - Reports & Statistics
 - Admin Dashboard
 
-### 2. FKC Trading Academy
+### 📈 2. FKC TRADING ACADEMY
 - Student Registration
 - Course Management / Batch Management
 - Student Enrollment
@@ -66,7 +80,7 @@ All modules share **Central Finance**, **Staff & User Management**, and a **Mast
 - Student Trading Performance
 - Trading Academy Dashboard
 
-### 3. The Smart Modern Educational Academy
+### 📚 3. THE SMART MODERN EDUCATIONAL ACADEMY
 - Student Registration / Student Profile
 - Tutor Management
 - Course & Subject Management
@@ -86,7 +100,7 @@ All modules share **Central Finance**, **Staff & User Management**, and a **Mast
 - Reports & Statistics
 - Educational Academy Dashboard
 
-### 4. Central Finance Management
+### 💰 4. CENTRAL FINANCE MANAGEMENT
 - School / Trading Academy / Educational Academy Fee Collection
 - Daily Income / Monthly Income
 - Daily Expenses / Monthly Expenses
@@ -96,7 +110,7 @@ All modules share **Central Finance**, **Staff & User Management**, and a **Mast
 - Collection Reports
 - Module-wise Financial Reports
 
-### 5. Staff & User Management
+### 👥 5. STAFF & USER MANAGEMENT
 - Super Admin
 - School Admin / Academy Admin
 - Accountant
@@ -107,7 +121,7 @@ All modules share **Central Finance**, **Staff & User Management**, and a **Mast
 - Password Management
 - Activity Logs
 
-### 6. Master ERP Dashboard
+### 📊 6. MASTER ERP DASHBOARD
 - Total Students / Teachers / Trainers/Tutors
 - Active Batches
 - Today's Attendance
@@ -116,7 +130,7 @@ All modules share **Central Finance**, **Staff & User Management**, and a **Mast
 - School Overview / Trading Academy Overview / Educational Academy Overview
 - Recent Activities / Notifications / Quick Actions
 
-### 7. System Features
+### ⚙️ 7. SYSTEM FEATURES
 - Secure Login System
 - Role & Permission Management
 - Search & Filter
@@ -130,36 +144,50 @@ All modules share **Central Finance**, **Staff & User Management**, and a **Mast
 - Database Management
 - Automatic Reports
 - Audit Logs
+- Offline-first PWA + Firebase sync
 
 ---
 
-## Design Assets
+## How to replace your repo
 
-| File | Description |
-|------|-------------|
-| `docs/Smart_Modern_ERP_Login_Dashboard.pptx` | Login screen + Master Dashboard + Feature list (branded) |
-| `mockups/login.html` | Interactive HTML login page (open in browser) |
-| `docs/FEATURES.txt` | Copy-paste ready feature list |
-
-**Brand Colors**
-- Navy: `#0A1628`
-- Gold: `#C9A227`
-- Cream / Light BG: `#F5F0E6` / `#F8F6F1`
-
----
-
-## Quick Start (Design Preview)
-
-1. Open `mockups/login.html` in any browser to see the login screen.
-2. Open the PPTX for full dashboard mockups and feature overview.
+1. Delete everything in your repo except `.git`.
+2. Copy every file from this folder into the repo root, keeping the exact same folder structure.
+3. Commit and push:
+   ```bash
+   git add .
+   git commit -m "Full package: branded login + Master Dashboard + complete feature list"
+   git push
+   ```
+4. GitHub Actions will auto-deploy. Your ERP will be live at your existing GitHub Pages URL.
 
 ---
 
-## Tagline
+## Still needed in Firebase Console (one-time)
 
-> **Educating Minds • Building Futures • Empowering Traders**
+1. **Authentication → Sign-in method** → enable Email/Password.
+2. **Authentication → Users** → add your staff login (email + password).
+3. **Firestore Database** → Create database (production mode).
+4. **Firestore → Rules** → paste:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+Once that's done, sign in on the live site — the sync pill should switch from "checking connection…" to "● synced".
 
 ---
 
-© The Smart Modern ERP System  
-GitHub: https://github.com/SMPSQ/The-Smart-Modern-ERP-System-
+## Brand
+
+- **Navy:** `#0A1628`
+- **Gold:** `#C9A227`
+- **Tagline:** Educating Minds • Building Futures • Empowering Traders
+
+© The Smart Modern ERP System

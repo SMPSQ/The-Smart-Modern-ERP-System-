@@ -3,31 +3,273 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>FKC Group — Sign In</title>
-<meta name="theme-color" content="#0B1D3A" />
+<title>The Smart Modern ERP — Sign In</title>
+<meta name="theme-color" content="#0A1628" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon.svg" />
 <link rel="stylesheet" href="css/style.css" />
+<style>
+  /* Branded login matching reception wall */
+  :root {
+    --navy: #0A1628;
+    --dark-navy: #06101C;
+    --gold: #C9A227;
+    --light-gold: #E8D48B;
+    --cream: #F8F6F1;
+  }
+  body.login-body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+    background: var(--cream);
+  }
+  .login-left {
+    width: 40%;
+    min-width: 300px;
+    background: var(--navy);
+    color: #fff;
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    border-right: 4px solid var(--gold);
+    position: relative;
+  }
+  .login-left::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: var(--gold);
+  }
+  .brand-block { text-align: center; margin-bottom: 1.25rem; }
+  .brand-block .eyebrow {
+    color: var(--gold);
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    font-weight: 600;
+  }
+  .brand-block h1 {
+    font-size: 1.7rem;
+    margin: 0.35rem 0 0.5rem;
+    letter-spacing: 1px;
+  }
+  .brand-line {
+    width: 70px;
+    height: 3px;
+    background: var(--gold);
+    margin: 0.5rem auto 0.8rem;
+  }
+  .tagline {
+    text-align: center;
+    color: var(--light-gold);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    margin-bottom: 1.75rem;
+  }
+  .inst-card {
+    background: #0F2A4A;
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
+    border: 1px solid rgba(201,162,39,0.2);
+  }
+  .inst-card h3 { font-size: 0.92rem; margin: 0 0 0.25rem; }
+  .inst-card p { font-size: 0.75rem; color: var(--light-gold); margin: 0; }
+  .github-link {
+    margin-top: auto;
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--gold);
+    padding-top: 1.25rem;
+  }
+  .github-link a { color: var(--gold); text-decoration: none; }
+  .github-link a:hover { text-decoration: underline; }
+
+  .login-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+  }
+  .login-right::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: var(--gold);
+  }
+  .login-card {
+    background: #fff;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+  .login-card .gold-bar { height: 5px; background: var(--gold); }
+  .login-card .inner { padding: 1.75rem 1.75rem 1.5rem; }
+  .welcome { text-align: center; margin-bottom: 1.25rem; }
+  .welcome .small {
+    color: var(--gold);
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    font-weight: 600;
+  }
+  .welcome h2 {
+    color: var(--navy);
+    font-size: 1.25rem;
+    margin: 0.3rem 0 0;
+  }
+  .login-card label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #666;
+    letter-spacing: 1px;
+    margin: 0.9rem 0 0.3rem;
+  }
+  .roles {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .role-btn {
+    flex: 1;
+    min-width: 90px;
+    padding: 0.45rem 0.3rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: #f0f0f0;
+    color: #555;
+  }
+  .role-btn.active { background: var(--navy); color: #fff; }
+  .login-card input[type="email"],
+  .login-card input[type="password"] {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #f7f7f7;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .login-card input:focus {
+    border-color: var(--gold);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(201,162,39,0.15);
+  }
+  .login-card button[type="submit"] {
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 0.8rem;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .login-card button[type="submit"]:hover { background: #0f2540; }
+  .login-status {
+    text-align: center;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    min-height: 1.2em;
+  }
+  .secure-note {
+    text-align: center;
+    margin-top: 0.75rem;
+    font-size: 0.72rem;
+    color: #999;
+  }
+  @media (max-width: 800px) {
+    body.login-body { flex-direction: column; }
+    .login-left {
+      width: 100%;
+      min-width: unset;
+      border-right: none;
+      border-bottom: 4px solid var(--gold);
+      padding: 1.5rem 1.25rem;
+    }
+  }
+</style>
 </head>
 <body class="login-body" data-root="">
 
-<div class="login-card">
-  <div class="crest">FKC</div>
-  <h1>THE SMART MODERN GROUP ERP</h1>
-  <p class="tagline">One login for School · Trading Academy · Educational Academy</p>
+<div class="login-left">
+  <div class="brand-block">
+    <div class="eyebrow">THE SMART MODERN</div>
+    <h1>ERP SYSTEM</h1>
+    <div class="brand-line"></div>
+  </div>
+  <p class="tagline">Educating Minds  •  Building Futures<br>Empowering Traders</p>
 
-  <form id="login-form">
-    <label for="login-email">Email</label>
-    <input type="email" id="login-email" required autocomplete="username" />
+  <div class="inst-card">
+    <h3>🏫  THE SMART MODERN<br>PUBLIC SCHOOL</h3>
+    <p>Nurturing Minds, Building Futures</p>
+  </div>
+  <div class="inst-card">
+    <h3>📈  FKC TRADING ACADEMY</h3>
+    <p>Learn  |  Trade  |  Succeed</p>
+  </div>
+  <div class="inst-card">
+    <h3>📚  THE SMART MODERN<br>EDUCATIONAL ACADEMY</h3>
+    <p>Skills  |  Knowledge  |  Excellence</p>
+  </div>
 
-    <label for="login-password">Password</label>
-    <input type="password" id="login-password" required autocomplete="current-password" />
-
-    <button type="submit">Sign in</button>
-    <p class="login-status" id="login-status"></p>
-  </form>
+  <div class="github-link">
+    🔗 <a href="https://github.com/SMPSQ/The-Smart-Modern-ERP-System-" target="_blank" rel="noopener">github.com/SMPSQ/The-Smart-Modern-ERP-System-</a>
+  </div>
 </div>
 
+<div class="login-right">
+  <div class="login-card">
+    <div class="gold-bar"></div>
+    <div class="inner">
+      <div class="welcome">
+        <div class="small">WELCOME BACK</div>
+        <h2>Sign in to your ERP Dashboard</h2>
+      </div>
+
+      <form id="login-form">
+        <label>SELECT ROLE</label>
+        <div class="roles">
+          <button type="button" class="role-btn active" data-role="super">Super Admin</button>
+          <button type="button" class="role-btn" data-role="school">School Admin</button>
+          <button type="button" class="role-btn" data-role="academy">Academy Admin</button>
+        </div>
+
+        <label for="login-email">EMAIL / USERNAME</label>
+        <input type="email" id="login-email" required autocomplete="username" placeholder="admin@smartmodern.edu" />
+
+        <label for="login-password">PASSWORD</label>
+        <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" />
+
+        <button type="submit">LOGIN TO DASHBOARD</button>
+        <p class="login-status" id="login-status"></p>
+        <p class="secure-note">Secure Role-Based Access  •  Encrypted Connection</p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.role-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+</script>
 <script type="module" src="js/firebase-config.js"></script>
 <script type="module" src="js/db.js"></script>
 <script type="module" src="js/sync.js"></script>
