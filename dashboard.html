@@ -8,15 +8,314 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon.svg" />
 <link rel="stylesheet" href="css/style.css" />
+<style>
+  :root {
+    --navy: #0A1628;
+    --dark-navy: #06101C;
+    --gold: #C9A227;
+    --light-gold: #E8D48B;
+  }
+  body.dash-body {
+    background: #EEF1F5;
+    font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+    margin: 0;
+  }
+  .brand-bar {
+    background: var(--navy);
+    border-bottom: 4px solid var(--gold);
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .brand-bar__left {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+  .brand-bar__titles h1 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .brand-bar__titles p {
+    margin: 0.15rem 0 0;
+    font-size: 0.72rem;
+    color: var(--light-gold);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .brand-bar__right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: #fff;
+  }
+  .sync-pill {
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .sync-pill--ok { color: #4ade80; border-color: #4ade80; }
+  .sync-pill--busy { color: var(--light-gold); border-color: var(--gold); }
+  .sync-pill--offline { color: #fbbf24; border-color: #fbbf24; }
+  .user-chip { opacity: 0.9; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ghost-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.35);
+    color: #fff;
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .ghost-btn:hover { background: rgba(255,255,255,0.1); }
+  .dash-layout { display: flex; min-height: calc(100vh - 64px); }
+  .sidebar {
+    width: 240px;
+    background: var(--dark-navy);
+    padding: 1.25rem 0;
+    flex-shrink: 0;
+  }
+  .sidebar .side-label {
+    padding: 0 1.2rem 0.5rem;
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
+    color: var(--gold);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 1.2rem;
+    color: #AAB4C4;
+    font-size: 0.9rem;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .sidebar a:hover, .sidebar a.active {
+    background: #0F2A4A;
+    color: var(--gold);
+    border-left-color: var(--gold);
+  }
+  .sidebar a img { width: 22px; height: 22px; object-fit: contain; }
+  .dash-main {
+    flex: 1;
+    padding: 1.5rem 1.75rem 2.5rem;
+    max-width: 1200px;
+  }
+  .hero-brand {
+    background: linear-gradient(135deg, var(--navy) 0%, #0F2A4A 100%);
+    border-radius: 14px;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(201,162,39,0.25);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-brand::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 6px;
+    background: var(--gold);
+  }
+  .hero-brand h1 {
+    margin: 0 0 0.3rem;
+    font-size: 1.5rem;
+    color: #fff;
+    font-weight: 700;
+  }
+  .hero-brand .tagline {
+    color: var(--light-gold);
+    font-size: 0.9rem;
+    margin: 0 0 1rem;
+    letter-spacing: 0.5px;
+  }
+  .hero-logos {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .hero-logo-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(201,162,39,0.2);
+    border-radius: 10px;
+    padding: 0.5rem 0.9rem;
+  }
+  .hero-logo-item img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+  }
+  .hero-logo-item span {
+    font-size: 0.78rem;
+    color: #E0E6F0;
+    line-height: 1.3;
+  }
+  .hero-logo-item strong {
+    display: block;
+    color: var(--gold);
+    font-size: 0.82rem;
+  }
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .kpi-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.15rem 1.25rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    border-left: 5px solid var(--navy);
+  }
+  .kpi-card.green { border-left-color: #2D6A4F; }
+  .kpi-card.gold { border-left-color: var(--gold); }
+  .kpi-card.red { border-left-color: #9B2226; }
+  .kpi-card .label {
+    font-size: 0.72rem;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+  .kpi-card .value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--navy);
+  }
+  .kpi-card .sub {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 0.3rem;
+  }
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.15rem;
+    margin-bottom: 1.5rem;
+  }
+  .module-card {
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    transition: transform 0.18s, box-shadow 0.18s;
+    border: 1px solid #e8e8e8;
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+  .module-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  }
+  .module-card__head {
+    background: var(--navy);
+    color: #fff;
+    padding: 0.9rem 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 3px solid var(--gold);
+  }
+  .module-card__head img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 4px;
+  }
+  .module-card__head .titles h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .module-card__head .titles p {
+    margin: 0.15rem 0 0;
+    font-size: 0.7rem;
+    color: var(--light-gold);
+  }
+  .module-card__body {
+    padding: 1rem 1.15rem 0.5rem;
+    font-size: 0.85rem;
+    color: #444;
+    line-height: 1.55;
+  }
+  .module-card__body ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.15rem;
+  }
+  .module-card__body li { margin-bottom: 0.2rem; }
+  .module-card__foot {
+    padding: 0.6rem 1.15rem 0.95rem;
+    font-size: 0.8rem;
+    color: var(--navy);
+    font-weight: 600;
+  }
+  .module-card__foot span { color: var(--gold); }
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.15rem 1.3rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    margin-bottom: 1.25rem;
+    border: 1px solid #eee;
+  }
+  .panel h3 {
+    margin: 0 0 0.9rem;
+    color: var(--navy);
+    font-size: 1.05rem;
+    border-bottom: 2px solid var(--gold);
+    padding-bottom: 0.4rem;
+    display: inline-block;
+  }
+  .dash-footer {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.78rem;
+    color: #888;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 1rem;
+  }
+  .dash-footer strong { color: var(--navy); }
+  @media (max-width: 800px) {
+    .sidebar { display: none; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .brand-bar__titles h1 { font-size: 0.95rem; }
+  }
+</style>
 </head>
 <body class="dash-body" data-root="">
 
-<header class="dash-header">
-  <div class="dash-header__brand">
-    <span class="crest-sm">FKC</span>
-    <span>THE SMART MODERN ERP — Master Dashboard</span>
+<header class="brand-bar">
+  <div class="brand-bar__left">
+    <img src="icons/icon.svg" alt="FKC" style="height:38px;background:var(--gold);border-radius:8px;padding:4px;" />
+    <div class="brand-bar__titles">
+      <h1>THE SMART MODERN ERP</h1>
+      <p>Educating Minds · Building Futures · Empowering Traders</p>
+    </div>
   </div>
-  <div class="dash-header__right">
+  <div class="brand-bar__right">
     <span class="sync-pill" id="sync-pill">● checking…</span>
     <span class="user-chip" id="user-chip">—</span>
     <button class="ghost-btn" id="logout-btn">Sign out</button>
@@ -25,31 +324,49 @@
 
 <div class="dash-layout">
   <nav class="sidebar">
-    <a href="dashboard.html" class="active">📊 Master Dashboard</a>
-    <a href="modules/school/index.html">🏫 Public School</a>
-    <a href="modules/trading-academy/index.html">📈 FKC Trading</a>
-    <a href="modules/educational-academy/index.html">📚 Edu Academy</a>
+    <div class="side-label">Navigation</div>
+    <a href="dashboard.html" class="active"><span>📊</span> Master Dashboard</a>
+    <a href="modules/school/index.html">
+      <img src="icons/logo-school.svg" alt="" /> Public School
+    </a>
+    <a href="modules/trading-academy/index.html">
+      <img src="icons/logo-trading.svg" alt="" /> FKC Trading
+    </a>
+    <a href="modules/educational-academy/index.html">
+      <img src="icons/logo-academy.svg" alt="" /> Edu Academy
+    </a>
   </nav>
 
   <main class="dash-main">
-    <section class="dash-hero">
-      <h1 style="color:var(--navy);margin:0 0 0.25rem;font-size:1.4rem">Master ERP Dashboard</h1>
-      <p style="color:#666;margin:0 0 1.25rem;font-size:0.9rem">
-        Educating Minds · Building Futures · Empowering Traders — Live overview
-      </p>
+    <section class="hero-brand">
+      <h1>Master ERP Dashboard</h1>
+      <p class="tagline">One system for School · Trading Academy · Educational Academy</p>
+      <div class="hero-logos">
+        <div class="hero-logo-item">
+          <img src="icons/logo-school.svg" alt="School" />
+          <span><strong>Public School</strong>Nurturing Minds, Building Futures</span>
+        </div>
+        <div class="hero-logo-item">
+          <img src="icons/logo-trading.svg" alt="Trading" />
+          <span><strong>FKC Trading Academy</strong>Learn | Trade | Succeed</span>
+        </div>
+        <div class="hero-logo-item">
+          <img src="icons/logo-academy.svg" alt="Academy" />
+          <span><strong>Educational Academy</strong>Skills | Knowledge | Excellence</span>
+        </div>
+      </div>
     </section>
 
-    <!-- LIVE KPIs -->
     <section class="kpi-row">
       <div class="kpi-card">
         <div class="label">Total Students</div>
         <div class="value" id="kpi-students">—</div>
-        <div class="sub">All institutions</div>
+        <div class="sub">School · Trading · Academy</div>
       </div>
       <div class="kpi-card green">
         <div class="label">Active Batches / Classes</div>
         <div class="value" id="kpi-batches">—</div>
-        <div class="sub">Trading + Academy</div>
+        <div class="sub">Across all modules</div>
       </div>
       <div class="kpi-card gold">
         <div class="label">Today's Collection</div>
@@ -59,57 +376,78 @@
       <div class="kpi-card red">
         <div class="label">Pending Fees</div>
         <div class="value" id="kpi-pending">—</div>
-        <div class="sub">All modules</div>
+        <div class="sub">All institutions</div>
       </div>
     </section>
 
-    <!-- MODULE CARDS -->
     <section class="module-grid">
       <a class="module-card" href="modules/school/index.html">
-        <div class="module-card__head">🏫 The Smart Modern Public School</div>
+        <div class="module-card__head">
+          <img src="icons/logo-school.svg" alt="School Logo" />
+          <div class="titles">
+            <h3>The Smart Modern Public School</h3>
+            <p>Nurturing Minds, Building Futures</p>
+          </div>
+        </div>
         <div class="module-card__body">
-          Admission, Students, Fee Challans, Fee Structure
+          Complete school management — Admission, Students, Fee Structure, Challans, Certificates.
           <ul>
-            <li>Full Admission Form</li>
-            <li>Auto Fee Structure → Challan</li>
+            <li>Full Admission Form + Print</li>
+            <li>Fee Structure → Auto Challan</li>
             <li>Paid / Unpaid tracking</li>
-            <li>Search & Filters</li>
+            <li>Enrollment Certificates</li>
           </ul>
         </div>
+        <div class="module-card__foot">Open School Module <span>→</span></div>
       </a>
+
       <a class="module-card" href="modules/trading-academy/index.html">
-        <div class="module-card__head">📈 FKC Trading Academy</div>
+        <div class="module-card__head">
+          <img src="icons/logo-trading.svg" alt="Trading Logo" />
+          <div class="titles">
+            <h3>FKC Trading Academy</h3>
+            <p>Learn | Trade | Succeed</p>
+          </div>
+        </div>
         <div class="module-card__body">
-          Batches, Enrollments, Trading Journal, P/L
+          Batches, Enrollments, Fee Challans, Trading Journal with P/L tracking.
           <ul>
+            <li>Separate Admission + Print</li>
             <li>Batch Management</li>
-            <li>Student Enrollment</li>
-            <li>Trading Journal</li>
-            <li>Profit / Loss tracking</li>
+            <li>Trading Journal + Auto P/L</li>
+            <li>Certificates</li>
           </ul>
         </div>
+        <div class="module-card__foot">Open Trading Module <span>→</span></div>
       </a>
+
       <a class="module-card" href="modules/educational-academy/index.html">
-        <div class="module-card__head">📚 Educational Academy</div>
+        <div class="module-card__head">
+          <img src="icons/logo-academy.svg" alt="Academy Logo" />
+          <div class="titles">
+            <h3>Educational Academy</h3>
+            <p>Skills | Knowledge | Excellence</p>
+          </div>
+        </div>
         <div class="module-card__body">
-          Tutors, Classes, Enrollments, Fees
+          Tutors, Classes, Enrollments, Fee Challans — fully separate data.
           <ul>
-            <li>Tutor Management</li>
-            <li>Classes & Batches</li>
-            <li>Student Enrollment</li>
-            <li>Fee Tracking</li>
+            <li>Separate Admission + Print</li>
+            <li>Tutor &amp; Class Management</li>
+            <li>Fee Challans + Print</li>
+            <li>Certificates</li>
           </ul>
         </div>
+        <div class="module-card__foot">Open Academy Module <span>→</span></div>
       </a>
     </section>
 
-    <!-- WALK-IN LOG -->
     <section class="panel">
-      <h3>Walk-in Log</h3>
+      <h3>Walk-in Reception Log</h3>
       <form id="visitor-form" class="inline-form">
         <input type="text" id="visitor-name" placeholder="Visitor name" required />
         <select id="visitor-for">
-          <option value="school">School</option>
+          <option value="school">Public School</option>
           <option value="trading">Trading Academy</option>
           <option value="academy">Educational Academy</option>
           <option value="general">General inquiry</option>
@@ -118,8 +456,13 @@
         <button type="submit">Log visit</button>
       </form>
       <ul id="visitor-list" class="visitor-list"></ul>
-      <p class="hint">Saved instantly on device • Syncs when online</p>
+      <p class="hint">Saved instantly on this device · Syncs to cloud when online</p>
     </section>
+
+    <div class="dash-footer">
+      <strong>THE SMART MODERN GROUP</strong> — Educating Minds · Building Futures · Empowering Traders<br>
+      FKC ERP System v4
+    </div>
   </main>
 </div>
 

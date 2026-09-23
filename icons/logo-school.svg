@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220">
+  <!-- Shield -->
+  <path d="M100 8 L180 40 L180 110 Q180 175 100 210 Q20 175 20 110 L20 40 Z" fill="#0A1628" stroke="#C9A227" stroke-width="4"/>
+  <path d="M100 18 L170 46 L170 108 Q170 165 100 197 Q30 165 30 108 L30 46 Z" fill="#0F2A4A"/>
+  <!-- Top banner -->
+  <rect x="40" y="28" width="120" height="22" rx="3" fill="#C9A227"/>
+  <text x="100" y="44" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#0A1628">THE SMART MODERN</text>
+  <!-- Book + graduate icon -->
+  <ellipse cx="100" cy="95" rx="38" ry="14" fill="#C9A227" opacity="0.3"/>
+  <path d="M70 85 Q100 70 130 85 L130 105 Q100 120 70 105 Z" fill="#C9A227"/>
+  <path d="M100 70 L100 115" stroke="#0A1628" stroke-width="2"/>
+  <circle cx="100" cy="68" r="8" fill="#C9A227"/>
+  <!-- Bottom ribbon -->
+  <path d="M35 155 Q100 175 165 155 L160 175 Q100 195 40 175 Z" fill="#C9A227"/>
+  <text x="100" y="178" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-weight="700" fill="#0A1628">QUEST FOR EXCELLENCE</text>
+  <text x="100" y="140" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#fff">Public School</text>
+</svg>
