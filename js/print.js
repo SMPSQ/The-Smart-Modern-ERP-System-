@@ -290,3 +290,37 @@ export function buildCertificatePrint(data, institutionName) {
     </div>
   `;
 }
+
+
+export function buildIdCardPrint(student, institutionName) {
+  const name = student.name || '—';
+  const cls = student.className || student.course || student.batchName || '—';
+  const phone = student.phone || student.guardianContact || '—';
+  const guardian = student.guardianName || student.fatherName || '—';
+  const id = (student.id || '').slice(0, 8).toUpperCase();
+  return `
+    <div style="display:flex;justify-content:center;padding:1rem;">
+      <div style="width:340px;border:3px solid #C9A227;border-radius:14px;overflow:hidden;font-family:Inter,Arial,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.12);">
+        <div style="background:#0A1628;color:#fff;padding:12px 14px;text-align:center;border-bottom:3px solid #C9A227;">
+          <div style="font-size:11px;letter-spacing:1.5px;color:#E8D48B;font-weight:600;">STUDENT IDENTITY CARD</div>
+          <div style="font-size:14px;font-weight:800;margin-top:4px;">${institutionName}</div>
+        </div>
+        <div style="padding:16px 14px;background:#fff;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="width:72px;height:88px;background:#EEF1F5;border:2px solid #C9A227;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#8B93A1;font-size:10px;text-align:center;flex-shrink:0;">PHOTO</div>
+            <div style="flex:1;font-size:12px;line-height:1.55;">
+              <div style="font-size:15px;font-weight:800;color:#0A1628;margin-bottom:6px;">${name}</div>
+              <div><strong>ID:</strong> ${id}</div>
+              <div><strong>Class/Course:</strong> ${cls}</div>
+              <div><strong>Guardian:</strong> ${guardian}</div>
+              <div><strong>Phone:</strong> ${phone}</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#0A1628;color:#E8D48B;padding:8px 14px;font-size:10px;text-align:center;letter-spacing:0.5px;">
+          Quest for Excellence · Valid for current session
+        </div>
+      </div>
+    </div>
+  `;
+}

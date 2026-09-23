@@ -422,10 +422,140 @@ if (challanForm) {
 }
 if (statusFilter) statusFilter.addEventListener('change', renderChallans);
 
+
+
+// ========== EXAMS ==========
+const examForm = document.getElementById('exam-form');
+const examList = document.getElementById('exam-list');
+const examStudent = document.getElementById('exam-student');
+async function populateExamStudents() {
+  if (!examStudent) return;
+  const all = await getAllLocal('academyEnrollments');
+  const list = all.filter(e => e.module === MODULE);
+  examStudent.innerHTML = '<option value="">Select student</option>' +
+    list.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+}
+async function renderExams() {
+  if (!examList) return;
+  const list = (await getAllLocal('exams')).filter(r => r.module === MODULE);
+  list.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  examList.innerHTML = list.length ? list.map(x => {
+    const pct = x.total ? Math.round((Number(x.marks)/Number(x.total))*100) : 0;
+    return `<li><strong>${esc(x.studentName)}</strong> <span class="tag">${esc(x.title)}</span>
+      <span class="muted">${esc(x.subject)}</span> <span class="amount">${x.marks}/${x.total} (${pct}%)</span>
+      <span class="actions"><button class="mini-btn danger" data-del-exam="${x.id}">Delete</button></span></li>`;
+  }).join('') : '<li class="muted">No exams yet.</li>';
+  examList.querySelectorAll('[data-del-exam]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('exams', btn.dataset.delExam);
+      await renderExams(); runSync();
+    });
+  });
+}
+if (examForm) {
+  examForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const opt = examStudent?.selectedOptions[0];
+    if (!opt?.value) return;
+    await saveLocal('exams', {
+      title: document.getElementById('exam-title').value.trim(),
+      studentId: opt.value,
+      studentName: opt.textContent,
+      subject: document.getElementById('exam-subject').value.trim(),
+      marks: Number(document.getElementById('exam-marks').value),
+      total: Number(document.getElementById('exam-total').value) || 100,
+      date: new Date().toISOString().slice(0, 10),
+      module: MODULE
+    });
+    examForm.reset();
+    await populateExamStudents();
+    await renderExams();
+    runSync();
+  });
+}
+
+// ========== FINANCE ==========
+const incomeForm = document.getElementById('income-form');
+const expenseForm = document.getElementById('expense-form');
+const incomeList = document.getElementById('income-list');
+const expenseList = document.getElementById('expense-list');
+function fmt(n) { return 'Rs ' + Number(n || 0).toLocaleString('en-PK'); }
+async function renderIncome() {
+  if (!incomeList) return;
+  const list = (await getAllLocal('income')).filter(r => r.module === MODULE);
+  list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  incomeList.innerHTML = list.length ? list.map(r => `
+    <li><strong>${esc(r.description)}</strong><span class="muted">${esc(r.date)}</span>
+    <span class="amount">${fmt(r.amount)}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-inc="${r.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No income records.</li>';
+  incomeList.querySelectorAll('[data-del-inc]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('income', btn.dataset.delInc);
+      await populateExamStudents();
+  await renderExams();
+  await renderIncome(); runSync();
+    });
+  });
+}
+async function renderExpenses() {
+  if (!expenseList) return;
+  const list = (await getAllLocal('expenses')).filter(r => r.module === MODULE);
+  list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  expenseList.innerHTML = list.length ? list.map(r => `
+    <li><strong>${esc(r.description)}</strong><span class="muted">${esc(r.date)}</span>
+    <span class="amount">${fmt(r.amount)}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-exp="${r.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No expenses.</li>';
+  expenseList.querySelectorAll('[data-del-exp]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('expenses', btn.dataset.delExp);
+      await renderExpenses(); runSync();
+    });
+  });
+}
+if (incomeForm) {
+  const d = document.getElementById('income-date');
+  if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
+  incomeForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('income', {
+      date: document.getElementById('income-date').value,
+      description: document.getElementById('income-desc').value.trim(),
+      amount: Number(document.getElementById('income-amount').value),
+      module: MODULE
+    });
+    incomeForm.reset();
+    if (d) d.value = new Date().toISOString().slice(0, 10);
+    await renderIncome(); runSync();
+  });
+}
+if (expenseForm) {
+  const d = document.getElementById('expense-date');
+  if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
+  expenseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('expenses', {
+      date: document.getElementById('expense-date').value,
+      description: document.getElementById('expense-desc').value.trim(),
+      amount: Number(document.getElementById('expense-amount').value),
+      module: MODULE
+    });
+    expenseForm.reset();
+    if (d) d.value = new Date().toISOString().slice(0, 10);
+    await renderExpenses(); runSync();
+  });
+}
+
 (async function init() {
   await renderAdmissions();
   await renderTutors();
   await renderClasses();
   await renderEnrollments();
   await renderChallans();
+  await renderIncome();
+  await renderExpenses();
 })();

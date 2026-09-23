@@ -449,10 +449,86 @@ if (journalForm) {
   });
 }
 
+
+// ========== FINANCE ==========
+const incomeForm = document.getElementById('income-form');
+const expenseForm = document.getElementById('expense-form');
+const incomeList = document.getElementById('income-list');
+const expenseList = document.getElementById('expense-list');
+function fmt(n) { return 'Rs ' + Number(n || 0).toLocaleString('en-PK'); }
+async function renderIncome() {
+  if (!incomeList) return;
+  const list = (await getAllLocal('income')).filter(r => r.module === MODULE);
+  list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  incomeList.innerHTML = list.length ? list.map(r => `
+    <li><strong>${esc(r.description)}</strong><span class="muted">${esc(r.date)}</span>
+    <span class="amount">${fmt(r.amount)}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-inc="${r.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No income records.</li>';
+  incomeList.querySelectorAll('[data-del-inc]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('income', btn.dataset.delInc);
+      await renderIncome(); runSync();
+    });
+  });
+}
+async function renderExpenses() {
+  if (!expenseList) return;
+  const list = (await getAllLocal('expenses')).filter(r => r.module === MODULE);
+  list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  expenseList.innerHTML = list.length ? list.map(r => `
+    <li><strong>${esc(r.description)}</strong><span class="muted">${esc(r.date)}</span>
+    <span class="amount">${fmt(r.amount)}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-exp="${r.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No expenses.</li>';
+  expenseList.querySelectorAll('[data-del-exp]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('expenses', btn.dataset.delExp);
+      await renderExpenses(); runSync();
+    });
+  });
+}
+if (incomeForm) {
+  const d = document.getElementById('income-date');
+  if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
+  incomeForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('income', {
+      date: document.getElementById('income-date').value,
+      description: document.getElementById('income-desc').value.trim(),
+      amount: Number(document.getElementById('income-amount').value),
+      module: MODULE
+    });
+    incomeForm.reset();
+    if (d) d.value = new Date().toISOString().slice(0, 10);
+    await renderIncome(); runSync();
+  });
+}
+if (expenseForm) {
+  const d = document.getElementById('expense-date');
+  if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
+  expenseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('expenses', {
+      date: document.getElementById('expense-date').value,
+      description: document.getElementById('expense-desc').value.trim(),
+      amount: Number(document.getElementById('expense-amount').value),
+      module: MODULE
+    });
+    expenseForm.reset();
+    if (d) d.value = new Date().toISOString().slice(0, 10);
+    await renderExpenses(); runSync();
+  });
+}
+
 (async function init() {
   await renderAdmissions();
   await renderBatches();
   await renderEnrollments();
   await renderChallans();
   await renderJournal();
+  await renderIncome();
+  await renderExpenses();
 })();

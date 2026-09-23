@@ -1,7 +1,7 @@
 // modules/school/school.js — Full CRUD: Add / Edit / Delete for Admission, Student, Challan
 import { saveLocal, getAllLocal, deleteLocal, getLocal } from '../../js/db.js';
 import { runSync } from '../../js/sync.js';
-import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint } from '../../js/print.js';
+import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint, buildIdCardPrint } from '../../js/print.js';
 
 const MODULE = 'school';
 const INST_NAME = 'The Smart Modern Public School';
@@ -294,6 +294,7 @@ async function renderStudents(filter = '') {
         <span class="muted">${esc(s.phone || s.guardianContact || '')}</span>
         <span class="actions">
           <button class="mini-btn edit" data-edit-student="${s.id}">Edit</button>
+          <button class="mini-btn ghost" data-idcard="${s.id}">ID Card</button>
           <button class="mini-btn ghost" data-cert="${s.id}">Certificate</button>
           <button class="mini-btn danger" data-del-student="${s.id}">Delete</button>
         </span>
@@ -305,6 +306,15 @@ async function renderStudents(filter = '') {
     btn.addEventListener('click', async () => {
       const s = await getLocal('students', btn.dataset.editStudent);
       if (s) fillStudentForm(s);
+    });
+  });
+
+  
+  studentList.querySelectorAll('[data-idcard]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const s = await getLocal('students', btn.dataset.idcard);
+      if (!s) return;
+      printDocument('Student ID Card', buildIdCardPrint(s, INST_NAME), { subtitle: INST_NAME, showDate: false });
     });
   });
 

@@ -161,6 +161,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     <button type="button" class="tab-btn" data-tab="enroll">Enroll</button>
     <button type="button" class="tab-btn" data-tab="fees">Fees</button>
     <button type="button" class="tab-btn" data-tab="journal">Journal</button>
+    <button type="button" class="tab-btn" data-tab="finance">Finance</button>
   </div>
 
   <div class="tab-panel active" id="tab-admission">
@@ -271,6 +272,30 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
       <ul id="journal-list" class="data-list"></ul>
     </div>
   </div>
+
+  <div class="tab-panel" id="tab-finance">
+    <div class="form-card">
+      <h3>Income</h3>
+      <form id="income-form" class="inline-form">
+        <input type="date" id="income-date" required />
+        <input type="text" id="income-desc" placeholder="Description" required />
+        <input type="number" id="income-amount" placeholder="Amount (Rs)" min="0" required />
+        <button type="submit">Add</button>
+      </form>
+      <ul id="income-list" class="data-list"></ul>
+    </div>
+    <div class="form-card">
+      <h3>Expenses</h3>
+      <form id="expense-form" class="inline-form">
+        <input type="date" id="expense-date" required />
+        <input type="text" id="expense-desc" placeholder="Description" required />
+        <input type="number" id="expense-amount" placeholder="Amount (Rs)" min="0" required />
+        <button type="submit">Add</button>
+      </form>
+      <ul id="expense-list" class="data-list"></ul>
+    </div>
+  </div>
+
 </main>
 
 <script>
