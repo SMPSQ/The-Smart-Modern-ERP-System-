@@ -44,8 +44,10 @@ async function renderAdmissions() {
           ? '<span class="tag" style="background:#d1fae5;color:#065f46">Approved</span>'
           : `<button class="mini-btn" data-approve="${a.id}">Approve</button>`
         }
-        <button class="mini-btn ghost" data-print-adm="${a.id}">🖨 Print</button>
-        <button class="mini-btn danger" data-del-adm="${a.id}">Delete</button>
+        <span class="actions">
+          <button class="mini-btn ghost" data-print-adm="${a.id}">Print</button>
+          <button class="mini-btn danger" data-del-adm="${a.id}">Delete</button>
+        </span>
       </li>
     `).join('')
     : '<li class="muted">No admissions yet.</li>';
@@ -189,8 +191,10 @@ async function renderEnrollments() {
           <strong>${esc(e.name)}</strong>
           <span class="tag">${esc(batchMap[e.batchId] || e.course || '—')}</span>
           <span class="muted">${esc(e.phone || '')}</span>
-          <button class="mini-btn ghost" data-cert="${e.id}">🎓 Certificate</button>
-          <button class="mini-btn danger" data-del-enroll="${e.id}">Remove</button>
+          <span class="actions">
+            <button class="mini-btn ghost" data-cert="${e.id}">Certificate</button>
+            <button class="mini-btn danger" data-del-enroll="${e.id}">Delete</button>
+          </span>
         </li>
       `).join('')
       : '<li class="muted">No enrollments yet.</li>';
@@ -280,8 +284,10 @@ async function renderChallans() {
             <button class="status-btn ${isPaid ? 'status-btn--paid' : 'status-btn--unpaid'}" data-toggle="${c.id}">
               ${isPaid ? 'Paid' : 'Unpaid'}
             </button>
-            <button class="mini-btn ghost" data-print-challan="${c.id}">🖨 Print</button>
-            <button class="mini-btn danger" data-del-challan="${c.id}">×</button>
+            <span class="actions">
+              <button class="mini-btn ghost" data-print-challan="${c.id}">Print</button>
+              <button class="mini-btn danger" data-del-challan="${c.id}">Delete</button>
+            </span>
           </li>
         `;
       }).join('')

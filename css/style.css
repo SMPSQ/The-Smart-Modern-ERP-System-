@@ -98,14 +98,24 @@ button, .primary-btn, .mini-btn, .ghost-btn, .status-btn {
 .mini-btn.danger { background: var(--danger); }
 .mini-btn.danger:hover { background: #991b1b; }
 .mini-btn.ghost {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
+  background: #fff;
+  border: 1px solid #0A1628;
+  color: #0A1628;
+  font-weight: 700;
 }
 .mini-btn.ghost:hover {
   border-color: var(--gold);
-  color: var(--navy);
+  color: #0A1628;
   background: var(--gold-soft);
+}
+.mini-btn.edit {
+  background: #0F2A4A;
+  color: #E8D48B;
+  border: 1px solid #C9A227;
+}
+.mini-btn.edit:hover {
+  background: #0A1628;
+  color: #C9A227;
 }
 
 .ghost-btn {
@@ -233,13 +243,20 @@ ul.data-list li, ul.visitor-list li {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 0.65rem;
-  background: var(--bg);
-  border: 1px solid var(--border-soft);
+  gap: 0.45rem 0.5rem;
+  background: #fff;
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.7rem 0.9rem;
+  padding: 0.75rem 0.9rem;
   font-size: var(--fs-sm);
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+ul.data-list li .actions, ul.visitor-list li .actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
 }
 ul.data-list li:hover, ul.visitor-list li:hover {
   border-color: var(--border);

@@ -96,9 +96,11 @@ async function renderAdmissions() {
           ? '<span class="tag" style="background:#d1fae5;color:#065f46">Approved</span>'
           : `<button class="mini-btn" data-approve="${a.id}">Approve</button>`
         }
-        <button class="mini-btn ghost" data-edit-adm="${a.id}">✏️ Edit</button>
-        <button class="mini-btn ghost" data-print-adm="${a.id}">🖨 Print</button>
-        <button class="mini-btn danger" data-del-adm="${a.id}">Delete</button>
+        <span class="actions">
+          <button class="mini-btn edit" data-edit-adm="${a.id}">Edit</button>
+          <button class="mini-btn ghost" data-print-adm="${a.id}">Print</button>
+          <button class="mini-btn danger" data-del-adm="${a.id}">Delete</button>
+        </span>
       </li>
     `).join('')
     : '<li class="muted">No admissions yet.</li>';
@@ -290,9 +292,11 @@ async function renderStudents(filter = '') {
         <span class="tag">${esc(s.className)}</span>
         <span class="muted">${esc(s.guardianName || '')}</span>
         <span class="muted">${esc(s.phone || s.guardianContact || '')}</span>
-        <button class="mini-btn ghost" data-edit-student="${s.id}">✏️ Edit</button>
-        <button class="mini-btn ghost" data-cert="${s.id}">🎓 Certificate</button>
-        <button class="mini-btn danger" data-del-student="${s.id}">Delete</button>
+        <span class="actions">
+          <button class="mini-btn edit" data-edit-student="${s.id}">Edit</button>
+          <button class="mini-btn ghost" data-cert="${s.id}">Certificate</button>
+          <button class="mini-btn danger" data-del-student="${s.id}">Delete</button>
+        </span>
       </li>
     `).join('')
     : '<li class="muted">No students yet.</li>';
@@ -435,9 +439,11 @@ async function renderChallans() {
             <button class="status-btn ${isPaid ? 'status-btn--paid' : 'status-btn--unpaid'}" data-toggle="${c.id}">
               ${isPaid ? 'Paid' : 'Unpaid'}
             </button>
-            <button class="mini-btn ghost" data-edit-challan="${c.id}">✏️ Edit</button>
-            <button class="mini-btn ghost" data-print-challan="${c.id}">🖨 Print</button>
-            <button class="mini-btn danger" data-del-challan="${c.id}">Delete</button>
+            <span class="actions">
+              <button class="mini-btn edit" data-edit-challan="${c.id}">Edit</button>
+              <button class="mini-btn ghost" data-print-challan="${c.id}">Print</button>
+              <button class="mini-btn danger" data-del-challan="${c.id}">Delete</button>
+            </span>
           </li>
         `;
       }).join('')
