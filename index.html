@@ -10,245 +10,365 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/style.css" />
 <style>
   :root {
     --navy: #0A1628;
-    --dark-navy: #06101C;
+    --navy-mid: #0F2A4A;
     --gold: #C9A227;
-    --light-gold: #E8D48B;
-    --cream: #F8F6F1;
+    --gold-light: #E8D48B;
   }
-  body.login-body {
-    margin: 0;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
     min-height: 100vh;
-    display: flex;
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-    background: var(--cream);
-  }
-  .login-left {
-    width: 40%;
-    min-width: 300px;
+    font-family: Inter, system-ui, sans-serif;
     background: var(--navy);
     color: #fff;
-    padding: 2.5rem 2rem;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+  }
+  @media (max-width: 900px) {
+    body { grid-template-columns: 1fr; }
+    .brand-side { display: none; }
+  }
+
+  /* LEFT BRAND PANEL */
+  .brand-side {
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(201,162,39,0.15), transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(15,42,74,0.9), transparent 55%),
+      linear-gradient(160deg, #06101C 0%, #0A1628 50%, #0F2A4A 100%);
+    padding: 3rem 3.5rem;
     display: flex;
     flex-direction: column;
-    border-right: 4px solid var(--gold);
+    justify-content: space-between;
+    border-right: 1px solid rgba(201,162,39,0.2);
+    position: relative;
+    overflow: hidden;
   }
-  .brand-block { text-align: center; margin-bottom: 1.25rem; }
-  .brand-block .eyebrow {
-    color: var(--gold);
-    font-size: 0.8rem;
-    letter-spacing: 3px;
-    font-weight: 600;
+  .brand-side::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; right: -40px;
+    width: 280px; height: 280px;
+    border: 40px solid rgba(201,162,39,0.06);
+    border-radius: 50%;
   }
-  .brand-block h1 {
-    font-size: 1.7rem;
-    margin: 0.35rem 0 0.5rem;
-    letter-spacing: 1px;
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
   }
-  .brand-line {
-    width: 70px;
-    height: 3px;
+  .brand-logo .crest {
+    width: 48px; height: 48px;
     background: var(--gold);
-    margin: 0.5rem auto 0.8rem;
+    color: var(--navy);
+    font-weight: 800;
+    font-size: 0.85rem;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    letter-spacing: 0.05em;
   }
-  .tagline {
-    text-align: center;
-    color: var(--light-gold);
-    font-size: 0.88rem;
-    line-height: 1.5;
-    margin-bottom: 1.75rem;
+  .brand-logo span {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
   }
-  .inst-card {
-    background: #0F2A4A;
-    border-radius: 10px;
-    padding: 0.9rem 1rem;
+  .brand-hero h1 {
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
     margin-bottom: 0.75rem;
-    text-align: center;
-    border: 1px solid rgba(201,162,39,0.2);
   }
-  .inst-card h3 { font-size: 0.92rem; margin: 0 0 0.25rem; }
-  .inst-card p { font-size: 0.75rem; color: var(--light-gold); margin: 0; }
+  .brand-hero h1 em {
+    font-style: normal;
+    color: var(--gold);
+  }
+  .brand-hero p {
+    color: rgba(255,255,255,0.65);
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 380px;
+  }
+  .inst-pills {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 2rem;
+  }
+  .inst-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,162,39,0.18);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+  }
+  .inst-pill img {
+    width: 36px; height: 36px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+  }
+  .inst-pill strong {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--gold-light);
+  }
+  .inst-pill span {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.5);
+  }
+  .brand-foot {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.04em;
+  }
 
-  .login-right {
-    flex: 1;
+  /* RIGHT LOGIN PANEL */
+  .login-side {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    padding: 2rem 1.5rem;
+    background: #F4F6F9;
   }
   .login-card {
-    background: #fff;
     width: 100%;
     max-width: 400px;
-    border-radius: 14px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.1);
-    overflow: hidden;
-  }
-  .login-card .gold-bar { height: 5px; background: var(--gold); }
-  .login-card .inner { padding: 1.75rem; }
-  .welcome { text-align: center; margin-bottom: 1.25rem; }
-  .welcome .small {
-    color: var(--gold);
-    font-size: 0.75rem;
-    letter-spacing: 2px;
-    font-weight: 600;
-  }
-  .welcome h2 {
-    color: var(--navy);
-    font-size: 1.25rem;
-    margin: 0.3rem 0 0;
-  }
-  .login-card label {
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #666;
-    letter-spacing: 1px;
-    margin: 0.9rem 0 0.3rem;
-  }
-  .roles {
-    display: flex;
-    gap: 0.4rem;
-    flex-wrap: wrap;
-  }
-  .role-btn {
-    flex: 1;
-    min-width: 90px;
-    padding: 0.45rem 0.3rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    background: #f0f0f0;
-    color: #555;
-  }
-  .role-btn.active { background: var(--navy); color: #fff; }
-  .login-card input[type="email"],
-  .login-card input[type="password"] {
-    width: 100%;
-    padding: 0.7rem 0.9rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    background: #f7f7f7;
-    outline: none;
-    box-sizing: border-box;
-  }
-  .login-card input:focus {
-    border-color: var(--gold);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(201,162,39,0.15);
+    border-radius: 20px;
+    padding: 2.25rem 2rem;
+    box-shadow: 0 20px 50px rgba(10,22,40,0.12);
+    border: 1px solid #E8ECF1;
   }
-  .login-card button[type="submit"] {
+  .login-card h2 {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.35rem;
+  }
+  .login-card .sub {
+    color: #6B7280;
+    font-size: 0.88rem;
+    margin-bottom: 1.75rem;
+  }
+  .field {
+    margin-bottom: 1.1rem;
+  }
+  .field label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #5A6270;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+  }
+  .field input {
     width: 100%;
-    margin-top: 1.25rem;
-    padding: 0.8rem;
-    background: var(--navy);
-    color: #fff;
-    border: none;
+    padding: 0.8rem 1rem;
+    border: 1.5px solid #E2E6ED;
     border-radius: 10px;
     font-size: 0.95rem;
-    font-weight: 700;
+    font-family: inherit;
+    background: #FAFBFC;
+    color: #1A1D26;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--gold);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(201,162,39,0.15);
+  }
+  .role-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.45rem;
+    margin-bottom: 1.25rem;
+  }
+  .role-row button {
+    border: 1.5px solid #E2E6ED;
+    background: #FAFBFC;
+    color: #5A6270;
+    padding: 0.55rem 0.3rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    font-family: inherit;
     cursor: pointer;
+    transition: all 0.15s;
   }
-  .login-card button[type="submit"]:hover { background: #0f2540; }
-  .login-status {
-    text-align: center;
+  .role-row button.active,
+  .role-row button:hover {
+    border-color: var(--navy);
+    background: var(--navy);
+    color: var(--gold);
+  }
+  .btn-login {
+    width: 100%;
+    padding: 0.9rem;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0A1628 0%, #0F2A4A 100%);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-login:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(10,22,40,0.25);
+  }
+  .btn-login:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+  .error-msg {
+    color: #B91C1C;
+    font-size: 0.82rem;
     margin-top: 0.75rem;
-    font-size: 0.85rem;
     min-height: 1.2em;
-    color: #c0392b;
   }
-  .secure-note {
+  .links {
+    margin-top: 1.5rem;
     text-align: center;
-    margin-top: 0.75rem;
-    font-size: 0.72rem;
-    color: #999;
+    font-size: 0.85rem;
   }
-  @media (max-width: 800px) {
-    body.login-body { flex-direction: column; }
-    .login-left {
-      width: 100%;
-      min-width: unset;
-      border-right: none;
-      border-bottom: 4px solid var(--gold);
-      padding: 1.5rem 1.25rem;
-    }
+  .links a {
+    color: var(--navy);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .links a:hover { color: var(--gold); }
+  .secure {
+    margin-top: 1.25rem;
+    text-align: center;
+    font-size: 0.7rem;
+    color: #9CA3AF;
+    letter-spacing: 0.03em;
   }
 </style>
 </head>
-<body class="login-body" data-root="">
+<body data-root="">
 
-<div class="login-left">
-  <div class="brand-block">
-    <div class="eyebrow">THE SMART MODERN</div>
-    <h1>ERP SYSTEM</h1>
-    <div class="brand-line"></div>
+<aside class="brand-side">
+  <div class="brand-logo">
+    <div class="crest">FKC</div>
+    <span>THE SMART MODERN ERP</span>
   </div>
-  <p class="tagline">Educating Minds  •  Building Futures<br>Empowering Traders</p>
 
-  <div class="inst-card">
-    <h3>🏫  THE SMART MODERN<br>PUBLIC SCHOOL</h3>
-    <p>Nurturing Minds, Building Futures</p>
-  </div>
-  <div class="inst-card">
-    <h3>📈  FKC TRADING ACADEMY</h3>
-    <p>Learn  |  Trade  |  Succeed</p>
-  </div>
-  <div class="inst-card">
-    <h3>📚  THE SMART MODERN<br>EDUCATIONAL ACADEMY</h3>
-    <p>Skills  |  Knowledge  |  Excellence</p>
-  </div>
-</div>
-
-<div class="login-right">
-  <div class="login-card">
-    <div class="gold-bar"></div>
-    <div class="inner">
-      <div class="welcome">
-        <div class="small">WELCOME BACK</div>
-        <h2>Sign in to your ERP Dashboard</h2>
-      </div>
-
-      <form id="login-form">
-        <label>SELECT ROLE</label>
-        <div class="roles">
-          <button type="button" class="role-btn active" data-role="super">Super Admin</button>
-          <button type="button" class="role-btn" data-role="school">School Admin</button>
-          <button type="button" class="role-btn" data-role="academy">Academy Admin</button>
+  <div class="brand-hero">
+    <h1>One system.<br><em>Three institutions.</em></h1>
+    <p>Offline-first ERP for School, Trading Academy &amp; Educational Academy — with live sync when online.</p>
+    <div class="inst-pills">
+      <div class="inst-pill">
+        <img src="icons/logo-school-official.jpg" alt="" />
+        <div>
+          <strong>Public School</strong>
+          <span>Nurturing Minds, Building Futures</span>
         </div>
-
-        <label for="login-email">EMAIL / USERNAME</label>
-        <input type="email" id="login-email" required autocomplete="username" placeholder="admin@smartmodern.edu" />
-
-        <label for="login-password">PASSWORD</label>
-        <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" />
-
-        <button type="submit">LOGIN TO DASHBOARD</button>
-        <p class="login-status" id="login-status"></p>
-        <p class="secure-note">Secure Role-Based Access  •  Encrypted Connection</p>
-      </form>
-      <p style="text-align:center;margin-top:1rem;"><a href="parent.html" style="color:#C9A227;font-size:0.85rem;font-weight:600;">Parent Portal →</a></p>
+      </div>
+      <div class="inst-pill">
+        <img src="icons/logo-trading.svg" alt="" />
+        <div>
+          <strong>FKC Trading Academy</strong>
+          <span>Learn | Trade | Succeed</span>
+        </div>
+      </div>
+      <div class="inst-pill">
+        <img src="icons/logo-academy.svg" alt="" />
+        <div>
+          <strong>Educational Academy</strong>
+          <span>Skills | Knowledge | Excellence</span>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-  document.querySelectorAll('.role-btn').forEach(btn => {
+  <div class="brand-foot">Educating Minds · Building Futures · Empowering Traders</div>
+</aside>
+
+<main class="login-side">
+  <div class="login-card">
+    <h2>Welcome back</h2>
+    <p class="sub">Sign in to your ERP dashboard</p>
+
+    <div class="field">
+      <label>Role</label>
+      <div class="role-row" id="role-row">
+        <button type="button" class="active" data-role="admin">Super Admin</button>
+        <button type="button" data-role="school">School</button>
+        <button type="button" data-role="academy">Academy</button>
+      </div>
+    </div>
+
+    <form id="login-form">
+      <div class="field">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" required autocomplete="username" placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" />
+      </div>
+      <button type="submit" class="btn-login" id="login-btn">Login to Dashboard</button>
+      <p class="error-msg" id="login-error"></p>
+    </form>
+
+    <div class="links">
+      <a href="parent.html">Parent Portal →</a>
+    </div>
+    <p class="secure">Secure staff access · Firebase Auth</p>
+  </div>
+</main>
+
+<script type="module">
+  import { auth } from './js/firebase-config.js';
+  import { signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+
+  // Role UI only (visual preference stored)
+  document.querySelectorAll('#role-row button').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#role-row button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      try { sessionStorage.setItem('erp-role', btn.dataset.role); } catch (_) {}
     });
   });
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) window.location.href = 'dashboard.html';
+  });
+
+  const form = document.getElementById('login-form');
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errEl.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      window.location.href = 'dashboard.html';
+    } catch (err) {
+      errEl.textContent = err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password'
+        ? 'Invalid email or password.'
+        : (err.message || 'Login failed.');
+      btn.disabled = false;
+      btn.textContent = 'Login to Dashboard';
+    }
+  });
 </script>
-<script type="module" src="js/firebase-config.js"></script>
-<script type="module" src="js/db.js"></script>
-<script type="module" src="js/sync.js"></script>
-<script type="module" src="js/auth.js"></script>
 <script src="js/sw-register.js"></script>
 </body>
 </html>
