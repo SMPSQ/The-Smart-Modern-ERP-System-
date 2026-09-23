@@ -325,6 +325,7 @@ async function renderStudents(filter = '') {
       if (editingStudentId === btn.dataset.delStudent) clearStudentForm();
       await renderStudents(studentSearch?.value || '');
       await populateStudentSelect();
+      await populateAttStudentSelect();
       runSync();
     });
   });
@@ -529,6 +530,87 @@ if (challanForm) {
 if (monthFilter) monthFilter.addEventListener('change', renderChallans);
 if (statusFilter) statusFilter.addEventListener('change', renderChallans);
 
+
+// ========== ATTENDANCE ==========
+const attendanceForm = document.getElementById('attendance-form');
+const attendanceList = document.getElementById('attendance-list');
+const attStudent = document.getElementById('att-student');
+const attFilterDate = document.getElementById('att-filter-date');
+
+async function populateAttStudentSelect() {
+  if (!attStudent) return;
+  const students = await getModuleRecords('students');
+  students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const current = attStudent.value;
+  attStudent.innerHTML = '<option value="">Select student</option>' +
+    students.map(s => `<option value="${s.id}">${esc(s.name)} (${esc(s.className)})</option>`).join('');
+  if (current) attStudent.value = current;
+}
+
+async function renderAttendance() {
+  if (!attendanceList) return;
+  let records = await getModuleRecords('attendance');
+  const fDate = attFilterDate?.value || '';
+  if (fDate) records = records.filter(r => r.date === fDate);
+  records.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.studentName || '').localeCompare(b.studentName || ''));
+
+  attendanceList.innerHTML = records.length
+    ? records.map(r => {
+        const color = r.status === 'Present' ? '#1B7A4E' : r.status === 'Leave' ? '#B45309' : '#B91C1C';
+        return `
+          <li>
+            <strong>${esc(r.studentName)}</strong>
+            <span class="muted">${esc(r.date)}</span>
+            <span class="tag" style="background:${color};color:#fff">${esc(r.status)}</span>
+            <button class="mini-btn danger" data-del-att="${r.id}" style="margin-left:auto">Delete</button>
+          </li>
+        `;
+      }).join('')
+    : '<li class="muted">No attendance records.</li>';
+
+  attendanceList.querySelectorAll('[data-del-att]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this attendance record?')) return;
+      await deleteLocal('attendance', btn.dataset.delAtt);
+      await renderAttendance();
+      runSync();
+    });
+  });
+}
+
+if (attendanceForm) {
+  const attDate = document.getElementById('att-date');
+  if (attDate && !attDate.value) attDate.value = new Date().toISOString().slice(0, 10);
+
+  attendanceForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const studentId = document.getElementById('att-student')?.value;
+    const date = document.getElementById('att-date')?.value;
+    const status = document.getElementById('att-status')?.value || 'Present';
+    if (!studentId || !date) return;
+
+    const opt = document.getElementById('att-student')?.selectedOptions[0];
+    const studentName = opt ? opt.textContent.split(' (')[0] : '';
+
+    // Upsert: one record per student per day
+    const all = await getModuleRecords('attendance');
+    const existing = all.find(r => r.studentId === studentId && r.date === date);
+
+    await saveLocal('attendance', {
+      id: existing?.id,
+      studentId,
+      studentName,
+      date,
+      status,
+      module: MODULE
+    });
+
+    await renderAttendance();
+    runSync();
+  });
+}
+if (attFilterDate) attFilterDate.addEventListener('change', renderAttendance);
+
 // ========== INIT ==========
 (async function init() {
   await renderAdmissions();
@@ -536,4 +618,6 @@ if (statusFilter) statusFilter.addEventListener('change', renderChallans);
   await renderStudents();
   await populateStudentSelect();
   await renderChallans();
+  await populateAttStudentSelect();
+  await renderAttendance();
 })();
