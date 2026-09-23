@@ -21,12 +21,21 @@ async function loadKPIs() {
     const pendingAmount = await getTotalPendingAmount();
     const todayCollection = await getTodayCollection();
 
+    // Module-wise counts — data never mixes across modules
+    const schoolCount = students.filter(s => s.module === 'school').length;
+    const tradingCount = students.filter(s => s.module === 'trading').length;
+    const academyCount = students.filter(s => s.module === 'academy').length;
+
     const elStudents = document.getElementById('kpi-students');
     const elBatches = document.getElementById('kpi-batches');
     const elCollection = document.getElementById('kpi-collection');
     const elPending = document.getElementById('kpi-pending');
 
-    if (elStudents) elStudents.textContent = students.length;
+    if (elStudents) {
+      elStudents.textContent = students.length;
+      const sub = elStudents.parentElement?.querySelector('.sub');
+      if (sub) sub.textContent = `School ${schoolCount} · Trading ${tradingCount} · Academy ${academyCount}`;
+    }
     if (elBatches) elBatches.textContent = (batches.length + classes.length) || 0;
     if (elCollection) elCollection.textContent = formatMoney(todayCollection);
     if (elPending) elPending.textContent = formatMoney(pendingAmount);

@@ -26,9 +26,52 @@
 <main class="module-main">
   <a class="back-link" href="../../dashboard.html">← Back to Master Dashboard</a>
 
-  <!-- TUTORS -->
   <section class="panel">
-    <h3>📚 Add Tutor</h3>
+    <h3>📚 Student Admission (Educational Academy Only)</h3>
+    <p class="hint" style="margin-bottom:1rem">Data is completely separate from School & Trading Academy.</p>
+    <form id="admission-form">
+      <div class="form-grid">
+        <div class="form-section-title">Student Information</div>
+        <div>
+          <label>Full Name *</label>
+          <input type="text" id="adm-name" required />
+        </div>
+        <div>
+          <label>Phone *</label>
+          <input type="tel" id="adm-phone" required placeholder="03XX-XXXXXXX" />
+        </div>
+        <div>
+          <label>Father / Guardian Name</label>
+          <input type="text" id="adm-guardian" />
+        </div>
+        <div>
+          <label>Course / Subject Preference *</label>
+          <input type="text" id="adm-course" required placeholder="e.g. Mathematics, English" />
+        </div>
+        <div>
+          <label>Preferred Timing</label>
+          <input type="text" id="adm-timing" placeholder="e.g. 4-6 PM" />
+        </div>
+        <div>
+          <label>Admission Date *</label>
+          <input type="date" id="adm-date" required />
+        </div>
+        <div class="form-full">
+          <label>Address</label>
+          <textarea id="adm-address" rows="2"></textarea>
+        </div>
+      </div>
+      <button type="submit" class="primary-btn">Submit Admission</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h3>Admissions Queue (Academy Only)</h3>
+    <ul id="admission-list" class="data-list"></ul>
+  </section>
+
+  <section class="panel">
+    <h3>Add Tutor</h3>
     <form id="tutor-form" class="inline-form">
       <input type="text" id="tutor-name" placeholder="Tutor name" required />
       <input type="text" id="tutor-subject" placeholder="Subject / Expertise" />
@@ -38,7 +81,6 @@
     <ul id="tutor-list" class="data-list"></ul>
   </section>
 
-  <!-- CLASSES -->
   <section class="panel">
     <h3>Create Class / Batch</h3>
     <form id="class-form" class="inline-form">
@@ -53,9 +95,8 @@
     <ul id="class-list" class="data-list"></ul>
   </section>
 
-  <!-- ENROLLMENTS -->
   <section class="panel">
-    <h3>Student Enrollment</h3>
+    <h3>Enroll Student</h3>
     <form id="enroll-form" class="inline-form">
       <input type="text" id="enroll-name" placeholder="Student name" required />
       <select id="enroll-class" required>
@@ -65,6 +106,29 @@
       <button type="submit">Enroll</button>
     </form>
     <ul id="enroll-list" class="data-list"></ul>
+  </section>
+
+  <section class="panel">
+    <h3>Fee Challan (Educational Academy Only)</h3>
+    <form id="challan-form" class="inline-form">
+      <select id="challan-student" required>
+        <option value="">Select student</option>
+      </select>
+      <input type="month" id="challan-month" required />
+      <input type="number" id="challan-amount" placeholder="Amount (Rs)" min="0" required />
+      <button type="submit">Create Challan</button>
+    </form>
+  </section>
+  <section class="panel">
+    <h3>Academy Fee Challans</h3>
+    <div class="filter-row">
+      <select id="status-filter">
+        <option value="all">All statuses</option>
+        <option value="Paid">Paid</option>
+        <option value="Unpaid">Unpaid</option>
+      </select>
+    </div>
+    <ul id="challan-list" class="data-list"></ul>
   </section>
 </main>
 

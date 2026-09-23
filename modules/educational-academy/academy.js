@@ -1,15 +1,118 @@
-// modules/educational-academy/academy.js — Educational Academy Module (ERP v4)
-import { saveLocal, getAllLocal, deleteLocal } from '../../js/db.js';
+// modules/educational-academy/academy.js — Separate data + Print support
+import { saveLocal, getAllLocal, deleteLocal, getLocal } from '../../js/db.js';
 import { runSync } from '../../js/sync.js';
+import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint } from '../../js/print.js';
+
+const MODULE = 'academy';
+const INST_NAME = 'The Smart Modern Educational Academy';
 
 function esc(str = '') {
   return String(str).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
   );
 }
-
 function formatMoney(n) {
   return 'Rs ' + Number(n || 0).toLocaleString('en-PK');
+}
+function monthLabel(ym) {
+  if (!ym) return '—';
+  const [y, m] = ym.split('-');
+  return new Date(Number(y), Number(m) - 1, 1)
+    .toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+async function getModuleRecords(store) {
+  const all = await getAllLocal(store);
+  return all.filter(r => r.module === MODULE);
+}
+
+// ========== ADMISSIONS ==========
+const admissionForm = document.getElementById('admission-form');
+const admissionList = document.getElementById('admission-list');
+
+async function renderAdmissions() {
+  if (!admissionList) return;
+  const list = await getModuleRecords('admissions');
+  list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+  admissionList.innerHTML = list.length
+    ? list.map(a => `
+      <li>
+        <strong>${esc(a.name)}</strong>
+        <span class="tag">${esc(a.course || '')}</span>
+        <span class="muted">${esc(a.phone || '')}</span>
+        ${a.status === 'approved'
+          ? '<span class="tag" style="background:#d1fae5;color:#065f46">Approved</span>'
+          : `<button class="mini-btn" data-approve="${a.id}">Approve</button>`
+        }
+        <button class="mini-btn ghost" data-print-adm="${a.id}">🖨 Print</button>
+        <button class="mini-btn danger" data-del-adm="${a.id}">Delete</button>
+      </li>
+    `).join('')
+    : '<li class="muted">No admissions yet.</li>';
+
+  admissionList.querySelectorAll('[data-approve]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const adm = await getLocal('admissions', btn.dataset.approve);
+      if (!adm || adm.module !== MODULE) return;
+      await saveLocal('students', {
+        name: adm.name, className: adm.course || 'Academy',
+        phone: adm.phone, guardianName: adm.guardianName,
+        module: MODULE, admissionId: adm.id
+      });
+      await saveLocal('academyEnrollments', {
+        name: adm.name, phone: adm.phone, course: adm.course, module: MODULE
+      });
+      adm.status = 'approved';
+      await saveLocal('admissions', adm);
+      await renderAdmissions();
+      await renderEnrollments();
+      await populateStudentSelects();
+      runSync();
+    });
+  });
+
+  admissionList.querySelectorAll('[data-print-adm]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const adm = await getLocal('admissions', btn.dataset.printAdm);
+      if (!adm) return;
+      adm.className = adm.course;
+      adm.fatherName = adm.guardianName;
+      printDocument('Educational Academy Admission Form', buildAdmissionPrint(adm, INST_NAME), { subtitle: INST_NAME });
+    });
+  });
+
+  admissionList.querySelectorAll('[data-del-adm]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this admission?')) return;
+      await deleteLocal('admissions', btn.dataset.delAdm);
+      await renderAdmissions();
+      runSync();
+    });
+  });
+}
+
+if (admissionForm) {
+  const dateInput = document.getElementById('adm-date');
+  if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+  admissionForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('admissions', {
+      name: document.getElementById('adm-name').value.trim(),
+      phone: document.getElementById('adm-phone').value.trim(),
+      guardianName: document.getElementById('adm-guardian').value.trim(),
+      course: document.getElementById('adm-course').value.trim(),
+      className: document.getElementById('adm-course').value.trim(),
+      timing: document.getElementById('adm-timing').value.trim(),
+      admissionDate: document.getElementById('adm-date').value,
+      address: document.getElementById('adm-address').value.trim(),
+      status: 'pending',
+      module: MODULE
+    });
+    admissionForm.reset();
+    if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+    await renderAdmissions();
+    runSync();
+  });
 }
 
 // ========== TUTORS ==========
@@ -18,9 +121,8 @@ const tutorList = document.getElementById('tutor-list');
 const classTutor = document.getElementById('class-tutor');
 
 async function renderTutors() {
-  const tutors = await getAllLocal('tutors');
+  const tutors = await getModuleRecords('tutors');
   tutors.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
   if (tutorList) {
     tutorList.innerHTML = tutors.length
       ? tutors.map(t => `
@@ -32,28 +134,21 @@ async function renderTutors() {
         </li>
       `).join('')
       : '<li class="muted">No tutors yet.</li>';
-
     tutorList.querySelectorAll('[data-del-tutor]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Delete this tutor?')) return;
         await deleteLocal('tutors', btn.dataset.delTutor);
         await renderTutors();
-        await populateTutorSelect();
         runSync();
       });
     });
   }
-
-  await populateTutorSelect();
-}
-
-async function populateTutorSelect() {
-  if (!classTutor) return;
-  const tutors = await getAllLocal('tutors');
-  const current = classTutor.value;
-  classTutor.innerHTML = '<option value="">Select tutor (optional)</option>' +
-    tutors.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
-  if (current) classTutor.value = current;
+  if (classTutor) {
+    const current = classTutor.value;
+    classTutor.innerHTML = '<option value="">Select tutor (optional)</option>' +
+      tutors.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+    if (current) classTutor.value = current;
+  }
 }
 
 if (tutorForm) {
@@ -63,7 +158,7 @@ if (tutorForm) {
       name: document.getElementById('tutor-name').value.trim(),
       subject: document.getElementById('tutor-subject').value.trim(),
       phone: document.getElementById('tutor-phone').value.trim(),
-      module: 'academy'
+      module: MODULE
     });
     tutorForm.reset();
     await renderTutors();
@@ -77,10 +172,9 @@ const classList = document.getElementById('class-list');
 const enrollClass = document.getElementById('enroll-class');
 
 async function renderClasses() {
-  const classes = await getAllLocal('classes');
-  const tutors = await getAllLocal('tutors');
+  const classes = await getModuleRecords('classes');
+  const tutors = await getModuleRecords('tutors');
   const tutorMap = Object.fromEntries(tutors.map(t => [t.id, t.name]));
-
   classes.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   if (classList) {
@@ -95,28 +189,21 @@ async function renderClasses() {
         </li>
       `).join('')
       : '<li class="muted">No classes yet.</li>';
-
     classList.querySelectorAll('[data-del-class]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Delete this class?')) return;
         await deleteLocal('classes', btn.dataset.delClass);
         await renderClasses();
-        await populateClassSelect();
         runSync();
       });
     });
   }
-
-  await populateClassSelect();
-}
-
-async function populateClassSelect() {
-  if (!enrollClass) return;
-  const classes = await getAllLocal('classes');
-  const current = enrollClass.value;
-  enrollClass.innerHTML = '<option value="">Select class</option>' +
-    classes.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
-  if (current) enrollClass.value = current;
+  if (enrollClass) {
+    const current = enrollClass.value;
+    enrollClass.innerHTML = '<option value="">Select class</option>' +
+      classes.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    if (current) enrollClass.value = current;
+  }
 }
 
 if (classForm) {
@@ -127,7 +214,7 @@ if (classForm) {
       tutorId: document.getElementById('class-tutor').value || null,
       timing: document.getElementById('class-timing').value.trim(),
       fee: Number(document.getElementById('class-fee').value) || 0,
-      module: 'academy'
+      module: MODULE
     });
     classForm.reset();
     await renderClasses();
@@ -141,66 +228,177 @@ const enrollList = document.getElementById('enroll-list');
 
 async function renderEnrollments() {
   if (!enrollList) return;
-  const enrolls = await getAllLocal('academyEnrollments');
-  const classes = await getAllLocal('classes');
+  const enrolls = await getModuleRecords('academyEnrollments');
+  const classes = await getModuleRecords('classes');
   const classMap = Object.fromEntries(classes.map(c => [c.id, c.name]));
-
   enrolls.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   enrollList.innerHTML = enrolls.length
     ? enrolls.map(e => `
       <li>
         <strong>${esc(e.name)}</strong>
-        <span class="tag">${esc(classMap[e.classId] || '—')}</span>
+        <span class="tag">${esc(classMap[e.classId] || e.course || '—')}</span>
         <span class="muted">${esc(e.phone || '')}</span>
-        <button class="mini-btn danger" data-del-enroll="${e.id}" style="margin-left:auto">Remove</button>
+        <button class="mini-btn ghost" data-cert="${e.id}">🎓 Certificate</button>
+        <button class="mini-btn danger" data-del-enroll="${e.id}">Remove</button>
       </li>
     `).join('')
     : '<li class="muted">No enrollments yet.</li>';
+
+  enrollList.querySelectorAll('[data-cert]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const e = await getLocal('academyEnrollments', btn.dataset.cert);
+      if (!e) return;
+      printDocument('Certificate of Completion', buildCertificatePrint({
+        studentName: e.name,
+        type: 'Completion',
+        course: classMap[e.classId] || e.course || 'the program',
+        body: `has successfully completed the course at ${INST_NAME}.`
+      }, INST_NAME), { subtitle: INST_NAME });
+    });
+  });
 
   enrollList.querySelectorAll('[data-del-enroll]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('Remove this enrollment?')) return;
       await deleteLocal('academyEnrollments', btn.dataset.delEnroll);
       await renderEnrollments();
+      await populateStudentSelects();
       runSync();
     });
   });
+  await populateStudentSelects();
 }
 
 if (enrollForm) {
   enrollForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const classId = document.getElementById('enroll-class').value;
-    if (!classId) return;
-
     const name = document.getElementById('enroll-name').value.trim();
     const phone = document.getElementById('enroll-phone').value.trim();
-
-    await saveLocal('academyEnrollments', {
-      name,
-      classId,
-      phone,
-      module: 'academy'
-    });
-
-    // Also add to global students
-    await saveLocal('students', {
-      name,
-      className: 'Academy',
-      phone,
-      module: 'academy'
-    });
-
+    if (!classId || !name) return;
+    await saveLocal('academyEnrollments', { name, classId, phone, module: MODULE });
+    await saveLocal('students', { name, className: 'Academy', phone, module: MODULE });
     enrollForm.reset();
     await renderEnrollments();
     runSync();
   });
 }
 
-// Init
+// ========== FEE CHALLANS ==========
+const challanForm = document.getElementById('challan-form');
+const challanList = document.getElementById('challan-list');
+const challanStudent = document.getElementById('challan-student');
+const statusFilter = document.getElementById('status-filter');
+
+async function populateStudentSelects() {
+  const enrolls = await getModuleRecords('academyEnrollments');
+  enrolls.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  if (challanStudent) {
+    const current = challanStudent.value;
+    challanStudent.innerHTML = '<option value="">Select student</option>' +
+      enrolls.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+    if (current) challanStudent.value = current;
+  }
+}
+
+async function renderChallans() {
+  if (!challanList) return;
+  let challans = await getModuleRecords('feeChallans');
+  const sFilter = statusFilter?.value || 'all';
+  if (sFilter !== 'all') {
+    challans = challans.filter(c => (c.status || '').toLowerCase() === sFilter.toLowerCase());
+  }
+  challans.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+  challanList.innerHTML = challans.length
+    ? challans.map(c => {
+        const isPaid = (c.status || '').toLowerCase() === 'paid';
+        return `
+          <li>
+            <strong>${esc(c.studentName)}</strong>
+            <span class="muted">${monthLabel(c.month)}</span>
+            <span class="amount">${formatMoney(c.amount)}</span>
+            <button class="status-btn ${isPaid ? 'status-btn--paid' : 'status-btn--unpaid'}" data-toggle="${c.id}">
+              ${isPaid ? 'Paid' : 'Unpaid'}
+            </button>
+            <button class="mini-btn ghost" data-print-challan="${c.id}">🖨 Print</button>
+            <button class="mini-btn danger" data-del-challan="${c.id}">×</button>
+          </li>
+        `;
+      }).join('')
+    : '<li class="muted">No challans yet.</li>';
+
+  challanList.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const all = await getAllLocal('feeChallans');
+      const rec = all.find(c => c.id === btn.dataset.toggle && c.module === MODULE);
+      if (!rec) return;
+      const isPaid = (rec.status || '').toLowerCase() === 'paid';
+      rec.status = isPaid ? 'Unpaid' : 'Paid';
+      rec.paidOn = isPaid ? null : Date.now();
+      await saveLocal('feeChallans', rec);
+      await renderChallans();
+      runSync();
+    });
+  });
+
+  challanList.querySelectorAll('[data-print-challan]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const c = await getLocal('feeChallans', btn.dataset.printChallan);
+      if (!c) return;
+      c.monthLabel = monthLabel(c.month);
+      printDocument('Fee Challan — Educational Academy', buildChallanPrint(c, INST_NAME), { subtitle: INST_NAME });
+    });
+  });
+
+  challanList.querySelectorAll('[data-del-challan]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this challan?')) return;
+      await deleteLocal('feeChallans', btn.dataset.delChallan);
+      await renderChallans();
+      runSync();
+    });
+  });
+}
+
+if (challanForm) {
+  const monthInput = document.getElementById('challan-month');
+  if (monthInput) {
+    const now = new Date();
+    monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+  challanForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const select = document.getElementById('challan-student');
+    const opt = select.selectedOptions[0];
+    if (!opt || !opt.value) return;
+    const month = document.getElementById('challan-month').value;
+    const amount = Number(document.getElementById('challan-amount').value);
+    if (!month || !amount) return;
+    await saveLocal('feeChallans', {
+      studentId: opt.value,
+      studentName: opt.textContent,
+      month, amount,
+      status: 'Unpaid',
+      module: MODULE
+    });
+    challanForm.reset();
+    if (monthInput) {
+      const now = new Date();
+      monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+    await populateStudentSelects();
+    await renderChallans();
+    runSync();
+  });
+}
+if (statusFilter) statusFilter.addEventListener('change', renderChallans);
+
 (async function init() {
+  await renderAdmissions();
   await renderTutors();
   await renderClasses();
   await renderEnrollments();
+  await renderChallans();
 })();

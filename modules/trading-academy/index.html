@@ -26,9 +26,64 @@
 <main class="module-main">
   <a class="back-link" href="../../dashboard.html">← Back to Master Dashboard</a>
 
-  <!-- BATCHES -->
   <section class="panel">
-    <h3>📈 Create Batch</h3>
+    <h3>📈 Student Admission (Trading Academy Only)</h3>
+    <p class="hint" style="margin-bottom:1rem">Data is completely separate from School & Educational Academy.</p>
+    <form id="admission-form">
+      <div class="form-grid">
+        <div class="form-section-title">Student Information</div>
+        <div>
+          <label>Full Name *</label>
+          <input type="text" id="adm-name" required />
+        </div>
+        <div>
+          <label>Phone *</label>
+          <input type="tel" id="adm-phone" required placeholder="03XX-XXXXXXX" />
+        </div>
+        <div>
+          <label>CNIC / B-Form</label>
+          <input type="text" id="adm-cnic" placeholder="XXXXX-XXXXXXX-X" />
+        </div>
+        <div>
+          <label>Gender</label>
+          <select id="adm-gender">
+            <option value="">Select</option>
+            <option>Male</option>
+            <option>Female</option>
+          </select>
+        </div>
+        <div>
+          <label>Course / Batch Preference *</label>
+          <input type="text" id="adm-course" required placeholder="e.g. Forex Basics" />
+        </div>
+        <div>
+          <label>Preferred Timing</label>
+          <input type="text" id="adm-timing" placeholder="e.g. 6-8 PM" />
+        </div>
+        <div>
+          <label>Father / Guardian Name</label>
+          <input type="text" id="adm-guardian" />
+        </div>
+        <div>
+          <label>Admission Date *</label>
+          <input type="date" id="adm-date" required />
+        </div>
+        <div class="form-full">
+          <label>Address</label>
+          <textarea id="adm-address" rows="2"></textarea>
+        </div>
+      </div>
+      <button type="submit" class="primary-btn">Submit Admission</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h3>Admissions Queue (Trading Only)</h3>
+    <ul id="admission-list" class="data-list"></ul>
+  </section>
+
+  <section class="panel">
+    <h3>Create Batch</h3>
     <form id="batch-form" class="inline-form">
       <input type="text" id="batch-name" placeholder="Batch name" required />
       <select id="batch-gender">
@@ -36,16 +91,16 @@
         <option value="Male">Male</option>
         <option value="Female">Female</option>
       </select>
-      <input type="text" id="batch-timing" placeholder="Timing (e.g. 6-8 PM)" />
+      <input type="text" id="batch-timing" placeholder="Timing" />
       <input type="text" id="batch-instructor" placeholder="Instructor" />
+      <input type="number" id="batch-fee" placeholder="Course fee (Rs)" min="0" />
       <button type="submit">Add Batch</button>
     </form>
     <ul id="batch-list" class="data-list"></ul>
   </section>
 
-  <!-- ENROLLMENTS -->
   <section class="panel">
-    <h3>Student Enrollment</h3>
+    <h3>Enroll Student into Batch</h3>
     <form id="enroll-form" class="inline-form">
       <input type="text" id="enroll-name" placeholder="Student name" required />
       <select id="enroll-batch" required>
@@ -57,25 +112,46 @@
     <ul id="enroll-list" class="data-list"></ul>
   </section>
 
-  <!-- TRADING JOURNAL -->
+  <section class="panel">
+    <h3>Fee Challan (Trading Academy Only)</h3>
+    <form id="challan-form" class="inline-form">
+      <select id="challan-student" required>
+        <option value="">Select student</option>
+      </select>
+      <input type="month" id="challan-month" required />
+      <input type="number" id="challan-amount" placeholder="Amount (Rs)" min="0" required />
+      <button type="submit">Create Challan</button>
+    </form>
+  </section>
+  <section class="panel">
+    <h3>Trading Fee Challans</h3>
+    <div class="filter-row">
+      <select id="status-filter">
+        <option value="all">All statuses</option>
+        <option value="Paid">Paid</option>
+        <option value="Unpaid">Unpaid</option>
+      </select>
+    </div>
+    <ul id="challan-list" class="data-list"></ul>
+  </section>
+
   <section class="panel">
     <h3>Trading Journal</h3>
     <form id="journal-form" class="inline-form">
       <select id="journal-student" required>
         <option value="">Select student</option>
       </select>
-      <input type="text" id="journal-symbol" placeholder="Symbol (e.g. EURUSD)" required />
+      <input type="text" id="journal-symbol" placeholder="Symbol (EURUSD)" required />
       <select id="journal-side">
         <option value="Buy">Buy</option>
         <option value="Sell">Sell</option>
       </select>
-      <input type="number" id="journal-entry" placeholder="Entry price" step="any" required />
-      <input type="number" id="journal-exit" placeholder="Exit price" step="any" />
+      <input type="number" id="journal-entry" placeholder="Entry" step="any" required />
+      <input type="number" id="journal-exit" placeholder="Exit" step="any" />
       <input type="number" id="journal-lots" placeholder="Lots" step="0.01" value="0.1" />
       <button type="submit">Log Trade</button>
     </form>
     <ul id="journal-list" class="data-list"></ul>
-    <p class="hint">Profit/Loss is calculated automatically when exit price is entered.</p>
   </section>
 </main>
 

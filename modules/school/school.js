@@ -1,22 +1,30 @@
-// modules/school/school.js — Fully Working School Module (ERP v4)
+// modules/school/school.js — School Module (Separate Data + Print)
 import { saveLocal, getAllLocal, deleteLocal, getLocal } from '../../js/db.js';
 import { runSync } from '../../js/sync.js';
+import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint } from '../../js/print.js';
+
+const MODULE = 'school';
+const INST_NAME = 'The Smart Modern Public School';
 
 function esc(str = '') {
   return String(str).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
   );
 }
-
 function formatMoney(n) {
   return 'Rs ' + Number(n || 0).toLocaleString('en-PK');
 }
-
 function monthLabel(ym) {
   if (!ym) return '—';
   const [y, m] = ym.split('-');
   return new Date(Number(y), Number(m) - 1, 1)
     .toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+
+// Only this module's records
+async function getModuleRecords(store) {
+  const all = await getAllLocal(store);
+  return all.filter(r => r.module === MODULE);
 }
 
 // ========== ADMISSIONS ==========
@@ -25,7 +33,7 @@ const admissionList = document.getElementById('admission-list');
 
 async function renderAdmissions() {
   if (!admissionList) return;
-  const list = await getAllLocal('admissions');
+  const list = await getModuleRecords('admissions');
   list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
   admissionList.innerHTML = list.length
@@ -37,20 +45,19 @@ async function renderAdmissions() {
         <span class="muted">${esc(a.phone || '')}</span>
         ${a.status === 'approved'
           ? '<span class="tag" style="background:#d1fae5;color:#065f46">Approved</span>'
-          : `<button class="mini-btn" data-approve="${a.id}">Approve</button>
-             <button class="mini-btn danger" data-del-adm="${a.id}">Delete</button>`
+          : `<button class="mini-btn" data-approve="${a.id}">Approve</button>`
         }
+        <button class="mini-btn ghost" data-print-adm="${a.id}">🖨 Print</button>
+        <button class="mini-btn danger" data-del-adm="${a.id}">Delete</button>
       </li>
     `).join('')
     : '<li class="muted">No admissions yet.</li>';
 
-  // Approve buttons
   admissionList.querySelectorAll('[data-approve]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const adm = await getLocal('admissions', btn.dataset.approve);
-      if (!adm) return;
+      if (!adm || adm.module !== MODULE) return;
 
-      // Create student
       await saveLocal('students', {
         name: adm.name,
         className: adm.className,
@@ -58,7 +65,7 @@ async function renderAdmissions() {
         guardianName: adm.fatherName,
         guardianContact: adm.fatherPhone || adm.phone,
         phone: adm.phone,
-        module: 'school',
+        module: MODULE,
         admissionId: adm.id,
         dob: adm.dob,
         gender: adm.gender,
@@ -67,14 +74,22 @@ async function renderAdmissions() {
         session: adm.session
       });
 
-      // Mark admission approved
       adm.status = 'approved';
       await saveLocal('admissions', adm);
-
       await renderAdmissions();
       await renderStudents();
       await populateStudentSelect();
       runSync();
+    });
+  });
+
+  admissionList.querySelectorAll('[data-print-adm]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const adm = await getLocal('admissions', btn.dataset.printAdm);
+      if (!adm) return;
+      printDocument('Student Admission Form', buildAdmissionPrint(adm, INST_NAME), {
+        subtitle: INST_NAME
+      });
     });
   });
 
@@ -89,7 +104,6 @@ async function renderAdmissions() {
 }
 
 if (admissionForm) {
-  // Set default admission date
   const dateInput = document.getElementById('adm-date');
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
 
@@ -112,9 +126,8 @@ if (admissionForm) {
       city: document.getElementById('adm-city').value.trim(),
       phone: document.getElementById('adm-phone').value.trim(),
       status: 'pending',
-      module: 'school'
+      module: MODULE
     };
-
     await saveLocal('admissions', data);
     admissionForm.reset();
     if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
@@ -123,13 +136,13 @@ if (admissionForm) {
   });
 }
 
-// ========== FEE STRUCTURE ==========
+// ========== FEE STRUCTURE (School only) ==========
 const fsForm = document.getElementById('fee-structure-form');
 const fsList = document.getElementById('fee-structure-list');
 
 async function renderFeeStructure() {
   if (!fsList) return;
-  const list = await getAllLocal('feeStructure');
+  const list = await getModuleRecords('feeStructure');
   list.sort((a, b) => (a.className || '').localeCompare(b.className || ''));
 
   fsList.innerHTML = list.length
@@ -159,32 +172,29 @@ if (fsForm) {
     const amount = Number(document.getElementById('fs-amount').value);
     if (!className || !amount) return;
 
-    // Upsert by className
-    const all = await getAllLocal('feeStructure');
+    const all = await getModuleRecords('feeStructure');
     const existing = all.find(f => f.className.toLowerCase() === className.toLowerCase());
 
     await saveLocal('feeStructure', {
       id: existing?.id,
       className,
       amount,
-      module: 'school'
+      module: MODULE
     });
-
     fsForm.reset();
     await renderFeeStructure();
     runSync();
   });
 }
 
-// ========== STUDENTS ==========
+// ========== STUDENTS (School only) ==========
 const studentForm = document.getElementById('student-form');
 const studentList = document.getElementById('student-list');
 const studentSearch = document.getElementById('student-search');
 
 async function renderStudents(filter = '') {
   if (!studentList) return;
-  let students = await getAllLocal('students');
-  students = students.filter(s => s.module === 'school' || !s.module);
+  let students = await getModuleRecords('students');
 
   if (filter) {
     const q = filter.toLowerCase();
@@ -193,7 +203,6 @@ async function renderStudents(filter = '') {
       (s.className || '').toLowerCase().includes(q)
     );
   }
-
   students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   studentList.innerHTML = students.length
@@ -203,10 +212,25 @@ async function renderStudents(filter = '') {
         <span class="tag">${esc(s.className)}</span>
         <span class="muted">${esc(s.guardianName || '')}</span>
         <span class="muted">${esc(s.phone || s.guardianContact || '')}</span>
-        <button class="mini-btn danger" data-del-student="${s.id}" style="margin-left:auto">Remove</button>
+        <button class="mini-btn ghost" data-cert="${s.id}">🎓 Certificate</button>
+        <button class="mini-btn danger" data-del-student="${s.id}">Remove</button>
       </li>
     `).join('')
     : '<li class="muted">No students enrolled yet.</li>';
+
+  studentList.querySelectorAll('[data-cert]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const s = await getLocal('students', btn.dataset.cert);
+      if (!s) return;
+      printDocument('Certificate of Enrollment', buildCertificatePrint({
+        studentName: s.name,
+        type: 'Enrollment',
+        course: s.className,
+        className: s.className,
+        body: `has been duly enrolled in <strong>Class ${s.className}</strong> at ${INST_NAME} for the academic session ${s.session || 'current'}.`
+      }, INST_NAME), { subtitle: INST_NAME });
+    });
+  });
 
   studentList.querySelectorAll('[data-del-student]').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -227,7 +251,7 @@ if (studentForm) {
       className: document.getElementById('student-class').value.trim(),
       guardianName: document.getElementById('student-guardian').value.trim(),
       phone: document.getElementById('student-phone').value.trim(),
-      module: 'school'
+      module: MODULE
     });
     studentForm.reset();
     await renderStudents();
@@ -235,14 +259,11 @@ if (studentForm) {
     runSync();
   });
 }
-
 if (studentSearch) {
-  studentSearch.addEventListener('input', () => {
-    renderStudents(studentSearch.value.trim());
-  });
+  studentSearch.addEventListener('input', () => renderStudents(studentSearch.value.trim()));
 }
 
-// ========== FEE CHALLANS ==========
+// ========== FEE CHALLANS (School only) ==========
 const challanForm = document.getElementById('challan-form');
 const challanList = document.getElementById('challan-list');
 const challanStudent = document.getElementById('challan-student');
@@ -252,44 +273,35 @@ const statusFilter = document.getElementById('status-filter');
 
 async function populateStudentSelect() {
   if (!challanStudent) return;
-  let students = await getAllLocal('students');
-  students = students.filter(s => s.module === 'school' || !s.module);
+  const students = await getModuleRecords('students');
   students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
   const current = challanStudent.value;
   challanStudent.innerHTML = '<option value="">Select student</option>' +
     students.map(s => `<option value="${s.id}" data-class="${esc(s.className)}">${esc(s.name)} (${esc(s.className)})</option>`).join('');
-
   if (current) challanStudent.value = current;
 }
 
-// Auto-fill amount from fee structure
 if (challanStudent) {
   challanStudent.addEventListener('change', async () => {
     const opt = challanStudent.selectedOptions[0];
     if (!opt || !opt.value) return;
     const className = opt.dataset.class;
-    const structures = await getAllLocal('feeStructure');
+    const structures = await getModuleRecords('feeStructure');
     const match = structures.find(f => f.className.toLowerCase() === (className || '').toLowerCase());
-    if (match && challanAmount) {
-      challanAmount.value = match.amount;
-    }
+    if (match && challanAmount) challanAmount.value = match.amount;
   });
 }
 
 async function renderChallans() {
   if (!challanList) return;
-  let challans = await getAllLocal('feeChallans');
-  challans = challans.filter(c => c.module === 'school' || !c.module);
+  let challans = await getModuleRecords('feeChallans');
 
   const mFilter = monthFilter?.value || '';
   const sFilter = statusFilter?.value || 'all';
-
   if (mFilter) challans = challans.filter(c => c.month === mFilter);
   if (sFilter !== 'all') {
     challans = challans.filter(c => (c.status || '').toLowerCase() === sFilter.toLowerCase());
   }
-
   challans.sort((a, b) => (b.month || '').localeCompare(a.month || '') || (a.studentName || '').localeCompare(b.studentName || ''));
 
   challanList.innerHTML = challans.length
@@ -301,21 +313,20 @@ async function renderChallans() {
             <span class="tag">${esc(c.className || '')}</span>
             <span class="muted">${monthLabel(c.month)}</span>
             <span class="amount">${formatMoney(c.amount)}</span>
-            <button class="status-btn ${isPaid ? 'status-btn--paid' : 'status-btn--unpaid'}"
-                    data-toggle="${c.id}">
+            <button class="status-btn ${isPaid ? 'status-btn--paid' : 'status-btn--unpaid'}" data-toggle="${c.id}">
               ${isPaid ? 'Paid' : 'Unpaid'}
             </button>
+            <button class="mini-btn ghost" data-print-challan="${c.id}">🖨 Print</button>
             <button class="mini-btn danger" data-del-challan="${c.id}">×</button>
           </li>
         `;
       }).join('')
     : '<li class="muted">No challans found.</li>';
 
-  // Toggle status
   challanList.querySelectorAll('[data-toggle]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const all = await getAllLocal('feeChallans');
-      const rec = all.find(c => c.id === btn.dataset.toggle);
+      const rec = all.find(c => c.id === btn.dataset.toggle && c.module === MODULE);
       if (!rec) return;
       const isPaid = (rec.status || '').toLowerCase() === 'paid';
       rec.status = isPaid ? 'Unpaid' : 'Paid';
@@ -326,7 +337,15 @@ async function renderChallans() {
     });
   });
 
-  // Delete
+  challanList.querySelectorAll('[data-print-challan]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const c = await getLocal('feeChallans', btn.dataset.printChallan);
+      if (!c) return;
+      c.monthLabel = monthLabel(c.month);
+      printDocument('Fee Challan', buildChallanPrint(c, INST_NAME), { subtitle: INST_NAME });
+    });
+  });
+
   challanList.querySelectorAll('[data-del-challan]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('Delete this challan?')) return;
@@ -338,7 +357,6 @@ async function renderChallans() {
 }
 
 if (challanForm) {
-  // Default month
   const monthInput = document.getElementById('challan-month');
   if (monthInput) {
     const now = new Date();
@@ -350,7 +368,6 @@ if (challanForm) {
     const select = document.getElementById('challan-student');
     const opt = select.selectedOptions[0];
     if (!opt || !opt.value) return;
-
     const month = document.getElementById('challan-month').value;
     const amount = Number(document.getElementById('challan-amount').value);
     if (!month || !amount) return;
@@ -362,9 +379,8 @@ if (challanForm) {
       month,
       amount,
       status: 'Unpaid',
-      module: 'school'
+      module: MODULE
     });
-
     challanForm.reset();
     if (monthInput) {
       const now = new Date();
@@ -375,7 +391,6 @@ if (challanForm) {
     runSync();
   });
 }
-
 if (monthFilter) monthFilter.addEventListener('change', renderChallans);
 if (statusFilter) statusFilter.addEventListener('change', renderChallans);
 
