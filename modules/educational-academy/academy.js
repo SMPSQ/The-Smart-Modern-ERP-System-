@@ -475,6 +475,64 @@ if (examForm) {
   });
 }
 
+
+// ========== ATTENDANCE ==========
+const attendanceForm = document.getElementById('attendance-form');
+const attendanceList = document.getElementById('attendance-list');
+const attStudent = document.getElementById('att-student');
+async function populateAttStudents() {
+  if (!attStudent) return;
+  let list = [];
+  try {
+    if (MODULE === 'trading') {
+      list = (await getAllLocal('tradingEnrollments')).filter(e => e.module === MODULE);
+    } else {
+      list = (await getAllLocal('academyEnrollments')).filter(e => e.module === MODULE);
+    }
+  } catch (_) {}
+  list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  attStudent.innerHTML = '<option value="">Select student</option>' +
+    list.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+}
+async function renderAttendance() {
+  if (!attendanceList) return;
+  const list = (await getAllLocal('attendance')).filter(r => r.module === MODULE);
+  list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  attendanceList.innerHTML = list.length ? list.map(r => {
+    const color = r.status === 'Present' ? '#1B7A4E' : r.status === 'Leave' ? '#B45309' : '#B91C1C';
+    return `<li><strong>${esc(r.studentName)}</strong> <span class="muted">${esc(r.date)}</span>
+      <span class="tag" style="background:${color};color:#fff">${esc(r.status)}</span>
+      <span class="actions"><button class="mini-btn danger" data-del-att="${r.id}">Delete</button></span></li>`;
+  }).join('') : '<li class="muted">No attendance yet.</li>';
+  attendanceList.querySelectorAll('[data-del-att]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('attendance', btn.dataset.delAtt);
+      await renderAttendance(); runSync();
+    });
+  });
+}
+if (attendanceForm) {
+  const d = document.getElementById('att-date');
+  if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
+  attendanceForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const opt = attStudent?.selectedOptions[0];
+    if (!opt?.value) return;
+    const date = document.getElementById('att-date').value;
+    const status = document.getElementById('att-status').value;
+    const all = (await getAllLocal('attendance')).filter(r => r.module === MODULE);
+    const existing = all.find(r => r.studentId === opt.value && r.date === date);
+    await saveLocal('attendance', {
+      id: existing?.id,
+      studentId: opt.value,
+      studentName: opt.textContent,
+      date, status, module: MODULE
+    });
+    await renderAttendance(); runSync();
+  });
+}
+
 // ========== FINANCE ==========
 const incomeForm = document.getElementById('income-form');
 const expenseForm = document.getElementById('expense-form');
@@ -496,6 +554,8 @@ async function renderIncome() {
       await deleteLocal('income', btn.dataset.delInc);
       await populateExamStudents();
   await renderExams();
+  await populateAttStudents();
+  await renderAttendance();
   await renderIncome(); runSync();
     });
   });

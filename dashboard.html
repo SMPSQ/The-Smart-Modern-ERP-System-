@@ -462,6 +462,23 @@
       <p class="hint">Saved instantly on this device · Syncs to cloud when online</p>
     </section>
 
+    
+    <section class="panel">
+      <h3>Announcements</h3>
+      <form id="announcement-form" class="inline-form">
+        <input type="text" id="ann-title" placeholder="Title" required />
+        <input type="text" id="ann-body" placeholder="Message" required style="flex:2" />
+        <select id="ann-for">
+          <option value="all">All modules</option>
+          <option value="school">School</option>
+          <option value="trading">Trading</option>
+          <option value="academy">Academy</option>
+        </select>
+        <button type="submit">Post</button>
+      </form>
+      <ul id="announcement-list" class="data-list"></ul>
+    </section>
+
     <div class="dash-footer">
       <strong>THE SMART MODERN GROUP</strong> — Educating Minds · Building Futures · Empowering Traders<br>
       FKC ERP System v4

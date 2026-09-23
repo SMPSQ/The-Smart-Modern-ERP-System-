@@ -269,6 +269,8 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     <button type="button" class="tab-btn" data-tab="teachers">Teachers</button>
     <button type="button" class="tab-btn" data-tab="exams">Exams</button>
     <button type="button" class="tab-btn" data-tab="finance">Finance</button>
+    <button type="button" class="tab-btn" data-tab="leave">Leave</button>
+    <button type="button" class="tab-btn" data-tab="timetable">Timetable</button>
   </div>
 
   <!-- ========== TAB: ADMISSION ========== -->
@@ -551,6 +553,46 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
           <div class="value" id="sum-net" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
         </div>
       </div>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-leave">
+    <div class="form-card">
+      <h3>Student Leave Request</h3>
+      <form id="leave-form" class="inline-form">
+        <select id="leave-student" required><option value="">Select student</option></select>
+        <input type="date" id="leave-from" required />
+        <input type="date" id="leave-to" required />
+        <input type="text" id="leave-reason" placeholder="Reason" required />
+        <select id="leave-status">
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+        <button type="submit">Save Leave</button>
+      </form>
+      <ul id="leave-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-timetable">
+    <div class="form-card">
+      <h3>Class Timetable</h3>
+      <form id="tt-form" class="inline-form">
+        <input type="text" id="tt-class" placeholder="Class (e.g. 5-A)" required />
+        <select id="tt-day">
+          <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+          <option>Thursday</option><option>Friday</option><option>Saturday</option>
+        </select>
+        <input type="text" id="tt-period" placeholder="Period / Time (e.g. 9-10)" required />
+        <input type="text" id="tt-subject" placeholder="Subject" required />
+        <input type="text" id="tt-teacher" placeholder="Teacher" />
+        <button type="submit">Add Slot</button>
+      </form>
+      <div class="filter-row">
+        <input type="text" id="tt-filter" placeholder="Filter by class..." />
+      </div>
+      <ul id="tt-list" class="data-list"></ul>
     </div>
   </div>
 

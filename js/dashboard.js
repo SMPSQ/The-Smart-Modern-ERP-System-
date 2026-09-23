@@ -5,7 +5,8 @@ import {
   getPendingFees,
   getTodayCollection,
   getTotalPendingAmount,
-  saveLocal
+  saveLocal,
+  deleteLocal
 } from './db.js';
 import { drainQueue } from './sync.js';
 
@@ -99,3 +100,42 @@ renderVisitors();
 
 // Refresh KPIs every 30 seconds
 setInterval(loadKPIs, 30000);
+
+
+// --- Announcements ---
+const annForm = document.getElementById('announcement-form');
+const annList = document.getElementById('announcement-list');
+function escAnn(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function renderAnnouncements() {
+  if (!annList) return;
+  let list = await getAllLocal('announcements');
+  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  annList.innerHTML = list.length ? list.map(a => `
+    <li>
+      <strong>${escAnn(a.title)}</strong>
+      <span class="tag">${escAnn(a.forModule||'all')}</span>
+      <span class="muted">${escAnn(a.body)}</span>
+      <span class="actions"><button class="mini-btn danger" data-del-ann="${a.id}">Delete</button></span>
+    </li>`).join('') : '<li class="muted">No announcements yet.</li>';
+  annList.querySelectorAll('[data-del-ann]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete announcement?')) return;
+      await deleteLocal('announcements', btn.dataset.delAnn);
+      await renderAnnouncements();
+    });
+  });
+}
+if (annForm) {
+  annForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('announcements', {
+      title: document.getElementById('ann-title').value.trim(),
+      body: document.getElementById('ann-body').value.trim(),
+      forModule: document.getElementById('ann-for').value,
+      createdAt: Date.now()
+    });
+    annForm.reset();
+    await renderAnnouncements();
+  });
+  renderAnnouncements();
+}

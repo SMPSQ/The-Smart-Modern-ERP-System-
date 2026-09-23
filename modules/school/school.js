@@ -341,6 +341,7 @@ async function renderStudents(filter = '') {
       await populateStudentSelect();
       await populateAttStudentSelect();
       await populateExamStudentSelect();
+      await populateLeaveStudents();
       runSync();
     });
   });
@@ -843,6 +844,129 @@ if (expenseForm) {
   });
 }
 
+
+// ========== LEAVE ==========
+const leaveForm = document.getElementById('leave-form');
+const leaveList = document.getElementById('leave-list');
+const leaveStudent = document.getElementById('leave-student');
+
+async function populateLeaveStudents() {
+  if (!leaveStudent) return;
+  const students = await getModuleRecords('students');
+  students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  leaveStudent.innerHTML = '<option value="">Select student</option>' +
+    students.map(s => `<option value="${s.id}">${esc(s.name)} (${esc(s.className)})</option>`).join('');
+}
+async function renderLeaves() {
+  if (!leaveList) return;
+  const list = await getModuleRecords('leaves');
+  list.sort((a, b) => (b.from || '').localeCompare(a.from || ''));
+  leaveList.innerHTML = list.length ? list.map(l => `
+    <li>
+      <strong>${esc(l.studentName)}</strong>
+      <span class="muted">${esc(l.from)} → ${esc(l.to)}</span>
+      <span class="muted">${esc(l.reason)}</span>
+      <span class="tag">${esc(l.status)}</span>
+      <span class="actions">
+        <button class="mini-btn edit" data-leave-status="${l.id}|Approved">Approve</button>
+        <button class="mini-btn ghost" data-leave-status="${l.id}|Rejected">Reject</button>
+        <button class="mini-btn danger" data-del-leave="${l.id}">Delete</button>
+      </span>
+    </li>`).join('') : '<li class="muted">No leave records.</li>';
+  leaveList.querySelectorAll('[data-leave-status]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const [id, status] = btn.dataset.leaveStatus.split('|');
+      const rec = await getLocal('leaves', id);
+      if (!rec) return;
+      rec.status = status;
+      await saveLocal('leaves', rec);
+      await renderLeaves();
+      runSync();
+    });
+  });
+  leaveList.querySelectorAll('[data-del-leave]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete leave?')) return;
+      await deleteLocal('leaves', btn.dataset.delLeave);
+      await renderLeaves();
+      runSync();
+    });
+  });
+}
+if (leaveForm) {
+  leaveForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const opt = leaveStudent?.selectedOptions[0];
+    if (!opt?.value) return;
+    await saveLocal('leaves', {
+      studentId: opt.value,
+      studentName: opt.textContent.split(' (')[0],
+      from: document.getElementById('leave-from').value,
+      to: document.getElementById('leave-to').value,
+      reason: document.getElementById('leave-reason').value.trim(),
+      status: document.getElementById('leave-status')?.value || 'Pending',
+      module: MODULE
+    });
+    leaveForm.reset();
+    await populateLeaveStudents();
+    await renderLeaves();
+    runSync();
+  });
+}
+
+// ========== TIMETABLE ==========
+const ttForm = document.getElementById('tt-form');
+const ttList = document.getElementById('tt-list');
+const ttFilter = document.getElementById('tt-filter');
+
+async function renderTimetable(filter = '') {
+  if (!ttList) return;
+  let list = await getModuleRecords('timetable');
+  if (filter) {
+    const q = filter.toLowerCase();
+    list = list.filter(t => (t.className || '').toLowerCase().includes(q));
+  }
+  const dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  list.sort((a, b) => {
+    const d = dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
+    return d !== 0 ? d : (a.period || '').localeCompare(b.period || '');
+  });
+  ttList.innerHTML = list.length ? list.map(t => `
+    <li>
+      <strong>${esc(t.className)}</strong>
+      <span class="tag">${esc(t.day)}</span>
+      <span class="muted">${esc(t.period)}</span>
+      <span>${esc(t.subject)}</span>
+      <span class="muted">${esc(t.teacher || '')}</span>
+      <span class="actions"><button class="mini-btn danger" data-del-tt="${t.id}">Delete</button></span>
+    </li>`).join('') : '<li class="muted">No timetable slots.</li>';
+  ttList.querySelectorAll('[data-del-tt]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete slot?')) return;
+      await deleteLocal('timetable', btn.dataset.delTt);
+      await renderTimetable(ttFilter?.value || '');
+      runSync();
+    });
+  });
+}
+if (ttForm) {
+  ttForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('timetable', {
+      className: document.getElementById('tt-class').value.trim(),
+      day: document.getElementById('tt-day').value,
+      period: document.getElementById('tt-period').value.trim(),
+      subject: document.getElementById('tt-subject').value.trim(),
+      teacher: document.getElementById('tt-teacher')?.value.trim() || '',
+      module: MODULE
+    });
+    ttForm.reset();
+    await renderTimetable(ttFilter?.value || '');
+    runSync();
+  });
+}
+if (ttFilter) ttFilter.addEventListener('input', () => renderTimetable(ttFilter.value.trim()));
+
 // ========== INIT ==========
 (async function init() {
   await renderAdmissions();
@@ -858,4 +982,7 @@ if (expenseForm) {
   await renderIncome();
   await renderExpenses();
   await renderFinanceSummary();
+  await populateLeaveStudents();
+  await renderLeaves();
+  await renderTimetable();
 })();
