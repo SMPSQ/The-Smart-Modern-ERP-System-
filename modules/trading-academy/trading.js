@@ -45,6 +45,7 @@ async function renderAdmissions() {
           : `<button class="mini-btn" data-approve="${a.id}">Approve</button>`
         }
         <span class="actions">
+          <button class="mini-btn edit" data-edit-adm="${a.id}">Edit</button>
           <button class="mini-btn ghost" data-print-adm="${a.id}">Print</button>
           <button class="mini-btn danger" data-del-adm="${a.id}">Delete</button>
         </span>
@@ -70,6 +71,28 @@ async function renderAdmissions() {
       await renderEnrollments();
       await populateStudentSelects();
       runSync();
+    });
+  });
+
+  
+  admissionList.querySelectorAll('[data-edit-adm]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const adm = await getLocal('admissions', btn.dataset.editAdm);
+      if (!adm) return;
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+      set('adm-name', adm.name);
+      set('adm-phone', adm.phone);
+      set('adm-cnic', adm.bform);
+      set('adm-gender', adm.gender);
+      set('adm-course', adm.course);
+      set('adm-timing', adm.timing);
+      set('adm-guardian', adm.guardianName);
+      set('adm-date', adm.admissionDate);
+      set('adm-address', adm.address);
+      window._editAdmissionId = adm.id;
+      const submitBtn = document.querySelector('#admission-form button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = 'Update Admission';
+      document.querySelector('.tab-btn[data-tab="admission"]')?.click();
     });
   });
 

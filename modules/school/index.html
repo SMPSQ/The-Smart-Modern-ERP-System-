@@ -187,6 +187,51 @@
     .tab-btn { min-width: 80px; font-size: 0.75rem; padding: 0.5rem; }
   }
 </style>
+
+<style>
+/* Failsafe: always-visible action buttons */
+ul.data-list li {
+  background: #fff !important;
+  color: #1a1d26 !important;
+  border: 1px solid #d0d5dd !important;
+}
+ul.data-list li strong { color: #0A1628 !important; }
+ul.data-list li .actions {
+  margin-left: auto;
+  display: inline-flex !important;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+ul.data-list li .mini-btn {
+  min-width: 54px;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  line-height: 1.2;
+}
+ul.data-list li .mini-btn.edit {
+  background: #0A1628 !important;
+  color: #C9A227 !important;
+  border: 1px solid #C9A227 !important;
+}
+ul.data-list li .mini-btn.ghost {
+  background: #eef1f5 !important;
+  color: #0A1628 !important;
+  border: 1px solid #0A1628 !important;
+}
+ul.data-list li .mini-btn.danger {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
+}
+ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
+  background: #0A1628 !important;
+  color: #fff !important;
+}
+</style>
+
 </head>
 <body class="dash-body" data-root="../../">
 

@@ -393,3 +393,65 @@ ul.data-list li:hover, ul.visitor-list li:hover {
 @media print {
   .dash-header, .sidebar, .back-link, .ghost-btn, .mini-btn { display: none !important; }
 }
+
+
+/* ===== HIGH CONTRAST ACTION BUTTONS (always visible) ===== */
+ul.data-list li, ul.visitor-list li {
+  background: #ffffff !important;
+  color: #1A1D26 !important;
+  border: 1px solid #D0D5DD !important;
+}
+ul.data-list li strong {
+  color: #0A1628 !important;
+}
+ul.data-list li .actions,
+ul.visitor-list li .actions {
+  margin-left: auto;
+  display: inline-flex !important;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.mini-btn {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  min-width: 52px;
+  text-align: center;
+  padding: 0.35rem 0.7rem !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.mini-btn.edit {
+  background: #0A1628 !important;
+  color: #C9A227 !important;
+  border: 1px solid #C9A227 !important;
+}
+.mini-btn.edit:hover {
+  background: #C9A227 !important;
+  color: #0A1628 !important;
+}
+.mini-btn.ghost {
+  background: #F0F2F5 !important;
+  color: #0A1628 !important;
+  border: 1px solid #0A1628 !important;
+}
+.mini-btn.ghost:hover {
+  background: #0A1628 !important;
+  color: #fff !important;
+}
+.mini-btn.danger {
+  background: #B91C1C !important;
+  color: #fff !important;
+  border: 1px solid #B91C1C !important;
+}
+.mini-btn.danger:hover {
+  background: #991B1B !important;
+}
+.mini-btn:not(.edit):not(.ghost):not(.danger) {
+  background: #0A1628 !important;
+  color: #fff !important;
+}
