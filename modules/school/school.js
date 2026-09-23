@@ -330,6 +330,7 @@ async function renderStudents(filter = '') {
       await renderStudents(studentSearch?.value || '');
       await populateStudentSelect();
       await populateAttStudentSelect();
+      await populateExamStudentSelect();
       runSync();
     });
   });
@@ -617,6 +618,221 @@ if (attendanceForm) {
 }
 if (attFilterDate) attFilterDate.addEventListener('change', renderAttendance);
 
+
+// ========== TEACHERS ==========
+const teacherForm = document.getElementById('teacher-form');
+const teacherList = document.getElementById('teacher-list');
+
+async function renderTeachers() {
+  if (!teacherList) return;
+  const list = await getModuleRecords('teachers');
+  list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  teacherList.innerHTML = list.length
+    ? list.map(t => `
+      <li>
+        <strong>${esc(t.name)}</strong>
+        <span class="tag">${esc(t.subject || '—')}</span>
+        <span class="muted">${esc(t.phone || '')}</span>
+        <span class="actions">
+          <button class="mini-btn danger" data-del-teacher="${t.id}">Delete</button>
+        </span>
+      </li>`).join('')
+    : '<li class="muted">No teachers yet.</li>';
+  teacherList.querySelectorAll('[data-del-teacher]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this teacher?')) return;
+      await deleteLocal('teachers', btn.dataset.delTeacher);
+      await renderTeachers();
+      runSync();
+    });
+  });
+}
+if (teacherForm) {
+  teacherForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('teachers', {
+      name: val('teacher-name'),
+      subject: val('teacher-subject'),
+      phone: val('teacher-phone'),
+      module: MODULE
+    });
+    teacherForm.reset();
+    await renderTeachers();
+    runSync();
+  });
+}
+
+// ========== EXAMS ==========
+const examForm = document.getElementById('exam-form');
+const examList = document.getElementById('exam-list');
+const examStudent = document.getElementById('exam-student');
+
+async function populateExamStudentSelect() {
+  if (!examStudent) return;
+  const students = await getModuleRecords('students');
+  students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  examStudent.innerHTML = '<option value="">Select student</option>' +
+    students.map(s => `<option value="${s.id}">${esc(s.name)} (${esc(s.className)})</option>`).join('');
+}
+
+async function renderExams() {
+  if (!examList) return;
+  const list = await getModuleRecords('exams');
+  list.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.studentName || '').localeCompare(b.studentName || ''));
+  examList.innerHTML = list.length
+    ? list.map(x => {
+        const pct = x.total ? Math.round((Number(x.marks) / Number(x.total)) * 100) : 0;
+        return `
+      <li>
+        <strong>${esc(x.studentName)}</strong>
+        <span class="tag">${esc(x.title)}</span>
+        <span class="muted">${esc(x.subject)}</span>
+        <span class="amount">${x.marks}/${x.total} (${pct}%)</span>
+        <span class="muted">${esc(x.date || '')}</span>
+        <span class="actions">
+          <button class="mini-btn danger" data-del-exam="${x.id}">Delete</button>
+        </span>
+      </li>`;
+      }).join('')
+    : '<li class="muted">No exam records yet.</li>';
+  examList.querySelectorAll('[data-del-exam]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this exam record?')) return;
+      await deleteLocal('exams', btn.dataset.delExam);
+      await renderExams();
+      runSync();
+    });
+  });
+}
+if (examForm) {
+  const ed = document.getElementById('exam-date');
+  if (ed && !ed.value) ed.value = new Date().toISOString().slice(0, 10);
+  examForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const opt = examStudent?.selectedOptions[0];
+    if (!opt || !opt.value) return;
+    await saveLocal('exams', {
+      title: val('exam-title'),
+      studentId: opt.value,
+      studentName: opt.textContent.split(' (')[0],
+      subject: val('exam-subject'),
+      marks: Number(document.getElementById('exam-marks')?.value),
+      total: Number(document.getElementById('exam-total')?.value) || 100,
+      date: val('exam-date'),
+      module: MODULE
+    });
+    examForm.reset();
+    if (ed) ed.value = new Date().toISOString().slice(0, 10);
+    await populateExamStudentSelect();
+    await renderExams();
+    runSync();
+  });
+}
+
+// ========== FINANCE (Income / Expense) ==========
+const incomeForm = document.getElementById('income-form');
+const expenseForm = document.getElementById('expense-form');
+const incomeList = document.getElementById('income-list');
+const expenseList = document.getElementById('expense-list');
+
+async function renderIncome() {
+  if (!incomeList) return;
+  const list = await getModuleRecords('income');
+  list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  incomeList.innerHTML = list.length
+    ? list.map(r => `
+      <li>
+        <strong>${esc(r.description)}</strong>
+        <span class="muted">${esc(r.date)}</span>
+        <span class="amount">${formatMoney(r.amount)}</span>
+        <span class="actions"><button class="mini-btn danger" data-del-income="${r.id}">Delete</button></span>
+      </li>`).join('')
+    : '<li class="muted">No other income yet.</li>';
+  incomeList.querySelectorAll('[data-del-income]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('income', btn.dataset.delIncome);
+      await renderIncome();
+      await renderFinanceSummary();
+      runSync();
+    });
+  });
+}
+async function renderExpenses() {
+  if (!expenseList) return;
+  const list = await getModuleRecords('expenses');
+  list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  expenseList.innerHTML = list.length
+    ? list.map(r => `
+      <li>
+        <strong>${esc(r.description)}</strong>
+        <span class="muted">${esc(r.date)}</span>
+        <span class="amount">${formatMoney(r.amount)}</span>
+        <span class="actions"><button class="mini-btn danger" data-del-expense="${r.id}">Delete</button></span>
+      </li>`).join('')
+    : '<li class="muted">No expenses yet.</li>';
+  expenseList.querySelectorAll('[data-del-expense]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('expenses', btn.dataset.delExpense);
+      await renderExpenses();
+      await renderFinanceSummary();
+      runSync();
+    });
+  });
+}
+async function renderFinanceSummary() {
+  const challans = await getModuleRecords('feeChallans');
+  const fees = challans.filter(c => (c.status || '').toLowerCase() === 'paid')
+    .reduce((s, c) => s + Number(c.amount || 0), 0);
+  const incomes = await getModuleRecords('income');
+  const otherInc = incomes.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const expenses = await getModuleRecords('expenses');
+  const exp = expenses.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const net = fees + otherInc - exp;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = formatMoney(v); };
+  set('sum-fees', fees);
+  set('sum-income', otherInc);
+  set('sum-expense', exp);
+  set('sum-net', net);
+}
+if (incomeForm) {
+  const d = document.getElementById('income-date');
+  if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
+  incomeForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('income', {
+      date: val('income-date'),
+      description: val('income-desc'),
+      amount: Number(document.getElementById('income-amount')?.value),
+      module: MODULE
+    });
+    incomeForm.reset();
+    if (d) d.value = new Date().toISOString().slice(0, 10);
+    await renderIncome();
+    await renderFinanceSummary();
+    runSync();
+  });
+}
+if (expenseForm) {
+  const d = document.getElementById('expense-date');
+  if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
+  expenseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('expenses', {
+      date: val('expense-date'),
+      description: val('expense-desc'),
+      amount: Number(document.getElementById('expense-amount')?.value),
+      module: MODULE
+    });
+    expenseForm.reset();
+    if (d) d.value = new Date().toISOString().slice(0, 10);
+    await renderExpenses();
+    await renderFinanceSummary();
+    runSync();
+  });
+}
+
 // ========== INIT ==========
 (async function init() {
   await renderAdmissions();
@@ -626,4 +842,10 @@ if (attFilterDate) attFilterDate.addEventListener('change', renderAttendance);
   await renderChallans();
   await populateAttStudentSelect();
   await renderAttendance();
+  await renderTeachers();
+  await populateExamStudentSelect();
+  await renderExams();
+  await renderIncome();
+  await renderExpenses();
+  await renderFinanceSummary();
 })();

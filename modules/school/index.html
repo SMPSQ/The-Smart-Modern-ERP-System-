@@ -266,6 +266,9 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     <button type="button" class="tab-btn" data-tab="fees">Fees</button>
     <button type="button" class="tab-btn" data-tab="challans">Challans</button>
     <button type="button" class="tab-btn" data-tab="attendance">Attendance</button>
+    <button type="button" class="tab-btn" data-tab="teachers">Teachers</button>
+    <button type="button" class="tab-btn" data-tab="exams">Exams</button>
+    <button type="button" class="tab-btn" data-tab="finance">Finance</button>
   </div>
 
   <!-- ========== TAB: ADMISSION ========== -->
@@ -470,6 +473,84 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
         <input type="date" id="att-filter-date" />
       </div>
       <ul id="attendance-list" class="data-list"></ul>
+    </div>
+  </div>
+
+
+  <!-- TEACHERS -->
+  <div class="tab-panel" id="tab-teachers">
+    <div class="form-card">
+      <h3>Add Teacher</h3>
+      <form id="teacher-form" class="inline-form">
+        <input type="text" id="teacher-name" placeholder="Teacher name" required />
+        <input type="text" id="teacher-subject" placeholder="Subject" />
+        <input type="tel" id="teacher-phone" placeholder="Phone" />
+        <button type="submit">Add Teacher</button>
+      </form>
+      <ul id="teacher-list" class="data-list"></ul>
+    </div>
+  </div>
+
+  <!-- EXAMS -->
+  <div class="tab-panel" id="tab-exams">
+    <div class="form-card">
+      <h3>Record Exam Marks</h3>
+      <form id="exam-form" class="inline-form">
+        <input type="text" id="exam-title" placeholder="Exam title (e.g. Mid Term)" required />
+        <select id="exam-student" required><option value="">Select student</option></select>
+        <input type="text" id="exam-subject" placeholder="Subject" required />
+        <input type="number" id="exam-marks" placeholder="Marks obtained" min="0" required />
+        <input type="number" id="exam-total" placeholder="Total marks" min="1" value="100" required />
+        <input type="date" id="exam-date" />
+        <button type="submit">Save Result</button>
+      </form>
+      <ul id="exam-list" class="data-list"></ul>
+      <p class="hint">Percentage auto-calculated. Delete any wrong entry.</p>
+    </div>
+  </div>
+
+  <!-- FINANCE -->
+  <div class="tab-panel" id="tab-finance">
+    <div class="form-card">
+      <h3>Income (other than fees)</h3>
+      <form id="income-form" class="inline-form">
+        <input type="date" id="income-date" required />
+        <input type="text" id="income-desc" placeholder="Description" required />
+        <input type="number" id="income-amount" placeholder="Amount (Rs)" min="0" required />
+        <button type="submit">Add Income</button>
+      </form>
+      <ul id="income-list" class="data-list"></ul>
+    </div>
+    <div class="form-card">
+      <h3>Expenses</h3>
+      <form id="expense-form" class="inline-form">
+        <input type="date" id="expense-date" required />
+        <input type="text" id="expense-desc" placeholder="Description (rent, salary…)" required />
+        <input type="number" id="expense-amount" placeholder="Amount (Rs)" min="0" required />
+        <button type="submit">Add Expense</button>
+      </form>
+      <ul id="expense-list" class="data-list"></ul>
+    </div>
+    <div class="form-card">
+      <h3>School Finance Summary</h3>
+      <div id="finance-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;">
+        <div class="kpi-card gold" style="border-left:4px solid #C9A227;padding:0.9rem;background:#fff;border-radius:10px;">
+          <div class="label" style="font-size:0.7rem;color:#777;text-transform:uppercase;">Fee Collected</div>
+          <div class="value" id="sum-fees" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #1B7A4E;padding:0.9rem;background:#fff;border-radius:10px;">
+          <div class="label" style="font-size:0.7rem;color:#777;text-transform:uppercase;">Other Income</div>
+          <div class="value" id="sum-income" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #B91C1C;padding:0.9rem;background:#fff;border-radius:10px;">
+          <div class="label" style="font-size:0.7rem;color:#777;text-transform:uppercase;">Expenses</div>
+          <div class="value" id="sum-expense" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #0A1628;padding:0.9rem;background:#fff;border-radius:10px;">
+          <div class="label" style="font-size:0.7rem;color:#777;text-transform:uppercase;">Net</div>
+          <div class="value" id="sum-net" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
+        </div>
+      </div>
     </div>
   </div>
 

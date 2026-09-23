@@ -2,30 +2,34 @@
 // IndexedDB + Sync Queue + Automatic Activity Logging
 
 const DB_NAME = 'fkc-erp-v4';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 const STORES = [
   // Core
-  'students',           // All enrolled students (school + trading + academy)
-  'admissions',         // School admission applications
-  'feeStructure',       // Monthly fee by class/batch
-  'feeChallans',        // Fee challans (all modules)
-  'attendance',         // Daily attendance records
+  'students',
+  'admissions',
+  'feeStructure',
+  'feeChallans',
+  'attendance',
+  'teachers',
+  'exams',
+  'expenses',
+  'income',
 
   // Trading Academy
-  'batches',            // Trading batches
-  'tradingEnrollments', // Students in trading batches
-  'tradingJournal',     // Trade entry/exit + P/L
+  'batches',
+  'tradingEnrollments',
+  'tradingJournal',
 
   // Educational Academy
-  'tutors',             // Tutors
-  'classes',            // Tuition classes
-  'academyEnrollments', // Academy student enrollments
+  'tutors',
+  'classes',
+  'academyEnrollments',
 
   // System
-  'visitors',           // Walk-in log
-  'activity_logs',      // Auto audit trail
-  'sync_queue'          // Offline sync outbox
+  'visitors',
+  'activity_logs',
+  'sync_queue'
 ];
 
 function openDatabase() {
