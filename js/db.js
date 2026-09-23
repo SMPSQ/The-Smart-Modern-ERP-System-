@@ -1,21 +1,37 @@
-// js/db.js — offline-first IndexedDB + sync queue + automatic activity tracking
-// Every create / update / delete is logged automatically.
+// js/db.js — Professional Offline-First Engine (ERP v4)
+// IndexedDB + Sync Queue + Automatic Activity Logging
 
-const DB_NAME = 'fkc-erp';
-const DB_VERSION = 3; // bumped for activity_logs store
+const DB_NAME = 'fkc-erp-v4';
+const DB_VERSION = 4;
+
 const STORES = [
-  'visitors', 'students', 'feeChallans',
-  'admissions', 'subjects', 'feeStructure',
-  'batches', 'tradingEnrollments',
-  'tutors', 'classes', 'academyEnrollments',
-  'sync_queue',
-  'activity_logs' // automatic edit / delete / create tracking
+  // Core
+  'students',           // All enrolled students (school + trading + academy)
+  'admissions',         // School admission applications
+  'feeStructure',       // Monthly fee by class/batch
+  'feeChallans',        // Fee challans (all modules)
+  'attendance',         // Daily attendance records
+
+  // Trading Academy
+  'batches',            // Trading batches
+  'tradingEnrollments', // Students in trading batches
+  'tradingJournal',     // Trade entry/exit + P/L
+
+  // Educational Academy
+  'tutors',             // Tutors
+  'classes',            // Tuition classes
+  'academyEnrollments', // Academy student enrollments
+
+  // System
+  'visitors',           // Walk-in log
+  'activity_logs',      // Auto audit trail
+  'sync_queue'          // Offline sync outbox
 ];
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = (e) => {
       const dbx = req.result;
       STORES.forEach((store) => {
         if (!dbx.objectStoreNames.contains(store)) {
@@ -34,23 +50,31 @@ export function uid() {
   return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
 }
 
-async function storeOf(storeName, mode) {
+async function storeOf(storeName, mode = 'readonly') {
   const dbx = await dbPromise;
   return dbx.transaction(storeName, mode).objectStore(storeName);
 }
 
 function currentUser() {
   try {
-    // Firebase auth email if available, else anonymous session tag
     const chip = document.getElementById('user-chip');
-    if (chip && chip.textContent && chip.textContent !== '—') return chip.textContent.trim();
+    if (chip && chip.textContent && chip.textContent !== '—') {
+      return chip.textContent.trim();
+    }
   } catch (_) {}
   return 'system';
 }
 
 async function queueSync(storeName, recordId, action, data) {
   const store = await storeOf('sync_queue', 'readwrite');
-  const item = { id: uid(), storeName, recordId, action, data, createdAt: Date.now() };
+  const item = {
+    id: uid(),
+    storeName,
+    recordId,
+    action,
+    data,
+    createdAt: Date.now()
+  };
   return new Promise((res, rej) => {
     const r = store.put(item);
     r.onsuccess = () => res(item);
@@ -58,20 +82,18 @@ async function queueSync(storeName, recordId, action, data) {
   });
 }
 
-/** Automatic activity log — create / update / delete */
-async function logActivity(action, storeName, recordId, summary, before, after) {
-  // Don't log the logs themselves
+async function logActivity(action, storeName, recordId, summary, before = null, after = null) {
   if (storeName === 'activity_logs' || storeName === 'sync_queue') return;
   try {
     const store = await storeOf('activity_logs', 'readwrite');
     const entry = {
       id: uid(),
-      action,          // 'create' | 'update' | 'delete'
+      action,
       storeName,
       recordId,
       summary: summary || '',
-      before: before || null,
-      after: after || null,
+      before,
+      after,
       user: currentUser(),
       createdAt: Date.now()
     };
@@ -80,19 +102,20 @@ async function logActivity(action, storeName, recordId, summary, before, after) 
       r.onsuccess = res;
       r.onerror = () => rej(r.error);
     });
-    // Also queue for cloud sync
     await queueSync('activity_logs', entry.id, 'upsert', entry);
   } catch (err) {
-    console.warn('activity log failed', err);
+    console.warn('Activity log failed:', err);
   }
 }
 
 function summarize(record) {
   if (!record) return '';
-  return record.name || record.studentName || record.title || record.className || record.id || '';
+  return record.name || record.studentName || record.title ||
+         record.className || record.batchName || record.id || '';
 }
 
-// Create or update a record. Assigns an id if missing. Auto-logs.
+// ========== PUBLIC API ==========
+
 export async function saveLocal(storeName, record) {
   const store = await storeOf(storeName, 'readwrite');
   const id = record.id || uid();
@@ -107,14 +130,20 @@ export async function saveLocal(storeName, record) {
     });
   }
 
-  const full = { ...record, id, updatedAt: Date.now(), synced: false };
+  const full = {
+    ...record,
+    id,
+    updatedAt: Date.now(),
+    synced: false
+  };
+
   await new Promise((res, rej) => {
     const r = store.put(full);
     r.onsuccess = res;
     r.onerror = () => rej(r.error);
   });
-  await queueSync(storeName, id, 'upsert', full);
 
+  await queueSync(storeName, id, 'upsert', full);
   await logActivity(
     isUpdate && before ? 'update' : 'create',
     storeName,
@@ -131,7 +160,7 @@ export async function getAllLocal(storeName) {
   const store = await storeOf(storeName, 'readonly');
   return new Promise((resolve, reject) => {
     const r = store.getAll();
-    r.onsuccess = () => resolve(r.result);
+    r.onsuccess = () => resolve(r.result || []);
     r.onerror = () => reject(r.error);
   });
 }
@@ -146,7 +175,6 @@ export async function getLocal(storeName, id) {
 }
 
 export async function deleteLocal(storeName, id) {
-  // Capture record before delete for the log
   let before = null;
   try {
     before = await getLocal(storeName, id);
@@ -158,8 +186,8 @@ export async function deleteLocal(storeName, id) {
     r.onsuccess = res;
     r.onerror = () => rej(r.error);
   });
-  await queueSync(storeName, id, 'delete', { id });
 
+  await queueSync(storeName, id, 'delete', { id });
   await logActivity('delete', storeName, id, summarize(before), before, null);
 }
 
@@ -167,7 +195,11 @@ export async function getQueue() {
   const store = await storeOf('sync_queue', 'readonly');
   return new Promise((resolve, reject) => {
     const r = store.getAll();
-    r.onsuccess = () => resolve(r.result.sort((a, b) => a.createdAt - b.createdAt));
+    r.onsuccess = () => {
+      const items = r.result || [];
+      items.sort((a, b) => a.createdAt - b.createdAt);
+      resolve(items);
+    };
     r.onerror = () => reject(r.error);
   });
 }
@@ -197,9 +229,34 @@ export async function markSynced(storeName, id) {
   });
 }
 
-/** Recent activity logs (newest first). Limit optional. */
-export async function getActivityLogs(limit = 100) {
+export async function getActivityLogs(limit = 50) {
   const all = await getAllLocal('activity_logs');
   all.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   return limit ? all.slice(0, limit) : all;
+}
+
+// ========== HELPER QUERIES (for Dashboard & Modules) ==========
+
+export async function getStudentsByModule(module = null) {
+  const all = await getAllLocal('students');
+  if (!module) return all;
+  return all.filter(s => s.module === module);
+}
+
+export async function getPendingFees() {
+  const challans = await getAllLocal('feeChallans');
+  return challans.filter(c => c.status === 'Unpaid' || c.status === 'unpaid');
+}
+
+export async function getTodayCollection() {
+  const challans = await getAllLocal('feeChallans');
+  const today = new Date().toISOString().slice(0, 10);
+  return challans
+    .filter(c => (c.status === 'Paid' || c.status === 'paid') && c.paidOn && new Date(c.paidOn).toISOString().slice(0, 10) === today)
+    .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+}
+
+export async function getTotalPendingAmount() {
+  const pending = await getPendingFees();
+  return pending.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
 }

@@ -1,193 +1,66 @@
-# THE SMART MODERN ERP SYSTEM
+# THE SMART MODERN ERP SYSTEM — v4 (Professional Core)
 
 **Educating Minds • Building Futures • Empowering Traders**
 
-🔗 **Repository:** [https://github.com/SMPSQ/The-Smart-Modern-ERP-System-](https://github.com/SMPSQ/The-Smart-Modern-ERP-System-)
+Offline-first PWA ERP for three institutions under one system.
 
-Unified, offline-first ERP for three brands sharing one reception:
+## What's Working in v4
 
-| Institution | Focus |
-|-------------|-------|
-| 🏫 **The Smart Modern Public School** | Complete school management |
-| 📈 **FKC Trading Academy** | Trading education + performance tracking |
-| 📚 **The Smart Modern Educational Academy** | Courses, tutors & skill development |
+### Master Dashboard
+- Live KPIs (Total Students, Batches/Classes, Today's Collection, Pending Fees)
+- Walk-in visitor log
+- Module cards with quick navigation
 
-Built as a **PWA**: works fully offline, syncs to Firebase whenever there's a connection, deploys free on GitHub Pages.
+### 🏫 Public School
+- Complete Student Admission form
+- Approval → Auto enroll as student
+- Fee Structure (class-wise monthly fee)
+- Auto-fill amount when creating challan
+- Fee Challans with Paid/Unpaid toggle + filters
+- Student search
+- Quick add student
 
----
+### 📈 FKC Trading Academy
+- Batch management (Gender, Timing, Instructor)
+- Student enrollment
+- Trading Journal (Symbol, Buy/Sell, Entry/Exit, Lots)
+- Auto Profit/Loss calculation
 
-## What's included
+### 📚 Educational Academy
+- Tutor management
+- Classes / Batches with fee
+- Student enrollment
 
-| File / Folder | Description |
-|---------------|-------------|
-| `index.html` | **Branded staff login** (navy + gold, role selector, reception style) |
-| `dashboard.html` | **Master ERP Dashboard** — KPIs, 3 module cards, full feature list, walk-in log |
-| `modules/school/` | Students, fee challans (Paid/Unpaid, filterable by month) |
-| `modules/trading-academy/` | Batches (male/female, timing, instructor), trader enrollments |
-| `modules/educational-academy/` | Tutors, tuition classes/timetable, student enrollments |
-| `js/db.js` | IndexedDB offline engine + sync outbox queue |
-| `js/sync.js` | Pushes the queue to Firestore whenever online |
-| `js/auth.js` | Shared login + route-guard (wired to your Firebase project) |
-| `js/firebase-config.js` | **Your real Firebase keys are already in this file** |
-| `sw.js` + `manifest.json` | Installable app shell, caches every module for full offline use |
-| `.github/workflows/deploy.yml` | Auto-deploys to GitHub Pages on every push to `main` |
+### System Features
+- Fully offline-first (IndexedDB)
+- Automatic sync to Firebase when online
+- Activity logs on every create/update/delete
+- Professional Navy + Gold branding
+- Responsive design
 
----
+## How to Deploy
 
-## Full Feature List
-
-### 🏫 1. THE SMART MODERN PUBLIC SCHOOL
-- Student Registration & Admission
-- Student Profile & Documents
-- Classes & Sections
-- Teacher Management
-- Student Attendance / Teacher Attendance
-- Fee Management, Monthly Fee Challans, Fee Collection & Pending Fees, Fee Receipts
-- Exams & Tests, Marks & Result Cards
-- Class Timetable / Teacher Timetable
-- Student Promotion, Leave Management
-- Parent/Guardian Records
-- Student ID Cards / Teacher ID Cards
-- SMS / WhatsApp Notifications
-- Homework & Assignments
-- Income & Expense Management
-- Reports & Statistics
-- Admin Dashboard
-
-### 📈 2. FKC TRADING ACADEMY
-- Student Registration
-- Course Management / Batch Management
-- Student Enrollment
-- Trading Class Schedule
-- Trainer/Instructor Management
-- Student Attendance
-- Course Fee Management / Installment Management
-- Fee Challans & Receipts
-- Trading Assignments
-- Quiz & Test Management
-- Student Progress Tracking
-- Certificates / Student ID Cards
-- Trading Notes / PDF Materials
-- Announcements
-- SMS / WhatsApp Notifications
-- Income & Expense Management
-- Batch-wise Reports / Trainer Reports
-- **Trading Journal**
-- Trade Entry & Exit Records
-- Profit/Loss Tracking
-- Risk Management Records
-- Strategy & Lesson Progress
-- Student Trading Performance
-- Trading Academy Dashboard
-
-### 📚 3. THE SMART MODERN EDUCATIONAL ACADEMY
-- Student Registration / Student Profile
-- Tutor Management
-- Course & Subject Management
-- Classes & Batches
-- Timetable Management
-- Student Attendance / Tutor Attendance
-- Monthly Fee Management / Installment Management
-- Fee Receipts / Pending Fee Reports
-- Tests & Exams / Marks & Results
-- Homework & Assignments
-- Student Progress Tracking
-- Parent/Guardian Records
-- Tutor Salary Management
-- Certificates
-- Notifications
-- Income & Expense Management
-- Reports & Statistics
-- Educational Academy Dashboard
-
-### 💰 4. CENTRAL FINANCE MANAGEMENT
-- School / Trading Academy / Educational Academy Fee Collection
-- Daily Income / Monthly Income
-- Daily Expenses / Monthly Expenses
-- Salaries, Rent, Electricity, Marketing Expenses, Other Expenses
-- Profit & Loss
-- Pending Fees
-- Collection Reports
-- Module-wise Financial Reports
-
-### 👥 5. STAFF & USER MANAGEMENT
-- Super Admin
-- School Admin / Academy Admin
-- Accountant
-- Teacher / Trainer / Tutor
-- Receptionist
-- Student Login / Parent Login
-- User Permissions / Role-based Access
-- Password Management
-- Activity Logs
-
-### 📊 6. MASTER ERP DASHBOARD
-- Total Students / Teachers / Trainers/Tutors
-- Active Batches
-- Today's Attendance
-- Pending Fees / Today's Collection
-- Monthly Income / Monthly Expenses / Profit-Loss
-- School Overview / Trading Academy Overview / Educational Academy Overview
-- Recent Activities / Notifications / Quick Actions
-
-### ⚙️ 7. SYSTEM FEATURES
-- Secure Login System
-- Role & Permission Management
-- Search & Filter
-- Print / PDF / Excel Reports
-- Data Backup & Restore
-- Notifications
-- Responsive Design / Mobile Friendly
-- Professional Admin Panel
-- Dark / Light Mode
-- System Settings
-- Database Management
-- Automatic Reports
-- Audit Logs
-- Offline-first PWA + Firebase sync
-
----
-
-## How to replace your repo
-
-1. Delete everything in your repo except `.git`.
-2. Copy every file from this folder into the repo root, keeping the exact same folder structure.
-3. Commit and push:
-   ```bash
-   git add .
-   git commit -m "Full package: branded login + Master Dashboard + complete feature list"
-   git push
+1. Replace the files in your GitHub repo with the contents of this `erp-v4` folder (keep the same structure).
+2. Make sure `js/firebase-config.js` has your Firebase project keys.
+3. In Firebase Console:
+   - Enable **Email/Password** authentication
+   - Create at least one user
+   - Create Firestore database
+   - Set rules:
    ```
-4. GitHub Actions will auto-deploy. Your ERP will be live at your existing GitHub Pages URL.
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /{document=**} {
+         allow read, write: if request.auth != null;
+       }
+     }
+   }
+   ```
+4. Push to `main` — GitHub Pages will deploy automatically.
 
----
-
-## Still needed in Firebase Console (one-time)
-
-1. **Authentication → Sign-in method** → enable Email/Password.
-2. **Authentication → Users** → add your staff login (email + password).
-3. **Firestore Database** → Create database (production mode).
-4. **Firestore → Rules** → paste:
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}
-```
-
-Once that's done, sign in on the live site — the sync pill should switch from "checking connection…" to "● synced".
-
----
-
-## Brand
-
-- **Navy:** `#0A1628`
-- **Gold:** `#C9A227`
-- **Tagline:** Educating Minds • Building Futures • Empowering Traders
+## Brand Colors
+- Navy: `#0A1628`
+- Gold: `#C9A227`
 
 © The Smart Modern ERP System

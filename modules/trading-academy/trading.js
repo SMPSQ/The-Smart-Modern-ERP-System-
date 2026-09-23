@@ -1,152 +1,227 @@
-import { saveLocal, getAllLocal, deleteLocal } from "../../js/db.js";
-import { runSync } from "../../js/sync.js";
+// modules/trading-academy/trading.js — Trading Academy Module (ERP v4)
+import { saveLocal, getAllLocal, deleteLocal } from '../../js/db.js';
+import { runSync } from '../../js/sync.js';
 
-document.querySelectorAll(".tab-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".tab-panel").forEach((p) => (p.hidden = true));
-    btn.classList.add("active");
-    document.getElementById(`tab-${btn.dataset.tab}`).hidden = false;
-  });
-});
-
-function escapeHtml(str = "") {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
+function esc(str = '') {
+  return String(str).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
 }
 
-// ---------------- Batches ----------------
-async function getBatches() {
-  const batches = await getAllLocal("batches");
-  return batches.sort((a, b) => a.name.localeCompare(b.name));
+function formatMoney(n) {
+  const num = Number(n || 0);
+  const color = num >= 0 ? '#2D6A4F' : '#9B2226';
+  return `<span style="color:${color};font-weight:600">${num >= 0 ? '+' : ''}${num.toFixed(2)}</span>`;
 }
+
+// ========== BATCHES ==========
+const batchForm = document.getElementById('batch-form');
+const batchList = document.getElementById('batch-list');
+const enrollBatch = document.getElementById('enroll-batch');
 
 async function renderBatches() {
-  const batches = await getBatches();
-  const enrollments = await getAllLocal("trading_enrollments");
-  const tbody = document.getElementById("batches-tbody");
-  const batchSelect = document.getElementById("e-batch");
-  const filterSelect = document.getElementById("e-filter");
+  const batches = await getAllLocal('batches');
+  batches.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-  tbody.innerHTML = batches.length
-    ? ""
-    : `<tr class="empty-row"><td colspan="6">No batches yet — add one above.</td></tr>`;
+  if (batchList) {
+    batchList.innerHTML = batches.length
+      ? batches.map(b => `
+        <li>
+          <strong>${esc(b.name)}</strong>
+          <span class="tag">${esc(b.gender)}</span>
+          <span class="muted">${esc(b.timing || '')}</span>
+          <span class="muted">${esc(b.instructor || '')}</span>
+          <button class="mini-btn danger" data-del-batch="${b.id}" style="margin-left:auto">Delete</button>
+        </li>
+      `).join('')
+      : '<li class="muted">No batches yet.</li>';
 
-  batchSelect.innerHTML = batches.length ? "" : `<option value="">Add a batch first</option>`;
-  const selectedFilter = filterSelect.value || "all";
-  filterSelect.innerHTML = `<option value="all">All batches</option>`;
-
-  for (const b of batches) {
-    const count = enrollments.filter((e) => e.batchId === b.id).length;
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(b.name)}</td>
-      <td style="text-transform:capitalize;">${escapeHtml(b.gender)}</td>
-      <td>${escapeHtml(b.timing)}</td>
-      <td>${escapeHtml(b.instructor || "—")}</td>
-      <td>${count}</td>
-      <td><button class="mini-btn danger" data-del-batch="${b.id}">Remove</button></td>
-    `;
-    tbody.appendChild(tr);
-
-    const opt = document.createElement("option");
-    opt.value = b.id;
-    opt.textContent = `${b.name} (${b.gender})`;
-    opt.dataset.name = b.name;
-    batchSelect.appendChild(opt);
-
-    const fopt = document.createElement("option");
-    fopt.value = b.id;
-    fopt.textContent = `${b.name} (${b.gender})`;
-    filterSelect.appendChild(fopt);
-  }
-  filterSelect.value = [...filterSelect.options].some((o) => o.value === selectedFilter) ? selectedFilter : "all";
-
-  tbody.querySelectorAll("[data-del-batch]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (!confirm("Remove this batch? Existing enrollments keep their record but lose the live link.")) return;
-      await deleteLocal("batches", btn.dataset.delBatch);
-      await renderBatches();
-      await renderEnrollments();
-      runSync();
+    batchList.querySelectorAll('[data-del-batch]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this batch?')) return;
+        await deleteLocal('batches', btn.dataset.delBatch);
+        await renderBatches();
+        await populateBatchSelect();
+        runSync();
+      });
     });
+  }
+
+  await populateBatchSelect();
+}
+
+async function populateBatchSelect() {
+  if (!enrollBatch) return;
+  const batches = await getAllLocal('batches');
+  const current = enrollBatch.value;
+  enrollBatch.innerHTML = '<option value="">Select batch</option>' +
+    batches.map(b => `<option value="${b.id}">${esc(b.name)} (${esc(b.gender)})</option>`).join('');
+  if (current) enrollBatch.value = current;
+}
+
+if (batchForm) {
+  batchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('batches', {
+      name: document.getElementById('batch-name').value.trim(),
+      gender: document.getElementById('batch-gender').value,
+      timing: document.getElementById('batch-timing').value.trim(),
+      instructor: document.getElementById('batch-instructor').value.trim(),
+      module: 'trading'
+    });
+    batchForm.reset();
+    await renderBatches();
+    runSync();
   });
 }
 
-document.getElementById("batch-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = document.getElementById("b-name").value.trim();
-  const gender = document.getElementById("b-gender").value;
-  const timing = document.getElementById("b-timing").value.trim();
-  const instructor = document.getElementById("b-instructor").value.trim();
-  if (!name || !timing) return;
-
-  await saveLocal("batches", { name, gender, timing, instructor });
-  e.target.reset();
-  await renderBatches();
-  runSync();
-});
-
-// ---------------- Enrollments ----------------
-async function getEnrollments() {
-  const rows = await getAllLocal("trading_enrollments");
-  return rows.sort((a, b) => b._updatedAt - a._updatedAt);
-}
+// ========== ENROLLMENTS ==========
+const enrollForm = document.getElementById('enroll-form');
+const enrollList = document.getElementById('enroll-list');
+const journalStudent = document.getElementById('journal-student');
 
 async function renderEnrollments() {
-  const all = await getEnrollments();
-  const activeFilter = document.getElementById("e-filter").value;
-  const filtered = activeFilter === "all" ? all : all.filter((r) => r.batchId === activeFilter);
+  const enrolls = await getAllLocal('tradingEnrollments');
+  const batches = await getAllLocal('batches');
+  const batchMap = Object.fromEntries(batches.map(b => [b.id, b.name]));
 
-  const tbody = document.getElementById("enrollments-tbody");
-  tbody.innerHTML = filtered.length
-    ? filtered.map((r) => `
-        <tr>
-          <td>${escapeHtml(r.studentName)}</td>
-          <td>${escapeHtml(r.contact || "—")}</td>
-          <td>${escapeHtml(r.batchName)}</td>
-          <td>${new Date(r.enrolledOn).toLocaleDateString()}</td>
-          <td><button class="mini-btn danger" data-del-enroll="${r.id}">Remove</button></td>
-        </tr>
-      `).join("")
-    : `<tr class="empty-row"><td colspan="5">No enrollments for this filter yet.</td></tr>`;
+  enrolls.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-  tbody.querySelectorAll("[data-del-enroll]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (!confirm("Remove this enrollment?")) return;
-      await deleteLocal("trading_enrollments", btn.dataset.delEnroll);
-      await renderBatches();
-      await renderEnrollments();
+  if (enrollList) {
+    enrollList.innerHTML = enrolls.length
+      ? enrolls.map(e => `
+        <li>
+          <strong>${esc(e.name)}</strong>
+          <span class="tag">${esc(batchMap[e.batchId] || '—')}</span>
+          <span class="muted">${esc(e.phone || '')}</span>
+          <button class="mini-btn danger" data-del-enroll="${e.id}" style="margin-left:auto">Remove</button>
+        </li>
+      `).join('')
+      : '<li class="muted">No enrollments yet.</li>';
+
+    enrollList.querySelectorAll('[data-del-enroll]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remove this enrollment?')) return;
+        await deleteLocal('tradingEnrollments', btn.dataset.delEnroll);
+        await renderEnrollments();
+        await populateStudentSelect();
+        runSync();
+      });
+    });
+  }
+
+  await populateStudentSelect();
+}
+
+async function populateStudentSelect() {
+  if (!journalStudent) return;
+  const enrolls = await getAllLocal('tradingEnrollments');
+  const current = journalStudent.value;
+  journalStudent.innerHTML = '<option value="">Select student</option>' +
+    enrolls.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  if (current) journalStudent.value = current;
+}
+
+if (enrollForm) {
+  enrollForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const batchId = document.getElementById('enroll-batch').value;
+    if (!batchId) return;
+
+    await saveLocal('tradingEnrollments', {
+      name: document.getElementById('enroll-name').value.trim(),
+      batchId,
+      phone: document.getElementById('enroll-phone').value.trim(),
+      module: 'trading'
+    });
+
+    // Also add to global students list
+    await saveLocal('students', {
+      name: document.getElementById('enroll-name').value.trim(),
+      className: 'Trading',
+      phone: document.getElementById('enroll-phone').value.trim(),
+      module: 'trading'
+    });
+
+    enrollForm.reset();
+    await renderEnrollments();
+    runSync();
+  });
+}
+
+// ========== TRADING JOURNAL ==========
+const journalForm = document.getElementById('journal-form');
+const journalList = document.getElementById('journal-list');
+
+async function renderJournal() {
+  if (!journalList) return;
+  const trades = await getAllLocal('tradingJournal');
+  const enrolls = await getAllLocal('tradingEnrollments');
+  const nameMap = Object.fromEntries(enrolls.map(e => [e.id, e.name]));
+
+  trades.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+  journalList.innerHTML = trades.length
+    ? trades.map(t => {
+        let pnl = null;
+        if (t.exitPrice && t.entryPrice) {
+          const diff = t.side === 'Buy'
+            ? (t.exitPrice - t.entryPrice)
+            : (t.entryPrice - t.exitPrice);
+          pnl = diff * (t.lots || 0.1) * 100000; // simplified pip value for display
+        }
+        return `
+          <li>
+            <strong>${esc(nameMap[t.studentId] || '—')}</strong>
+            <span class="tag">${esc(t.symbol)}</span>
+            <span class="tag">${esc(t.side)}</span>
+            <span class="muted">Entry: ${t.entryPrice}</span>
+            ${t.exitPrice ? `<span class="muted">Exit: ${t.exitPrice}</span>` : ''}
+            ${pnl !== null ? formatMoney(pnl) : '<span class="muted">Open</span>'}
+            <button class="mini-btn danger" data-del-trade="${t.id}" style="margin-left:auto">×</button>
+          </li>
+        `;
+      }).join('')
+    : '<li class="muted">No trades logged yet.</li>';
+
+  journalList.querySelectorAll('[data-del-trade]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this trade?')) return;
+      await deleteLocal('tradingJournal', btn.dataset.delTrade);
+      await renderJournal();
       runSync();
     });
   });
 }
 
-document.getElementById("enroll-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const select = document.getElementById("e-batch");
-  const opt = select.selectedOptions[0];
-  if (!opt || !opt.value) return;
+if (journalForm) {
+  journalForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const studentId = document.getElementById('journal-student').value;
+    if (!studentId) return;
 
-  const studentName = document.getElementById("e-name").value.trim();
-  const contact = document.getElementById("e-contact").value.trim();
-  if (!studentName) return;
+    await saveLocal('tradingJournal', {
+      studentId,
+      symbol: document.getElementById('journal-symbol').value.trim().toUpperCase(),
+      side: document.getElementById('journal-side').value,
+      entryPrice: Number(document.getElementById('journal-entry').value),
+      exitPrice: document.getElementById('journal-exit').value
+        ? Number(document.getElementById('journal-exit').value)
+        : null,
+      lots: Number(document.getElementById('journal-lots').value) || 0.1,
+      module: 'trading'
+    });
 
-  await saveLocal("trading_enrollments", {
-    studentName,
-    contact,
-    batchId: opt.value,
-    batchName: opt.dataset.name,
-    enrolledOn: Date.now(),
+    journalForm.reset();
+    document.getElementById('journal-lots').value = '0.1';
+    await renderJournal();
+    runSync();
   });
+}
 
-  e.target.reset();
+// Init
+(async function init() {
   await renderBatches();
   await renderEnrollments();
-  runSync();
-});
-
-document.getElementById("e-filter").addEventListener("change", renderEnrollments);
-
-renderBatches().then(renderEnrollments);
+  await renderJournal();
+})();

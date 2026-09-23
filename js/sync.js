@@ -1,4 +1,4 @@
-// js/sync.js — drains the local sync_queue into Firestore whenever online.
+// js/sync.js — Robust Offline → Firestore Sync (ERP v4)
 import { db } from './firebase-config.js';
 import { doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
 import { getQueue, removeFromQueue, markSynced } from './db.js';
@@ -6,6 +6,7 @@ import { getQueue, removeFromQueue, markSynced } from './db.js';
 function setPill(state) {
   const pill = document.getElementById('sync-pill');
   if (!pill) return;
+
   if (state === 'synced') {
     pill.textContent = '● synced';
     pill.className = 'sync-pill sync-pill--ok';
@@ -23,17 +24,21 @@ let draining = false;
 export async function drainQueue() {
   if (draining) return;
   draining = true;
+
   try {
     if (!navigator.onLine) {
       setPill('offline');
       return;
     }
+
     const queue = await getQueue();
     if (queue.length === 0) {
       setPill('synced');
       return;
     }
+
     setPill('syncing');
+
     for (const item of queue) {
       try {
         const ref = doc(db, item.storeName, item.recordId);
@@ -45,11 +50,11 @@ export async function drainQueue() {
         }
         await removeFromQueue(item.id);
       } catch (err) {
-        // Flaky connection or not signed in yet — stop here, keep order, retry later.
-        console.warn('Sync paused, will retry:', err.message || err);
-        break;
+        console.warn('Sync paused, will retry later:', err.message || err);
+        break; // Keep order, retry on next cycle
       }
     }
+
     const remaining = await getQueue();
     setPill(remaining.length === 0 ? 'synced' : (navigator.onLine ? 'syncing' : 'offline'));
   } finally {
@@ -57,10 +62,13 @@ export async function drainQueue() {
   }
 }
 
+// Public alias used by modules
+export const runSync = drainQueue;
+
 window.addEventListener('online', drainQueue);
 window.addEventListener('offline', () => setPill('offline'));
 
-// Kick off immediately, then on load, then every 30s as a safety net.
+// Auto start
 drainQueue();
 window.addEventListener('load', drainQueue);
-setInterval(drainQueue, 30000);
+setInterval(drainQueue, 25000); // every 25s safety net

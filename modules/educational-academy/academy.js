@@ -1,218 +1,206 @@
-import { saveLocal, getAllLocal, deleteLocal } from "../../js/db.js";
-import { runSync } from "../../js/sync.js";
+// modules/educational-academy/academy.js — Educational Academy Module (ERP v4)
+import { saveLocal, getAllLocal, deleteLocal } from '../../js/db.js';
+import { runSync } from '../../js/sync.js';
 
-document.querySelectorAll(".tab-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".tab-panel").forEach((p) => (p.hidden = true));
-    btn.classList.add("active");
-    document.getElementById(`tab-${btn.dataset.tab}`).hidden = false;
-  });
-});
-
-function escapeHtml(str = "") {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
+function esc(str = '') {
+  return String(str).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
 }
 
-// ---------------- Tutors ----------------
-async function getTutors() {
-  const tutors = await getAllLocal("tutors");
-  return tutors.sort((a, b) => a.name.localeCompare(b.name));
+function formatMoney(n) {
+  return 'Rs ' + Number(n || 0).toLocaleString('en-PK');
 }
+
+// ========== TUTORS ==========
+const tutorForm = document.getElementById('tutor-form');
+const tutorList = document.getElementById('tutor-list');
+const classTutor = document.getElementById('class-tutor');
 
 async function renderTutors() {
-  const tutors = await getTutors();
-  const tbody = document.getElementById("tutors-tbody");
-  const tutorSelect = document.getElementById("c-tutor");
+  const tutors = await getAllLocal('tutors');
+  tutors.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-  tbody.innerHTML = tutors.length
-    ? ""
-    : `<tr class="empty-row"><td colspan="4">No tutors yet — add one above.</td></tr>`;
+  if (tutorList) {
+    tutorList.innerHTML = tutors.length
+      ? tutors.map(t => `
+        <li>
+          <strong>${esc(t.name)}</strong>
+          <span class="tag">${esc(t.subject || '—')}</span>
+          <span class="muted">${esc(t.phone || '')}</span>
+          <button class="mini-btn danger" data-del-tutor="${t.id}" style="margin-left:auto">Delete</button>
+        </li>
+      `).join('')
+      : '<li class="muted">No tutors yet.</li>';
 
-  tutorSelect.innerHTML = `<option value="">Unassigned</option>`;
-
-  for (const t of tutors) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(t.name)}</td>
-      <td>${escapeHtml(t.subject || "—")}</td>
-      <td>${escapeHtml(t.contact || "—")}</td>
-      <td><button class="mini-btn danger" data-del-tutor="${t.id}">Remove</button></td>
-    `;
-    tbody.appendChild(tr);
-
-    const opt = document.createElement("option");
-    opt.value = t.id;
-    opt.textContent = t.name;
-    opt.dataset.name = t.name;
-    tutorSelect.appendChild(opt);
+    tutorList.querySelectorAll('[data-del-tutor]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this tutor?')) return;
+        await deleteLocal('tutors', btn.dataset.delTutor);
+        await renderTutors();
+        await populateTutorSelect();
+        runSync();
+      });
+    });
   }
 
-  tbody.querySelectorAll("[data-del-tutor]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (!confirm("Remove this tutor?")) return;
-      await deleteLocal("tutors", btn.dataset.delTutor);
-      await renderTutors();
-      await renderClasses();
-      runSync();
+  await populateTutorSelect();
+}
+
+async function populateTutorSelect() {
+  if (!classTutor) return;
+  const tutors = await getAllLocal('tutors');
+  const current = classTutor.value;
+  classTutor.innerHTML = '<option value="">Select tutor (optional)</option>' +
+    tutors.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  if (current) classTutor.value = current;
+}
+
+if (tutorForm) {
+  tutorForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('tutors', {
+      name: document.getElementById('tutor-name').value.trim(),
+      subject: document.getElementById('tutor-subject').value.trim(),
+      phone: document.getElementById('tutor-phone').value.trim(),
+      module: 'academy'
     });
+    tutorForm.reset();
+    await renderTutors();
+    runSync();
   });
 }
 
-document.getElementById("tutor-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = document.getElementById("t-name").value.trim();
-  const subject = document.getElementById("t-subject").value.trim();
-  const contact = document.getElementById("t-contact").value.trim();
-  if (!name) return;
-
-  await saveLocal("tutors", { name, subject, contact });
-  e.target.reset();
-  await renderTutors();
-  runSync();
-});
-
-// ---------------- Classes / Timetable ----------------
-async function getClasses() {
-  const classes = await getAllLocal("tuition_classes");
-  return classes.sort((a, b) => a.subject.localeCompare(b.subject));
-}
+// ========== CLASSES ==========
+const classForm = document.getElementById('class-form');
+const classList = document.getElementById('class-list');
+const enrollClass = document.getElementById('enroll-class');
 
 async function renderClasses() {
-  const classes = await getClasses();
-  const enrollments = await getAllLocal("academy_enrollments");
-  const tbody = document.getElementById("classes-tbody");
-  const classSelect = document.getElementById("e-class");
-  const filterSelect = document.getElementById("e-filter");
+  const classes = await getAllLocal('classes');
+  const tutors = await getAllLocal('tutors');
+  const tutorMap = Object.fromEntries(tutors.map(t => [t.id, t.name]));
 
-  tbody.innerHTML = classes.length
-    ? ""
-    : `<tr class="empty-row"><td colspan="6">No classes yet — add one above.</td></tr>`;
+  classes.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-  classSelect.innerHTML = classes.length ? "" : `<option value="">Add a class first</option>`;
-  const selectedFilter = filterSelect.value || "all";
-  filterSelect.innerHTML = `<option value="all">All classes</option>`;
+  if (classList) {
+    classList.innerHTML = classes.length
+      ? classes.map(c => `
+        <li>
+          <strong>${esc(c.name)}</strong>
+          <span class="tag">${esc(tutorMap[c.tutorId] || 'No tutor')}</span>
+          <span class="muted">${esc(c.timing || '')}</span>
+          ${c.fee ? `<span class="amount">${formatMoney(c.fee)}</span>` : ''}
+          <button class="mini-btn danger" data-del-class="${c.id}" style="margin-left:auto">Delete</button>
+        </li>
+      `).join('')
+      : '<li class="muted">No classes yet.</li>';
 
-  for (const c of classes) {
-    const count = enrollments.filter((e) => e.classId === c.id).length;
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(c.subject)}</td>
-      <td>${escapeHtml(c.room)}</td>
-      <td>${escapeHtml(c.timing)}</td>
-      <td>${escapeHtml(c.tutorName || "Unassigned")}</td>
-      <td>${count}</td>
-      <td><button class="mini-btn danger" data-del-class="${c.id}">Remove</button></td>
-    `;
-    tbody.appendChild(tr);
-
-    const opt = document.createElement("option");
-    opt.value = c.id;
-    opt.textContent = c.subject;
-    opt.dataset.subject = c.subject;
-    classSelect.appendChild(opt);
-
-    const fopt = document.createElement("option");
-    fopt.value = c.id;
-    fopt.textContent = c.subject;
-    filterSelect.appendChild(fopt);
-  }
-  filterSelect.value = [...filterSelect.options].some((o) => o.value === selectedFilter) ? selectedFilter : "all";
-
-  tbody.querySelectorAll("[data-del-class]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (!confirm("Remove this class? Existing enrollments keep their record but lose the live link.")) return;
-      await deleteLocal("tuition_classes", btn.dataset.delClass);
-      await renderClasses();
-      await renderEnrollments();
-      runSync();
+    classList.querySelectorAll('[data-del-class]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this class?')) return;
+        await deleteLocal('classes', btn.dataset.delClass);
+        await renderClasses();
+        await populateClassSelect();
+        runSync();
+      });
     });
+  }
+
+  await populateClassSelect();
+}
+
+async function populateClassSelect() {
+  if (!enrollClass) return;
+  const classes = await getAllLocal('classes');
+  const current = enrollClass.value;
+  enrollClass.innerHTML = '<option value="">Select class</option>' +
+    classes.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  if (current) enrollClass.value = current;
+}
+
+if (classForm) {
+  classForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('classes', {
+      name: document.getElementById('class-name').value.trim(),
+      tutorId: document.getElementById('class-tutor').value || null,
+      timing: document.getElementById('class-timing').value.trim(),
+      fee: Number(document.getElementById('class-fee').value) || 0,
+      module: 'academy'
+    });
+    classForm.reset();
+    await renderClasses();
+    runSync();
   });
 }
 
-document.getElementById("class-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const subject = document.getElementById("c-subject").value.trim();
-  const room = document.getElementById("c-room").value.trim();
-  const timing = document.getElementById("c-timing").value.trim();
-  const tutorSelect = document.getElementById("c-tutor");
-  const tutorOpt = tutorSelect.selectedOptions[0];
-  if (!subject || !room || !timing) return;
-
-  await saveLocal("tuition_classes", {
-    subject,
-    room,
-    timing,
-    tutorId: tutorOpt?.value || null,
-    tutorName: tutorOpt?.value ? tutorOpt.dataset.name : "",
-  });
-
-  e.target.reset();
-  await renderClasses();
-  runSync();
-});
-
-// ---------------- Enrollments ----------------
-async function getEnrollments() {
-  const rows = await getAllLocal("academy_enrollments");
-  return rows.sort((a, b) => b._updatedAt - a._updatedAt);
-}
+// ========== ENROLLMENTS ==========
+const enrollForm = document.getElementById('enroll-form');
+const enrollList = document.getElementById('enroll-list');
 
 async function renderEnrollments() {
-  const all = await getEnrollments();
-  const activeFilter = document.getElementById("e-filter").value;
-  const filtered = activeFilter === "all" ? all : all.filter((r) => r.classId === activeFilter);
+  if (!enrollList) return;
+  const enrolls = await getAllLocal('academyEnrollments');
+  const classes = await getAllLocal('classes');
+  const classMap = Object.fromEntries(classes.map(c => [c.id, c.name]));
 
-  const tbody = document.getElementById("enrollments-tbody");
-  tbody.innerHTML = filtered.length
-    ? filtered.map((r) => `
-        <tr>
-          <td>${escapeHtml(r.studentName)}</td>
-          <td>${escapeHtml(r.contact || "—")}</td>
-          <td>${escapeHtml(r.className)}</td>
-          <td>${new Date(r.enrolledOn).toLocaleDateString()}</td>
-          <td><button class="mini-btn danger" data-del-enroll="${r.id}">Remove</button></td>
-        </tr>
-      `).join("")
-    : `<tr class="empty-row"><td colspan="5">No enrollments for this filter yet.</td></tr>`;
+  enrolls.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-  tbody.querySelectorAll("[data-del-enroll]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (!confirm("Remove this enrollment?")) return;
-      await deleteLocal("academy_enrollments", btn.dataset.delEnroll);
-      await renderClasses();
+  enrollList.innerHTML = enrolls.length
+    ? enrolls.map(e => `
+      <li>
+        <strong>${esc(e.name)}</strong>
+        <span class="tag">${esc(classMap[e.classId] || '—')}</span>
+        <span class="muted">${esc(e.phone || '')}</span>
+        <button class="mini-btn danger" data-del-enroll="${e.id}" style="margin-left:auto">Remove</button>
+      </li>
+    `).join('')
+    : '<li class="muted">No enrollments yet.</li>';
+
+  enrollList.querySelectorAll('[data-del-enroll]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this enrollment?')) return;
+      await deleteLocal('academyEnrollments', btn.dataset.delEnroll);
       await renderEnrollments();
       runSync();
     });
   });
 }
 
-document.getElementById("enroll-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const select = document.getElementById("e-class");
-  const opt = select.selectedOptions[0];
-  if (!opt || !opt.value) return;
+if (enrollForm) {
+  enrollForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const classId = document.getElementById('enroll-class').value;
+    if (!classId) return;
 
-  const studentName = document.getElementById("e-name").value.trim();
-  const contact = document.getElementById("e-contact").value.trim();
-  if (!studentName) return;
+    const name = document.getElementById('enroll-name').value.trim();
+    const phone = document.getElementById('enroll-phone').value.trim();
 
-  await saveLocal("academy_enrollments", {
-    studentName,
-    contact,
-    classId: opt.value,
-    className: opt.dataset.subject,
-    enrolledOn: Date.now(),
+    await saveLocal('academyEnrollments', {
+      name,
+      classId,
+      phone,
+      module: 'academy'
+    });
+
+    // Also add to global students
+    await saveLocal('students', {
+      name,
+      className: 'Academy',
+      phone,
+      module: 'academy'
+    });
+
+    enrollForm.reset();
+    await renderEnrollments();
+    runSync();
   });
+}
 
-  e.target.reset();
+// Init
+(async function init() {
+  await renderTutors();
   await renderClasses();
   await renderEnrollments();
-  runSync();
-});
-
-document.getElementById("e-filter").addEventListener("change", renderEnrollments);
-
-renderTutors().then(renderClasses).then(renderEnrollments);
+})();

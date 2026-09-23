@@ -3,72 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>The Smart Modern Public School — FKC Group ERP</title>
+<title>The Smart Modern Public School — ERP</title>
 <meta name="theme-color" content="#0A1628" />
 <link rel="manifest" href="../../manifest.json" />
 <link rel="icon" href="../../icons/icon.svg" />
 <link rel="stylesheet" href="../../css/style.css" />
-<style>
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.75rem 1rem;
-    margin-bottom: 1rem;
-  }
-  .form-grid label {
-    display: block;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #555;
-    letter-spacing: 0.3px;
-    margin-bottom: 0.25rem;
-  }
-  .form-grid input,
-  .form-grid select,
-  .form-grid textarea {
-    width: 100%;
-    padding: 0.55rem 0.7rem;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    background: #fafafa;
-    box-sizing: border-box;
-  }
-  .form-grid input:focus,
-  .form-grid select:focus,
-  .form-grid textarea:focus {
-    border-color: #C9A227;
-    outline: none;
-    background: #fff;
-  }
-  .form-section-title {
-    grid-column: 1 / -1;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #0A1628;
-    border-bottom: 2px solid #C9A227;
-    padding-bottom: 0.3rem;
-    margin: 0.5rem 0 0.25rem;
-  }
-  .form-full { grid-column: 1 / -1; }
-  .adm-submit {
-    background: #0A1628;
-    color: #fff;
-    border: none;
-    padding: 0.7rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 0.95rem;
-  }
-  .adm-submit:hover { background: #0f2540; }
-  .admission-detail {
-    font-size: 0.8rem;
-    color: #555;
-    margin-top: 0.25rem;
-    line-height: 1.4;
-  }
-</style>
 </head>
 <body class="dash-body" data-root="../../">
 
@@ -78,245 +17,151 @@
     <span>The Smart Modern Public School</span>
   </div>
   <div class="dash-header__right">
-    <span class="sync-pill" id="sync-pill">● checking connection…</span>
+    <span class="sync-pill" id="sync-pill">● checking…</span>
     <span class="user-chip" id="user-chip">—</span>
     <button class="ghost-btn" id="logout-btn">Sign out</button>
   </div>
 </header>
 
 <main class="module-main">
-  <p><a class="back-link" href="../../dashboard.html">&larr; Back to Master Dashboard</a></p>
+  <a class="back-link" href="../../dashboard.html">← Back to Master Dashboard</a>
 
-  <!-- ========== COMPLETE ADMISSION FORM ========== -->
+  <!-- ========== ADMISSION FORM ========== -->
   <section class="panel">
-    <h3>🏫 Student Admission Form</h3>
-    <p class="hint" style="margin-bottom:1rem">Fill all required fields (*). On approval the applicant becomes an enrolled student.</p>
+    <h3>🏫 Student Admission</h3>
+    <p class="hint" style="margin-bottom:1rem">Fill required fields (*). After approval the student is enrolled automatically.</p>
 
     <form id="admission-form">
       <div class="form-grid">
-
-        <div class="form-section-title">1. Student Personal Information</div>
+        <div class="form-section-title">1. Student Information</div>
 
         <div>
-          <label for="adm-name">Student Full Name *</label>
+          <label>Student Full Name *</label>
           <input type="text" id="adm-name" required placeholder="As per B-Form / CNIC" />
         </div>
         <div>
-          <label for="adm-dob">Date of Birth *</label>
+          <label>Date of Birth *</label>
           <input type="date" id="adm-dob" required />
         </div>
         <div>
-          <label for="adm-gender">Gender *</label>
+          <label>Gender *</label>
           <select id="adm-gender" required>
             <option value="">Select</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
           </select>
         </div>
         <div>
-          <label for="adm-bform">B-Form / CNIC No. *</label>
+          <label>B-Form / CNIC *</label>
           <input type="text" id="adm-bform" required placeholder="XXXXX-XXXXXXX-X" />
         </div>
         <div>
-          <label for="adm-blood">Blood Group</label>
-          <select id="adm-blood">
-            <option value="">Select</option>
-            <option>A+</option><option>A-</option>
-            <option>B+</option><option>B-</option>
-            <option>AB+</option><option>AB-</option>
-            <option>O+</option><option>O-</option>
-          </select>
-        </div>
-        <div>
-          <label for="adm-religion">Religion</label>
-          <input type="text" id="adm-religion" placeholder="e.g. Islam" />
-        </div>
-        <div>
-          <label for="adm-nationality">Nationality</label>
-          <input type="text" id="adm-nationality" value="Pakistani" />
-        </div>
-        <div>
-          <label for="adm-place-birth">Place of Birth</label>
-          <input type="text" id="adm-place-birth" placeholder="City" />
-        </div>
-
-        <div class="form-section-title">2. Class & Admission Details</div>
-
-        <div>
-          <label for="adm-class">Class Applying For *</label>
+          <label>Class Applying For *</label>
           <input type="text" id="adm-class" required placeholder="e.g. Nursery, 1, 6-A" />
         </div>
         <div>
-          <label for="adm-section">Preferred Section</label>
-          <input type="text" id="adm-section" placeholder="e.g. A / B / Morning" />
+          <label>Section</label>
+          <input type="text" id="adm-section" placeholder="A / B / Morning" />
         </div>
         <div>
-          <label for="adm-date">Admission Date *</label>
+          <label>Admission Date *</label>
           <input type="date" id="adm-date" required />
         </div>
         <div>
-          <label for="adm-session">Academic Session</label>
-          <input type="text" id="adm-session" placeholder="e.g. 2025-26" />
-        </div>
-        <div>
-          <label for="adm-prev-school">Previous School</label>
-          <input type="text" id="adm-prev-school" placeholder="Name of last school" />
-        </div>
-        <div>
-          <label for="adm-prev-class">Last Class Passed</label>
-          <input type="text" id="adm-prev-class" placeholder="e.g. 5" />
+          <label>Session</label>
+          <input type="text" id="adm-session" placeholder="2025-26" />
         </div>
 
-        <div class="form-section-title">3. Father / Guardian Information</div>
+        <div class="form-section-title">2. Father / Guardian</div>
 
         <div>
-          <label for="adm-father">Father's Full Name *</label>
+          <label>Father's Name *</label>
           <input type="text" id="adm-father" required />
         </div>
         <div>
-          <label for="adm-father-cnic">Father's CNIC *</label>
+          <label>Father's CNIC *</label>
           <input type="text" id="adm-father-cnic" required placeholder="XXXXX-XXXXXXX-X" />
         </div>
         <div>
-          <label for="adm-father-occ">Father's Occupation</label>
-          <input type="text" id="adm-father-occ" placeholder="e.g. Business, Govt" />
-        </div>
-        <div>
-          <label for="adm-father-phone">Father's Phone *</label>
+          <label>Father's Phone *</label>
           <input type="tel" id="adm-father-phone" required placeholder="03XX-XXXXXXX" />
         </div>
         <div>
-          <label for="adm-mother">Mother's Full Name</label>
-          <input type="text" id="adm-mother" />
-        </div>
-        <div>
-          <label for="adm-mother-phone">Mother's Phone</label>
-          <input type="tel" id="adm-mother-phone" placeholder="03XX-XXXXXXX" />
-        </div>
-        <div>
-          <label for="adm-guardian">Guardian Name (if different)</label>
-          <input type="text" id="adm-guardian" placeholder="Only if not father" />
-        </div>
-        <div>
-          <label for="adm-guardian-rel">Guardian Relation</label>
-          <input type="text" id="adm-guardian-rel" placeholder="e.g. Uncle, Brother" />
-        </div>
-
-        <div class="form-section-title">4. Contact & Address</div>
-
-        <div class="form-full">
-          <label for="adm-address">Complete Residential Address *</label>
-          <textarea id="adm-address" rows="2" required placeholder="House No, Street, Area, Landmark"></textarea>
-        </div>
-        <div>
-          <label for="adm-city">City *</label>
-          <input type="text" id="adm-city" required placeholder="e.g. Lahore" />
-        </div>
-        <div>
-          <label for="adm-phone">Primary Contact Phone *</label>
-          <input type="tel" id="adm-phone" required placeholder="03XX-XXXXXXX" />
-        </div>
-        <div>
-          <label for="adm-email">Email (optional)</label>
-          <input type="email" id="adm-email" placeholder="parent@email.com" />
-        </div>
-        <div>
-          <label for="adm-emergency">Emergency Contact Name</label>
-          <input type="text" id="adm-emergency" />
-        </div>
-        <div>
-          <label for="adm-emergency-phone">Emergency Phone</label>
-          <input type="tel" id="adm-emergency-phone" placeholder="03XX-XXXXXXX" />
-        </div>
-
-        <div class="form-section-title">5. Medical & Other Information</div>
-
-        <div class="form-full">
-          <label for="adm-medical">Medical Conditions / Allergies</label>
-          <textarea id="adm-medical" rows="2" placeholder="Any known allergies, asthma, special needs…"></textarea>
-        </div>
-        <div>
-          <label for="adm-transport">Transport Required?</label>
-          <select id="adm-transport">
-            <option value="No">No</option>
-            <option value="Yes">Yes</option>
-          </select>
-        </div>
-        <div>
-          <label for="adm-siblings">Siblings in School</label>
-          <input type="text" id="adm-siblings" placeholder="Names / classes if any" />
+          <label>Occupation</label>
+          <input type="text" id="adm-father-occ" />
         </div>
         <div class="form-full">
-          <label for="adm-remarks">Additional Remarks</label>
-          <textarea id="adm-remarks" rows="2" placeholder="Any other information"></textarea>
+          <label>Complete Address *</label>
+          <textarea id="adm-address" rows="2" required></textarea>
         </div>
-
+        <div>
+          <label>City *</label>
+          <input type="text" id="adm-city" required />
+        </div>
+        <div>
+          <label>Primary Phone *</label>
+          <input type="tel" id="adm-phone" required />
+        </div>
       </div>
 
-      <button type="submit" class="adm-submit">Submit Admission Application</button>
+      <button type="submit" class="primary-btn">Submit Admission</button>
     </form>
   </section>
 
-  <!-- ========== ADMISSIONS LIST ========== -->
+  <!-- ========== ADMISSIONS QUEUE ========== -->
   <section class="panel">
     <h3>Admissions Queue</h3>
     <ul id="admission-list" class="data-list"></ul>
-    <p class="hint">Click <strong>Approve</strong> to enroll the applicant as a student.</p>
-  </section>
-
-  <!-- ========== SUBJECTS ========== -->
-  <section class="panel">
-    <h3>Add Subject</h3>
-    <form id="subject-form" class="inline-form">
-      <input type="text" id="subject-name" placeholder="Subject name" required />
-      <input type="text" id="subject-class" placeholder="Class (e.g. 6-B)" required />
-      <button type="submit">Add subject</button>
-    </form>
-  </section>
-  <section class="panel">
-    <h3>Subjects</h3>
-    <ul id="subject-list" class="data-list"></ul>
+    <p class="hint">Click <strong>Approve</strong> to enroll as student.</p>
   </section>
 
   <!-- ========== FEE STRUCTURE ========== -->
   <section class="panel">
-    <h3>Fee Structure</h3>
+    <h3>Fee Structure (Monthly)</h3>
     <form id="fee-structure-form" class="inline-form">
-      <input type="text" id="fs-class" placeholder="Class (e.g. 6-B)" required />
+      <input type="text" id="fs-class" placeholder="Class (e.g. 6-A)" required />
       <input type="number" id="fs-amount" placeholder="Monthly fee (Rs)" min="0" required />
-      <button type="submit">Save fee structure</button>
+      <button type="submit">Save</button>
     </form>
     <ul id="fee-structure-list" class="data-list"></ul>
-    <p class="hint">Setting a class's fee here auto-fills the amount when you create a challan for that class.</p>
   </section>
 
-  <!-- ========== STUDENTS ========== -->
+  <!-- ========== QUICK ADD STUDENT ========== -->
   <section class="panel">
-    <h3>Add Student (quick)</h3>
+    <h3>Quick Add Student</h3>
     <form id="student-form" class="inline-form">
       <input type="text" id="student-name" placeholder="Student name" required />
-      <input type="text" id="student-class" placeholder="Class (e.g. 6-B)" />
-      <input type="text" id="student-guardian" placeholder="Guardian name" />
+      <input type="text" id="student-class" placeholder="Class" required />
+      <input type="text" id="student-guardian" placeholder="Guardian" />
       <input type="text" id="student-phone" placeholder="Phone" />
-      <button type="submit">Add student</button>
+      <button type="submit">Add Student</button>
     </form>
   </section>
+
+  <!-- ========== ENROLLED STUDENTS ========== -->
   <section class="panel">
     <h3>Enrolled Students</h3>
+    <div class="filter-row">
+      <input type="text" id="student-search" placeholder="Search by name or class..." />
+    </div>
     <ul id="student-list" class="data-list"></ul>
   </section>
 
   <!-- ========== FEE CHALLANS ========== -->
   <section class="panel">
-    <h3>New Fee Challan</h3>
+    <h3>Create Fee Challan</h3>
     <form id="challan-form" class="inline-form">
-      <select id="challan-student" required></select>
+      <select id="challan-student" required>
+        <option value="">Select student</option>
+      </select>
       <input type="month" id="challan-month" required />
       <input type="number" id="challan-amount" placeholder="Amount (Rs)" min="0" required />
-      <button type="submit">Create challan</button>
+      <button type="submit">Create Challan</button>
     </form>
+    <p class="hint">Amount auto-fills from Fee Structure when available.</p>
   </section>
+
   <section class="panel">
     <h3>Fee Challans</h3>
     <div class="filter-row">
@@ -328,7 +173,7 @@
       </select>
     </div>
     <ul id="challan-list" class="data-list"></ul>
-    <p class="hint">Tap a challan's status badge to toggle Paid / Unpaid.</p>
+    <p class="hint">Tap status badge to toggle Paid / Unpaid.</p>
   </section>
 </main>
 
@@ -336,7 +181,7 @@
 <script type="module" src="../../js/db.js"></script>
 <script type="module" src="../../js/sync.js"></script>
 <script type="module" src="../../js/auth.js"></script>
-<script type="module" src="js/school.js"></script>
+<script type="module" src="school.js"></script>
 <script src="../../js/sw-register.js"></script>
 </body>
 </html>

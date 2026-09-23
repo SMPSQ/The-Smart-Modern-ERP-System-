@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>FKC Trading Academy — FKC Group ERP</title>
-<meta name="theme-color" content="#0B1D3A" />
+<title>FKC Trading Academy — ERP</title>
+<meta name="theme-color" content="#0A1628" />
 <link rel="manifest" href="../../manifest.json" />
 <link rel="icon" href="../../icons/icon.svg" />
 <link rel="stylesheet" href="../../css/style.css" />
@@ -17,52 +17,65 @@
     <span>FKC Trading Academy</span>
   </div>
   <div class="dash-header__right">
-    <span class="sync-pill" id="sync-pill">● checking connection…</span>
+    <span class="sync-pill" id="sync-pill">● checking…</span>
     <span class="user-chip" id="user-chip">—</span>
     <button class="ghost-btn" id="logout-btn">Sign out</button>
   </div>
 </header>
 
 <main class="module-main">
-  <p><a class="back-link" href="../../dashboard.html">&larr; Back to reception</a></p>
+  <a class="back-link" href="../../dashboard.html">← Back to Master Dashboard</a>
 
+  <!-- BATCHES -->
   <section class="panel">
-    <h3>Add Batch</h3>
+    <h3>📈 Create Batch</h3>
     <form id="batch-form" class="inline-form">
-      <input type="text" id="batch-name" placeholder="Batch name (e.g. Evening-1)" required />
+      <input type="text" id="batch-name" placeholder="Batch name" required />
       <select id="batch-gender">
+        <option value="Mixed">Mixed</option>
         <option value="Male">Male</option>
         <option value="Female">Female</option>
       </select>
-      <input type="text" id="batch-timing" placeholder="Timing (e.g. 5–7 PM)" />
+      <input type="text" id="batch-timing" placeholder="Timing (e.g. 6-8 PM)" />
       <input type="text" id="batch-instructor" placeholder="Instructor" />
-      <button type="submit">Add batch</button>
+      <button type="submit">Add Batch</button>
     </form>
-  </section>
-
-  <section class="panel">
-    <h3>Batches</h3>
     <ul id="batch-list" class="data-list"></ul>
   </section>
 
+  <!-- ENROLLMENTS -->
   <section class="panel">
-    <h3>Enroll Trader</h3>
-    <form id="enrollment-form" class="inline-form">
-      <select id="enrollment-batch" required></select>
-      <input type="text" id="trader-name" placeholder="Trader name" required />
-      <input type="text" id="trader-phone" placeholder="Phone" />
+    <h3>Student Enrollment</h3>
+    <form id="enroll-form" class="inline-form">
+      <input type="text" id="enroll-name" placeholder="Student name" required />
+      <select id="enroll-batch" required>
+        <option value="">Select batch</option>
+      </select>
+      <input type="tel" id="enroll-phone" placeholder="Phone" />
       <button type="submit">Enroll</button>
     </form>
+    <ul id="enroll-list" class="data-list"></ul>
   </section>
 
+  <!-- TRADING JOURNAL -->
   <section class="panel">
-    <h3>Enrollments</h3>
-    <div class="filter-row">
-      <select id="batch-filter">
-        <option value="">All batches</option>
+    <h3>Trading Journal</h3>
+    <form id="journal-form" class="inline-form">
+      <select id="journal-student" required>
+        <option value="">Select student</option>
       </select>
-    </div>
-    <ul id="enrollment-list" class="data-list"></ul>
+      <input type="text" id="journal-symbol" placeholder="Symbol (e.g. EURUSD)" required />
+      <select id="journal-side">
+        <option value="Buy">Buy</option>
+        <option value="Sell">Sell</option>
+      </select>
+      <input type="number" id="journal-entry" placeholder="Entry price" step="any" required />
+      <input type="number" id="journal-exit" placeholder="Exit price" step="any" />
+      <input type="number" id="journal-lots" placeholder="Lots" step="0.01" value="0.1" />
+      <button type="submit">Log Trade</button>
+    </form>
+    <ul id="journal-list" class="data-list"></ul>
+    <p class="hint">Profit/Loss is calculated automatically when exit price is entered.</p>
   </section>
 </main>
 
@@ -70,7 +83,7 @@
 <script type="module" src="../../js/db.js"></script>
 <script type="module" src="../../js/sync.js"></script>
 <script type="module" src="../../js/auth.js"></script>
-<script type="module" src="js/trading.js"></script>
+<script type="module" src="trading.js"></script>
 <script src="../../js/sw-register.js"></script>
 </body>
 </html>

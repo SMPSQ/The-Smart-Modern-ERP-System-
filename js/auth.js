@@ -1,6 +1,4 @@
-// js/auth.js — shared login + route-guard logic for every page.
-// Pages set <body data-root="..."> so this file knows how deep it is
-// (root pages: data-root=""; module pages: data-root="../../").
+// js/auth.js — Shared Auth + Route Guard (ERP v4)
 import { auth } from './firebase-config.js';
 import {
   onAuthStateChanged,
@@ -17,13 +15,14 @@ onAuthStateChanged(auth, (user) => {
       window.location.href = root + 'dashboard.html';
     } else {
       const chip = document.getElementById('user-chip');
-      if (chip) chip.textContent = user.email;
+      if (chip) chip.textContent = user.email || user.uid;
     }
   } else if (!isLoginPage) {
     window.location.href = root + 'index.html';
   }
 });
 
+// Login form handler
 const loginForm = document.getElementById('login-form');
 if (loginForm) {
   const statusEl = document.getElementById('login-status');
@@ -40,7 +39,7 @@ if (loginForm) {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // onAuthStateChanged above handles the redirect.
+      // redirect handled by onAuthStateChanged
     } catch (err) {
       if (statusEl) statusEl.textContent = 'Invalid email or password.';
       submitBtn.disabled = false;
@@ -48,6 +47,7 @@ if (loginForm) {
   });
 }
 
+// Logout
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {

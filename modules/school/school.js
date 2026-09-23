@@ -1,202 +1,389 @@
-import { saveLocal, getAllLocal, deleteLocal } from "../../js/db.js";
-import { runSync } from "../../js/sync.js";
+// modules/school/school.js — Fully Working School Module (ERP v4)
+import { saveLocal, getAllLocal, deleteLocal, getLocal } from '../../js/db.js';
+import { runSync } from '../../js/sync.js';
 
-// ---------------- Tabs ----------------
-document.querySelectorAll(".tab-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".tab-panel").forEach((p) => (p.hidden = true));
-    btn.classList.add("active");
-    document.getElementById(`tab-${btn.dataset.tab}`).hidden = false;
-  });
-});
-
-function escapeHtml(str = "") {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
+function esc(str = '') {
+  return String(str).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
 }
 
-// ---------------- Students ----------------
-async function getStudents() {
-  const students = await getAllLocal("students");
-  return students.sort((a, b) => a.name.localeCompare(b.name));
+function formatMoney(n) {
+  return 'Rs ' + Number(n || 0).toLocaleString('en-PK');
 }
 
-async function renderStudents() {
-  const students = await getStudents();
-  const tbody = document.getElementById("students-tbody");
-  const studentSelect = document.getElementById("f-student");
+function monthLabel(ym) {
+  if (!ym) return '—';
+  const [y, m] = ym.split('-');
+  return new Date(Number(y), Number(m) - 1, 1)
+    .toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
 
-  tbody.innerHTML = students.length
-    ? ""
-    : `<tr class="empty-row"><td colspan="5">No students yet — add one above.</td></tr>`;
+// ========== ADMISSIONS ==========
+const admissionForm = document.getElementById('admission-form');
+const admissionList = document.getElementById('admission-list');
 
-  studentSelect.innerHTML = students.length
-    ? ""
-    : `<option value="">Add a student first</option>`;
+async function renderAdmissions() {
+  if (!admissionList) return;
+  const list = await getAllLocal('admissions');
+  list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
-  for (const s of students) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(s.name)}</td>
-      <td>${escapeHtml(s.className)}</td>
-      <td>${escapeHtml(s.guardianName || "—")}</td>
-      <td>${escapeHtml(s.guardianContact || "—")}</td>
-      <td><button class="mini-btn danger" data-del-student="${s.id}">Remove</button></td>
-    `;
-    tbody.appendChild(tr);
+  admissionList.innerHTML = list.length
+    ? list.map(a => `
+      <li>
+        <strong>${esc(a.name)}</strong>
+        <span class="tag">${esc(a.className)}</span>
+        <span class="muted">${esc(a.fatherName || '')}</span>
+        <span class="muted">${esc(a.phone || '')}</span>
+        ${a.status === 'approved'
+          ? '<span class="tag" style="background:#d1fae5;color:#065f46">Approved</span>'
+          : `<button class="mini-btn" data-approve="${a.id}">Approve</button>
+             <button class="mini-btn danger" data-del-adm="${a.id}">Delete</button>`
+        }
+      </li>
+    `).join('')
+    : '<li class="muted">No admissions yet.</li>';
 
-    const opt = document.createElement("option");
-    opt.value = s.id;
-    opt.textContent = `${s.name} (${s.className})`;
-    opt.dataset.name = s.name;
-    opt.dataset.className = s.className;
-    studentSelect.appendChild(opt);
-  }
+  // Approve buttons
+  admissionList.querySelectorAll('[data-approve]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const adm = await getLocal('admissions', btn.dataset.approve);
+      if (!adm) return;
 
-  tbody.querySelectorAll("[data-del-student]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (!confirm("Remove this student? Their fee history stays on record.")) return;
-      await deleteLocal("students", btn.dataset.delStudent);
+      // Create student
+      await saveLocal('students', {
+        name: adm.name,
+        className: adm.className,
+        section: adm.section || '',
+        guardianName: adm.fatherName,
+        guardianContact: adm.fatherPhone || adm.phone,
+        phone: adm.phone,
+        module: 'school',
+        admissionId: adm.id,
+        dob: adm.dob,
+        gender: adm.gender,
+        address: adm.address,
+        city: adm.city,
+        session: adm.session
+      });
+
+      // Mark admission approved
+      adm.status = 'approved';
+      await saveLocal('admissions', adm);
+
+      await renderAdmissions();
       await renderStudents();
+      await populateStudentSelect();
+      runSync();
+    });
+  });
+
+  admissionList.querySelectorAll('[data-del-adm]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this admission?')) return;
+      await deleteLocal('admissions', btn.dataset.delAdm);
+      await renderAdmissions();
       runSync();
     });
   });
 }
 
-document.getElementById("student-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = document.getElementById("s-name").value.trim();
-  const className = document.getElementById("s-class").value.trim();
-  const guardianName = document.getElementById("s-guardian").value.trim();
-  const guardianContact = document.getElementById("s-contact").value.trim();
-  if (!name || !className) return;
+if (admissionForm) {
+  // Set default admission date
+  const dateInput = document.getElementById('adm-date');
+  if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
 
-  await saveLocal("students", { name, className, guardianName, guardianContact });
-  e.target.reset();
-  await renderStudents();
-  runSync();
-});
+  admissionForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+      name: document.getElementById('adm-name').value.trim(),
+      dob: document.getElementById('adm-dob').value,
+      gender: document.getElementById('adm-gender').value,
+      bform: document.getElementById('adm-bform').value.trim(),
+      className: document.getElementById('adm-class').value.trim(),
+      section: document.getElementById('adm-section').value.trim(),
+      admissionDate: document.getElementById('adm-date').value,
+      session: document.getElementById('adm-session').value.trim(),
+      fatherName: document.getElementById('adm-father').value.trim(),
+      fatherCnic: document.getElementById('adm-father-cnic').value.trim(),
+      fatherPhone: document.getElementById('adm-father-phone').value.trim(),
+      fatherOcc: document.getElementById('adm-father-occ').value.trim(),
+      address: document.getElementById('adm-address').value.trim(),
+      city: document.getElementById('adm-city').value.trim(),
+      phone: document.getElementById('adm-phone').value.trim(),
+      status: 'pending',
+      module: 'school'
+    };
 
-// ---------------- Fee Challans ----------------
-function monthLabel(monthStr) {
-  const [y, m] = monthStr.split("-");
-  const d = new Date(Number(y), Number(m) - 1, 1);
-  return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    await saveLocal('admissions', data);
+    admissionForm.reset();
+    if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+    await renderAdmissions();
+    runSync();
+  });
 }
 
-async function getChallans() {
-  const challans = await getAllLocal("fee_challans");
-  return challans.sort((a, b) => b.month.localeCompare(a.month) || a.studentName.localeCompare(b.studentName));
+// ========== FEE STRUCTURE ==========
+const fsForm = document.getElementById('fee-structure-form');
+const fsList = document.getElementById('fee-structure-list');
+
+async function renderFeeStructure() {
+  if (!fsList) return;
+  const list = await getAllLocal('feeStructure');
+  list.sort((a, b) => (a.className || '').localeCompare(b.className || ''));
+
+  fsList.innerHTML = list.length
+    ? list.map(f => `
+      <li>
+        <strong>${esc(f.className)}</strong>
+        <span class="amount">${formatMoney(f.amount)}</span>
+        <button class="mini-btn danger" data-del-fs="${f.id}" style="margin-left:auto">Delete</button>
+      </li>
+    `).join('')
+    : '<li class="muted">No fee structure defined yet.</li>';
+
+  fsList.querySelectorAll('[data-del-fs]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this fee structure?')) return;
+      await deleteLocal('feeStructure', btn.dataset.delFs);
+      await renderFeeStructure();
+      runSync();
+    });
+  });
 }
 
-async function populateMonthFilter(challans) {
-  const filter = document.getElementById("f-filter");
-  const selected = filter.value || "all";
-  const months = [...new Set(challans.map((c) => c.month))].sort().reverse();
+if (fsForm) {
+  fsForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const className = document.getElementById('fs-class').value.trim();
+    const amount = Number(document.getElementById('fs-amount').value);
+    if (!className || !amount) return;
 
-  filter.innerHTML = `<option value="all">All months</option>` +
-    months.map((m) => `<option value="${m}">${monthLabel(m)}</option>`).join("");
-  filter.value = months.includes(selected) ? selected : "all";
+    // Upsert by className
+    const all = await getAllLocal('feeStructure');
+    const existing = all.find(f => f.className.toLowerCase() === className.toLowerCase());
+
+    await saveLocal('feeStructure', {
+      id: existing?.id,
+      className,
+      amount,
+      module: 'school'
+    });
+
+    fsForm.reset();
+    await renderFeeStructure();
+    runSync();
+  });
 }
 
-function challanRow(c) {
-  const statusBtn = c.status === "paid"
-    ? `<button class="mini-btn ghost-mini" data-mark-unpaid="${c.id}">Mark unpaid</button>`
-    : `<button class="mini-btn" data-mark-paid="${c.id}">Mark paid</button>`;
+// ========== STUDENTS ==========
+const studentForm = document.getElementById('student-form');
+const studentList = document.getElementById('student-list');
+const studentSearch = document.getElementById('student-search');
 
-  return `
-    <tr>
-      <td>${escapeHtml(c.studentName)}</td>
-      <td>${escapeHtml(c.className || "—")}</td>
-      <td>${monthLabel(c.month)}</td>
-      <td>${Number(c.amount).toLocaleString()}</td>
-      <td><span class="status-badge ${c.status}">${c.status}</span></td>
-      <td style="white-space:nowrap;">
-        ${statusBtn}
-        <button class="mini-btn danger" data-del-challan="${c.id}">Delete</button>
-      </td>
-    </tr>
-  `;
+async function renderStudents(filter = '') {
+  if (!studentList) return;
+  let students = await getAllLocal('students');
+  students = students.filter(s => s.module === 'school' || !s.module);
+
+  if (filter) {
+    const q = filter.toLowerCase();
+    students = students.filter(s =>
+      (s.name || '').toLowerCase().includes(q) ||
+      (s.className || '').toLowerCase().includes(q)
+    );
+  }
+
+  students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  studentList.innerHTML = students.length
+    ? students.map(s => `
+      <li>
+        <strong>${esc(s.name)}</strong>
+        <span class="tag">${esc(s.className)}</span>
+        <span class="muted">${esc(s.guardianName || '')}</span>
+        <span class="muted">${esc(s.phone || s.guardianContact || '')}</span>
+        <button class="mini-btn danger" data-del-student="${s.id}" style="margin-left:auto">Remove</button>
+      </li>
+    `).join('')
+    : '<li class="muted">No students enrolled yet.</li>';
+
+  studentList.querySelectorAll('[data-del-student]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this student?')) return;
+      await deleteLocal('students', btn.dataset.delStudent);
+      await renderStudents(studentSearch?.value || '');
+      await populateStudentSelect();
+      runSync();
+    });
+  });
+}
+
+if (studentForm) {
+  studentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('students', {
+      name: document.getElementById('student-name').value.trim(),
+      className: document.getElementById('student-class').value.trim(),
+      guardianName: document.getElementById('student-guardian').value.trim(),
+      phone: document.getElementById('student-phone').value.trim(),
+      module: 'school'
+    });
+    studentForm.reset();
+    await renderStudents();
+    await populateStudentSelect();
+    runSync();
+  });
+}
+
+if (studentSearch) {
+  studentSearch.addEventListener('input', () => {
+    renderStudents(studentSearch.value.trim());
+  });
+}
+
+// ========== FEE CHALLANS ==========
+const challanForm = document.getElementById('challan-form');
+const challanList = document.getElementById('challan-list');
+const challanStudent = document.getElementById('challan-student');
+const challanAmount = document.getElementById('challan-amount');
+const monthFilter = document.getElementById('month-filter');
+const statusFilter = document.getElementById('status-filter');
+
+async function populateStudentSelect() {
+  if (!challanStudent) return;
+  let students = await getAllLocal('students');
+  students = students.filter(s => s.module === 'school' || !s.module);
+  students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  const current = challanStudent.value;
+  challanStudent.innerHTML = '<option value="">Select student</option>' +
+    students.map(s => `<option value="${s.id}" data-class="${esc(s.className)}">${esc(s.name)} (${esc(s.className)})</option>`).join('');
+
+  if (current) challanStudent.value = current;
+}
+
+// Auto-fill amount from fee structure
+if (challanStudent) {
+  challanStudent.addEventListener('change', async () => {
+    const opt = challanStudent.selectedOptions[0];
+    if (!opt || !opt.value) return;
+    const className = opt.dataset.class;
+    const structures = await getAllLocal('feeStructure');
+    const match = structures.find(f => f.className.toLowerCase() === (className || '').toLowerCase());
+    if (match && challanAmount) {
+      challanAmount.value = match.amount;
+    }
+  });
 }
 
 async function renderChallans() {
-  const all = await getChallans();
-  await populateMonthFilter(all);
+  if (!challanList) return;
+  let challans = await getAllLocal('feeChallans');
+  challans = challans.filter(c => c.module === 'school' || !c.module);
 
-  const activeMonth = document.getElementById("f-filter").value;
-  const filtered = activeMonth === "all" ? all : all.filter((c) => c.month === activeMonth);
+  const mFilter = monthFilter?.value || '';
+  const sFilter = statusFilter?.value || 'all';
 
-  const unpaid = filtered.filter((c) => c.status !== "paid");
-  const paid = filtered.filter((c) => c.status === "paid");
+  if (mFilter) challans = challans.filter(c => c.month === mFilter);
+  if (sFilter !== 'all') {
+    challans = challans.filter(c => (c.status || '').toLowerCase() === sFilter.toLowerCase());
+  }
 
-  const unpaidBody = document.getElementById("unpaid-tbody");
-  const paidBody = document.getElementById("paid-tbody");
+  challans.sort((a, b) => (b.month || '').localeCompare(a.month || '') || (a.studentName || '').localeCompare(b.studentName || ''));
 
-  unpaidBody.innerHTML = unpaid.length
-    ? unpaid.map(challanRow).join("")
-    : `<tr class="empty-row"><td colspan="6">Nothing unpaid for this filter.</td></tr>`;
+  challanList.innerHTML = challans.length
+    ? challans.map(c => {
+        const isPaid = (c.status || '').toLowerCase() === 'paid';
+        return `
+          <li>
+            <strong>${esc(c.studentName)}</strong>
+            <span class="tag">${esc(c.className || '')}</span>
+            <span class="muted">${monthLabel(c.month)}</span>
+            <span class="amount">${formatMoney(c.amount)}</span>
+            <button class="status-btn ${isPaid ? 'status-btn--paid' : 'status-btn--unpaid'}"
+                    data-toggle="${c.id}">
+              ${isPaid ? 'Paid' : 'Unpaid'}
+            </button>
+            <button class="mini-btn danger" data-del-challan="${c.id}">×</button>
+          </li>
+        `;
+      }).join('')
+    : '<li class="muted">No challans found.</li>';
 
-  paidBody.innerHTML = paid.length
-    ? paid.map(challanRow).join("")
-    : `<tr class="empty-row"><td colspan="6">Nothing paid yet for this filter.</td></tr>`;
-
-  document.querySelectorAll("[data-mark-paid]").forEach((btn) =>
-    btn.addEventListener("click", () => setChallanStatus(btn.dataset.markPaid, "paid"))
-  );
-  document.querySelectorAll("[data-mark-unpaid]").forEach((btn) =>
-    btn.addEventListener("click", () => setChallanStatus(btn.dataset.markUnpaid, "unpaid"))
-  );
-  document.querySelectorAll("[data-del-challan]").forEach((btn) =>
-    btn.addEventListener("click", async () => {
-      if (!confirm("Delete this fee record?")) return;
-      await deleteLocal("fee_challans", btn.dataset.delChallan);
+  // Toggle status
+  challanList.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const all = await getAllLocal('feeChallans');
+      const rec = all.find(c => c.id === btn.dataset.toggle);
+      if (!rec) return;
+      const isPaid = (rec.status || '').toLowerCase() === 'paid';
+      rec.status = isPaid ? 'Unpaid' : 'Paid';
+      rec.paidOn = isPaid ? null : Date.now();
+      await saveLocal('feeChallans', rec);
       await renderChallans();
       runSync();
-    })
-  );
-}
-
-async function setChallanStatus(id, status) {
-  const all = await getAllLocal("fee_challans");
-  const record = all.find((c) => c.id === id);
-  if (!record) return;
-  record.status = status;
-  record.paidOn = status === "paid" ? Date.now() : null;
-  await saveLocal("fee_challans", record, "update");
-  await renderChallans();
-  runSync();
-}
-
-document.getElementById("fee-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const select = document.getElementById("f-student");
-  const opt = select.selectedOptions[0];
-  if (!opt || !opt.value) return;
-
-  const month = document.getElementById("f-month").value;
-  const amount = Number(document.getElementById("f-amount").value);
-  if (!month || !amount) return;
-
-  await saveLocal("fee_challans", {
-    studentId: opt.value,
-    studentName: opt.dataset.name,
-    className: opt.dataset.className,
-    month,
-    amount,
-    status: "unpaid",
+    });
   });
 
-  e.target.reset();
+  // Delete
+  challanList.querySelectorAll('[data-del-challan]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this challan?')) return;
+      await deleteLocal('feeChallans', btn.dataset.delChallan);
+      await renderChallans();
+      runSync();
+    });
+  });
+}
+
+if (challanForm) {
+  // Default month
+  const monthInput = document.getElementById('challan-month');
+  if (monthInput) {
+    const now = new Date();
+    monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  challanForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const select = document.getElementById('challan-student');
+    const opt = select.selectedOptions[0];
+    if (!opt || !opt.value) return;
+
+    const month = document.getElementById('challan-month').value;
+    const amount = Number(document.getElementById('challan-amount').value);
+    if (!month || !amount) return;
+
+    await saveLocal('feeChallans', {
+      studentId: opt.value,
+      studentName: opt.textContent.split(' (')[0],
+      className: opt.dataset.class || '',
+      month,
+      amount,
+      status: 'Unpaid',
+      module: 'school'
+    });
+
+    challanForm.reset();
+    if (monthInput) {
+      const now = new Date();
+      monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+    await populateStudentSelect();
+    await renderChallans();
+    runSync();
+  });
+}
+
+if (monthFilter) monthFilter.addEventListener('change', renderChallans);
+if (statusFilter) statusFilter.addEventListener('change', renderChallans);
+
+// ========== INIT ==========
+(async function init() {
+  await renderAdmissions();
+  await renderFeeStructure();
+  await renderStudents();
+  await populateStudentSelect();
   await renderChallans();
-  runSync();
-});
-
-document.getElementById("f-filter").addEventListener("change", renderChallans);
-
-// Default the month picker to the current month.
-const now = new Date();
-document.getElementById("f-month").value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-renderStudents().then(renderChallans);
+})();

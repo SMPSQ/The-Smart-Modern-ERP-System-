@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>The Smart Modern Educational Academy — FKC Group ERP</title>
-<meta name="theme-color" content="#0B1D3A" />
+<title>Educational Academy — ERP</title>
+<meta name="theme-color" content="#0A1628" />
 <link rel="manifest" href="../../manifest.json" />
 <link rel="icon" href="../../icons/icon.svg" />
 <link rel="stylesheet" href="../../css/style.css" />
@@ -17,63 +17,54 @@
     <span>The Smart Modern Educational Academy</span>
   </div>
   <div class="dash-header__right">
-    <span class="sync-pill" id="sync-pill">● checking connection…</span>
+    <span class="sync-pill" id="sync-pill">● checking…</span>
     <span class="user-chip" id="user-chip">—</span>
     <button class="ghost-btn" id="logout-btn">Sign out</button>
   </div>
 </header>
 
 <main class="module-main">
-  <p><a class="back-link" href="../../dashboard.html">&larr; Back to reception</a></p>
+  <a class="back-link" href="../../dashboard.html">← Back to Master Dashboard</a>
 
+  <!-- TUTORS -->
   <section class="panel">
-    <h3>Add Tutor</h3>
+    <h3>📚 Add Tutor</h3>
     <form id="tutor-form" class="inline-form">
       <input type="text" id="tutor-name" placeholder="Tutor name" required />
-      <input type="text" id="tutor-subject" placeholder="Subject" />
-      <input type="text" id="tutor-phone" placeholder="Phone" />
-      <button type="submit">Add tutor</button>
+      <input type="text" id="tutor-subject" placeholder="Subject / Expertise" />
+      <input type="tel" id="tutor-phone" placeholder="Phone" />
+      <button type="submit">Add Tutor</button>
     </form>
-  </section>
-
-  <section class="panel">
-    <h3>Tutors</h3>
     <ul id="tutor-list" class="data-list"></ul>
   </section>
 
+  <!-- CLASSES -->
   <section class="panel">
-    <h3>Add Tuition Class</h3>
+    <h3>Create Class / Batch</h3>
     <form id="class-form" class="inline-form">
-      <input type="text" id="class-subject" placeholder="Subject" required />
-      <input type="text" id="class-room" placeholder="Room" />
-      <input type="text" id="class-timing" placeholder="Timing (e.g. 4–5 PM)" />
-      <select id="class-tutor" required></select>
-      <button type="submit">Add class</button>
+      <input type="text" id="class-name" placeholder="Class name" required />
+      <select id="class-tutor">
+        <option value="">Select tutor (optional)</option>
+      </select>
+      <input type="text" id="class-timing" placeholder="Timing" />
+      <input type="number" id="class-fee" placeholder="Monthly fee (Rs)" min="0" />
+      <button type="submit">Add Class</button>
     </form>
-  </section>
-
-  <section class="panel">
-    <h3>Timetable</h3>
     <ul id="class-list" class="data-list"></ul>
   </section>
 
+  <!-- ENROLLMENTS -->
   <section class="panel">
-    <h3>Enroll Student</h3>
-    <form id="enrollment-form" class="inline-form">
-      <select id="enrollment-class" required></select>
-      <input type="text" id="student-name" placeholder="Student name" required />
+    <h3>Student Enrollment</h3>
+    <form id="enroll-form" class="inline-form">
+      <input type="text" id="enroll-name" placeholder="Student name" required />
+      <select id="enroll-class" required>
+        <option value="">Select class</option>
+      </select>
+      <input type="tel" id="enroll-phone" placeholder="Phone" />
       <button type="submit">Enroll</button>
     </form>
-  </section>
-
-  <section class="panel">
-    <h3>Class Enrollments</h3>
-    <div class="filter-row">
-      <select id="class-filter">
-        <option value="">All classes</option>
-      </select>
-    </div>
-    <ul id="enrollment-list" class="data-list"></ul>
+    <ul id="enroll-list" class="data-list"></ul>
   </section>
 </main>
 
@@ -81,7 +72,7 @@
 <script type="module" src="../../js/db.js"></script>
 <script type="module" src="../../js/sync.js"></script>
 <script type="module" src="../../js/auth.js"></script>
-<script type="module" src="js/academy.js"></script>
+<script type="module" src="academy.js"></script>
 <script src="../../js/sw-register.js"></script>
 </body>
 </html>
