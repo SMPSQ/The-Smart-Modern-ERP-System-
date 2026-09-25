@@ -1,66 +1,17 @@
-# THE SMART MODERN ERP SYSTEM — v4 (Professional Core)
+# Future Tech Public School ERP — v5
 
-**Educating Minds • Building Futures • Empowering Traders**
+**Future Tech Public School · Qamber**  
+Nurturing Minds, Building Futures · Quest for Excellence
 
-Offline-first PWA ERP for three institutions under one system.
+Offline-first school ERP (+ optional Trading & Educational Academy modules).
 
-## What's Working in v4
+## Live modules
+- School: Admissions, Students, Fees, Attendance, Teachers, Staff, Exams, Finance, Leave, Timetable, Classes, Subjects, Homework, Certificates, ID Cards, Print
+- Parent Portal
+- Trading Academy & Educational Academy (separate data)
 
-### Master Dashboard
-- Live KPIs (Total Students, Batches/Classes, Today's Collection, Pending Fees)
-- Walk-in visitor log
-- Module cards with quick navigation
+## Deploy
+Push to `main` — GitHub Actions deploys to Pages (see `.github/workflows/deploy.yml`).
 
-### 🏫 Public School
-- Complete Student Admission form
-- Approval → Auto enroll as student
-- Fee Structure (class-wise monthly fee)
-- Auto-fill amount when creating challan
-- Fee Challans with Paid/Unpaid toggle + filters
-- Student search
-- Quick add student
-
-### 📈 FKC Trading Academy
-- Batch management (Gender, Timing, Instructor)
-- Student enrollment
-- Trading Journal (Symbol, Buy/Sell, Entry/Exit, Lots)
-- Auto Profit/Loss calculation
-
-### 📚 Educational Academy
-- Tutor management
-- Classes / Batches with fee
-- Student enrollment
-
-### System Features
-- Fully offline-first (IndexedDB)
-- Automatic sync to Firebase when online
-- Activity logs on every create/update/delete
-- Professional Navy + Gold branding
-- Responsive design
-
-## How to Deploy
-
-1. Replace the files in your GitHub repo with the contents of this `erp-v4` folder (keep the same structure).
-2. Make sure `js/firebase-config.js` has your Firebase project keys.
-3. In Firebase Console:
-   - Enable **Email/Password** authentication
-   - Create at least one user
-   - Create Firestore database
-   - Set rules:
-   ```
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /{document=**} {
-         allow read, write: if request.auth != null;
-       }
-     }
-   }
-   ```
-4. Push to `main` — GitHub Pages will deploy automatically.
-
-## Brand Colors
-- Navy: `#0A1628`
-- Gold: `#C9A227`
-
-© The Smart Modern ERP System
+## Firebase
+Enable Email/Password auth + Firestore rules for cloud sync.

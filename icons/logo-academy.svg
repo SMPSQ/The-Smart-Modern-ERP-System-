@@ -4,7 +4,7 @@
   <path d="M100 18 L170 46 L170 108 Q170 165 100 197 Q30 165 30 108 L30 46 Z" fill="#0F2A4A"/>
   <!-- Top banner -->
   <rect x="40" y="28" width="120" height="22" rx="3" fill="#C9A227"/>
-  <text x="100" y="44" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#0A1628">THE SMART MODERN</text>
+  <text x="100" y="44" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#0A1628">EDU ACADEMY</text>
   <!-- Book + person icon -->
   <ellipse cx="100" cy="100" rx="40" ry="16" fill="#C9A227" opacity="0.25"/>
   <path d="M65 90 Q100 75 135 90 L135 112 Q100 128 65 112 Z" fill="#C9A227"/>

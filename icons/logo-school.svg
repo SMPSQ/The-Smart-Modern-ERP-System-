@@ -4,7 +4,7 @@
   <path d="M100 18 L170 46 L170 108 Q170 165 100 197 Q30 165 30 108 L30 46 Z" fill="#0F2A4A"/>
   <!-- Top banner -->
   <rect x="40" y="28" width="120" height="22" rx="3" fill="#C9A227"/>
-  <text x="100" y="44" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#0A1628">THE SMART MODERN</text>
+  <text x="100" y="44" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#0A1628">FUTURE TECH</text>
   <!-- Book + graduate icon -->
   <ellipse cx="100" cy="95" rx="38" ry="14" fill="#C9A227" opacity="0.3"/>
   <path d="M70 85 Q100 70 130 85 L130 105 Q100 120 70 105 Z" fill="#C9A227"/>
