@@ -508,6 +508,134 @@ if (attendanceForm) {
   });
 }
 
+
+// ========== INSTRUCTORS ==========
+const teacherForm = document.getElementById('teacher-form');
+const teacherList = document.getElementById('teacher-list');
+async function renderTeachers() {
+  if (!teacherList) return;
+  const list = (await getAllLocal('teachers')).filter(t => t.module === MODULE);
+  teacherList.innerHTML = list.length ? list.map(t => `
+    <li><strong>${esc(t.name)}</strong> <span class="tag">${esc(t.subject||'')}</span>
+    <span class="muted">${esc(t.phone||'')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-t="${t.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No instructors yet.</li>';
+  teacherList.querySelectorAll('[data-del-t]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('teachers', btn.dataset.delT);
+      await renderTeachers(); runSync();
+    });
+  });
+}
+if (teacherForm) {
+  teacherForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('teachers', {
+      name: document.getElementById('teacher-name').value.trim(),
+      subject: document.getElementById('teacher-subject').value.trim(),
+      phone: document.getElementById('teacher-phone').value.trim(),
+      module: MODULE
+    });
+    teacherForm.reset();
+    await renderTeachers(); runSync();
+  });
+}
+
+// ========== TESTS ==========
+const examForm = document.getElementById('exam-form');
+const examList = document.getElementById('exam-list');
+const examStudent = document.getElementById('exam-student');
+function calcGrade(pct) {
+  if (pct >= 90) return 'A+'; if (pct >= 80) return 'A'; if (pct >= 70) return 'B';
+  if (pct >= 60) return 'C'; if (pct >= 50) return 'D'; return 'F';
+}
+async function populateExamStudents() {
+  if (!examStudent) return;
+  const list = (await getAllLocal('tradingEnrollments')).filter(e => e.module === MODULE);
+  examStudent.innerHTML = '<option value="">Select student</option>' +
+    list.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+}
+async function renderExams() {
+  if (!examList) return;
+  const list = (await getAllLocal('exams')).filter(r => r.module === MODULE);
+  examList.innerHTML = list.length ? list.map(x => {
+    const pct = x.total ? Math.round((Number(x.marks)/Number(x.total))*100) : 0;
+    return `<li><strong>${esc(x.studentName)}</strong> <span class="tag">${esc(x.title)}</span>
+      <span class="muted">${esc(x.subject)}</span> <span class="amount">${x.marks}/${x.total} (${pct}% · ${calcGrade(pct)})</span>
+      <span class="actions"><button class="mini-btn danger" data-del-ex="${x.id}">Delete</button></span></li>`;
+  }).join('') : '<li class="muted">No tests yet.</li>';
+  examList.querySelectorAll('[data-del-ex]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('exams', btn.dataset.delEx);
+      await renderExams(); runSync();
+    });
+  });
+}
+if (examForm) {
+  examForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const opt = examStudent?.selectedOptions[0];
+    if (!opt?.value) return;
+    await saveLocal('exams', {
+      title: document.getElementById('exam-title').value.trim(),
+      studentId: opt.value, studentName: opt.textContent,
+      subject: document.getElementById('exam-subject').value.trim(),
+      marks: Number(document.getElementById('exam-marks').value),
+      total: Number(document.getElementById('exam-total').value)||100,
+      date: new Date().toISOString().slice(0,10), module: MODULE
+    });
+    examForm.reset();
+    await populateExamStudents(); await renderExams(); runSync();
+  });
+}
+
+// ========== CERTIFICATES ==========
+const certForm = document.getElementById('cert-form');
+const certStudent = document.getElementById('cert-student');
+async function populateCertStudents() {
+  if (!certStudent) return;
+  const list = (await getAllLocal('tradingEnrollments')).filter(e => e.module === MODULE);
+  certStudent.innerHTML = '<option value="">Select student</option>' +
+    list.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+}
+if (certForm) {
+  certForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const opt = certStudent?.selectedOptions[0];
+    if (!opt?.value) return;
+    const type = document.getElementById('cert-type').value;
+    printDocument(type + ' Certificate', buildCertificatePrint({
+      studentName: opt.textContent, type, course: 'Trading Program',
+      body: `has successfully completed the ${type.toLowerCase()} requirements at <strong>${INST_NAME}</strong>.`
+    }, INST_NAME), { subtitle: INST_NAME });
+  });
+}
+
+// ========== REPORTS ==========
+async function renderReports() {
+  const grid = document.getElementById('reports-grid');
+  if (!grid) return;
+  const filt = async (s) => (await getAllLocal(s)).filter(r => r.module === MODULE).length;
+  const items = [
+    ['Enrollments', await filt('tradingEnrollments')],
+    ['Batches', await filt('batches')],
+    ['Admissions', await filt('admissions')],
+    ['Challans', await filt('feeChallans')],
+    ['Attendance', await filt('attendance')],
+    ['Instructors', await filt('teachers')],
+    ['Tests', await filt('exams')],
+    ['Journal entries', await filt('tradingJournal')],
+  ];
+  grid.innerHTML = items.map(([k,v]) => `
+    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:0.85rem;border-top:3px solid #0A1628;">
+      <div style="font-size:0.68rem;color:#64748B;text-transform:uppercase;font-weight:700;">${k}</div>
+      <div style="font-size:1.25rem;font-weight:800;color:#0A1628;">${v}</div>
+    </div>`).join('');
+}
+document.getElementById('reports-refresh')?.addEventListener('click', renderReports);
+
 // ========== FINANCE ==========
 const incomeForm = document.getElementById('income-form');
 const expenseForm = document.getElementById('expense-form');
@@ -529,6 +657,11 @@ async function renderIncome() {
       await deleteLocal('income', btn.dataset.delInc);
       await populateAttStudents();
   await renderAttendance();
+  await renderTeachers();
+  await populateExamStudents();
+  await renderExams();
+  await populateCertStudents();
+  await renderReports();
   await renderIncome(); runSync();
     });
   });

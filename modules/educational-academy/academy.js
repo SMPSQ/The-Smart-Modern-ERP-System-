@@ -533,6 +533,87 @@ if (attendanceForm) {
   });
 }
 
+
+// ========== HOMEWORK ==========
+const hwForm = document.getElementById('hw-form');
+const hwList = document.getElementById('hw-list');
+async function renderHomework() {
+  if (!hwList) return;
+  const list = (await getAllLocal('homework')).filter(r => r.module === MODULE);
+  list.sort((a,b)=>(b.due||'').localeCompare(a.due||''));
+  hwList.innerHTML = list.length ? list.map(h => `
+    <li><strong>${esc(h.title)}</strong> <span class="tag">${esc(h.className)}</span>
+    <span class="muted">${esc(h.subject)}</span> <span class="muted">Due: ${esc(h.due)}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-hw="${h.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No homework.</li>';
+  hwList.querySelectorAll('[data-del-hw]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('homework', btn.dataset.delHw);
+      await renderHomework(); runSync();
+    });
+  });
+}
+if (hwForm) {
+  hwForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('homework', {
+      className: document.getElementById('hw-class').value.trim(),
+      subject: document.getElementById('hw-subject').value.trim(),
+      title: document.getElementById('hw-title').value.trim(),
+      due: document.getElementById('hw-due').value,
+      note: document.getElementById('hw-note').value.trim(),
+      module: MODULE
+    });
+    hwForm.reset(); await renderHomework(); runSync();
+  });
+}
+
+// ========== CERTIFICATES ==========
+const certForm = document.getElementById('cert-form');
+const certStudent = document.getElementById('cert-student');
+async function populateCertStudents() {
+  if (!certStudent) return;
+  const list = (await getAllLocal('academyEnrollments')).filter(e => e.module === MODULE);
+  certStudent.innerHTML = '<option value="">Select student</option>' +
+    list.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+}
+if (certForm) {
+  certForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const opt = certStudent?.selectedOptions[0];
+    if (!opt?.value) return;
+    const type = document.getElementById('cert-type').value;
+    printDocument(type + ' Certificate', buildCertificatePrint({
+      studentName: opt.textContent, type, course: 'Academy Program',
+      body: `has successfully met the requirements for <strong>${type}</strong> at <strong>${INST_NAME}</strong>.`
+    }, INST_NAME), { subtitle: INST_NAME });
+  });
+}
+
+// ========== REPORTS ==========
+async function renderReports() {
+  const grid = document.getElementById('reports-grid');
+  if (!grid) return;
+  const filt = async (s) => (await getAllLocal(s)).filter(r => r.module === MODULE).length;
+  const items = [
+    ['Enrollments', await filt('academyEnrollments')],
+    ['Tutors', await filt('tutors')],
+    ['Classes', await filt('classes')],
+    ['Admissions', await filt('admissions')],
+    ['Challans', await filt('feeChallans')],
+    ['Attendance', await filt('attendance')],
+    ['Exams', await filt('exams')],
+    ['Homework', await filt('homework')],
+  ];
+  grid.innerHTML = items.map(([k,v]) => `
+    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:0.85rem;border-top:3px solid #0A1628;">
+      <div style="font-size:0.68rem;color:#64748B;text-transform:uppercase;font-weight:700;">${k}</div>
+      <div style="font-size:1.25rem;font-weight:800;color:#0A1628;">${v}</div>
+    </div>`).join('');
+}
+document.getElementById('reports-refresh')?.addEventListener('click', renderReports);
+
 // ========== FINANCE ==========
 const incomeForm = document.getElementById('income-form');
 const expenseForm = document.getElementById('expense-form');
@@ -556,6 +637,9 @@ async function renderIncome() {
   await renderExams();
   await populateAttStudents();
   await renderAttendance();
+  await renderHomework();
+  await populateCertStudents();
+  await renderReports();
   await renderIncome(); runSync();
     });
   });

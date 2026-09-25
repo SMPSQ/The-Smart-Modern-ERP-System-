@@ -150,7 +150,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
   <div class="mod-hero">
     <img src="../../icons/logo-trading-academy.png" alt="Trading" />
     <div>
-      <h1>FKC Trading Academy</h1>
+      <h1>Future Tech Trading Academy</h1>
       <p>Learn · Analyze · Trade · Grow — Separate data from School & Academy</p>
     </div>
   </div>
@@ -162,7 +162,11 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     <button type="button" class="tab-btn" data-tab="fees">Fees</button>
     <button type="button" class="tab-btn" data-tab="journal">Journal</button>
     <button type="button" class="tab-btn" data-tab="attendance">Attendance</button>
+    <button type="button" class="tab-btn" data-tab="teachers">Instructors</button>
+    <button type="button" class="tab-btn" data-tab="exams">Tests</button>
+    <button type="button" class="tab-btn" data-tab="certificates">Certificates</button>
     <button type="button" class="tab-btn" data-tab="finance">Finance</button>
+    <button type="button" class="tab-btn" data-tab="reports">Reports</button>
   </div>
 
   <div class="tab-panel active" id="tab-admission">
@@ -312,6 +316,55 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
         <button type="submit">Save</button>
       </form>
       <ul id="attendance-list" class="data-list"></ul>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-teachers">
+    <div class="form-card">
+      <h3>Instructors / Trainers</h3>
+      <form id="teacher-form" class="inline-form">
+        <input type="text" id="teacher-name" placeholder="Name" required />
+        <input type="text" id="teacher-subject" placeholder="Specialty (Forex, Crypto…)" />
+        <input type="tel" id="teacher-phone" placeholder="Phone" />
+        <button type="submit">Add</button>
+      </form>
+      <ul id="teacher-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-exams">
+    <div class="form-card">
+      <h3>Tests / Assessments</h3>
+      <form id="exam-form" class="inline-form">
+        <input type="text" id="exam-title" placeholder="Test title" required />
+        <select id="exam-student" required><option value="">Select student</option></select>
+        <input type="text" id="exam-subject" placeholder="Topic" required />
+        <input type="number" id="exam-marks" placeholder="Marks" min="0" required />
+        <input type="number" id="exam-total" placeholder="Total" min="1" value="100" required />
+        <button type="submit">Save</button>
+      </form>
+      <ul id="exam-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-certificates">
+    <div class="form-card">
+      <h3>Print Certificate</h3>
+      <form id="cert-form" class="inline-form">
+        <select id="cert-student" required><option value="">Select student</option></select>
+        <select id="cert-type">
+          <option value="Completion">Course Completion</option>
+          <option value="Participation">Participation</option>
+          <option value="Excellence">Excellence Award</option>
+        </select>
+        <button type="submit">Print</button>
+      </form>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-reports">
+    <div class="form-card">
+      <h3>Trading Academy Snapshot</h3>
+      <div id="reports-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;"></div>
+      <button type="button" class="btn-primary" id="reports-refresh" style="margin-top:0.75rem">Refresh</button>
     </div>
   </div>
 

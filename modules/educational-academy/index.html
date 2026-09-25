@@ -163,7 +163,10 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     <button type="button" class="tab-btn" data-tab="fees">Fees</button>
     <button type="button" class="tab-btn" data-tab="attendance">Attendance</button>
     <button type="button" class="tab-btn" data-tab="exams">Exams</button>
+    <button type="button" class="tab-btn" data-tab="homework">Homework</button>
+    <button type="button" class="tab-btn" data-tab="certificates">Certificates</button>
     <button type="button" class="tab-btn" data-tab="finance">Finance</button>
+    <button type="button" class="tab-btn" data-tab="reports">Reports</button>
   </div>
 
   <div class="tab-panel active" id="tab-admission">
@@ -319,6 +322,43 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
         <button type="submit">Save</button>
       </form>
       <ul id="attendance-list" class="data-list"></ul>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-homework">
+    <div class="form-card">
+      <h3>Homework / Assignments</h3>
+      <form id="hw-form" class="inline-form">
+        <input type="text" id="hw-class" placeholder="Class / Course" required />
+        <input type="text" id="hw-subject" placeholder="Subject" required />
+        <input type="text" id="hw-title" placeholder="Task title" required />
+        <input type="date" id="hw-due" required />
+        <input type="text" id="hw-note" placeholder="Instructions" />
+        <button type="submit">Post</button>
+      </form>
+      <ul id="hw-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-certificates">
+    <div class="form-card">
+      <h3>Print Certificate</h3>
+      <form id="cert-form" class="inline-form">
+        <select id="cert-student" required><option value="">Select student</option></select>
+        <select id="cert-type">
+          <option value="Completion">Course Completion</option>
+          <option value="Bonafide">Bonafide</option>
+          <option value="Excellence">Excellence</option>
+        </select>
+        <button type="submit">Print</button>
+      </form>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-reports">
+    <div class="form-card">
+      <h3>Academy Snapshot</h3>
+      <div id="reports-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;"></div>
+      <button type="button" class="btn-primary" id="reports-refresh" style="margin-top:0.75rem">Refresh</button>
     </div>
   </div>
 
