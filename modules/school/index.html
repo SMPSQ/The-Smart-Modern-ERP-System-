@@ -724,12 +724,34 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
       <h3>Staff / Employees</h3>
       <form id="staff-form" class="inline-form">
         <input type="text" id="staff-name" placeholder="Name" required />
-        <input type="text" id="staff-role" placeholder="Role (Clerk, Peon…)" />
+        <select id="staff-role" required>
+          <option value="Teacher">Teacher</option>
+          <option value="Accountant">Accountant</option>
+          <option value="Receptionist">Receptionist</option>
+          <option value="Counselor">Counselor</option>
+          <option value="Clerk">Clerk</option>
+          <option value="Librarian">Librarian</option>
+          <option value="Principal">Principal (full access)</option>
+          <option value="Admin">Admin (full access)</option>
+          <option value="Staff">Staff</option>
+          <option value="Peon">Peon</option>
+          <option value="Guard">Guard</option>
+          <option value="Sweeper / Cleaner">Sweeper / Cleaner</option>
+        </select>
         <input type="tel" id="staff-phone" placeholder="Phone" />
         <input type="number" id="staff-salary" placeholder="Salary (Rs)" min="0" />
-        <button type="submit">Add Staff</button>
+        <input type="text" id="staff-username" placeholder="Login username (auto if empty)" />
+        <input type="text" id="staff-password" placeholder="Password (auto if empty)" />
+        <button type="submit">Add Staff + Login</button>
       </form>
+      <p class="hint">Staff add hote hi username/password ban jata hai. Login page se staff login karein — role ke hisaab se tabs khulte hain.</p>
       <ul id="staff-list" class="data-list"></ul>
+      <div id="staff-cred-box" class="form-card" style="display:none;margin-top:0.75rem;border:2px solid #C9A227;">
+        <h3 style="color:#0A1628;">New login created</h3>
+        <p><strong>Username:</strong> <span id="cred-user"></span></p>
+        <p><strong>Password:</strong> <span id="cred-pass"></span></p>
+        <p class="hint">Staff ko ye credentials de dein. Password list mein dubara nahi dikhega.</p>
+      </div>
     </div>
   </div>
 

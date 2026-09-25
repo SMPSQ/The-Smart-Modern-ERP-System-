@@ -2,6 +2,7 @@
 import { saveLocal, getAllLocal, deleteLocal, getLocal } from '../../js/db.js';
 import { runSync } from '../../js/sync.js';
 import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint, buildIdCardPrint } from '../../js/print.js';
+import { ensureStaffCredentials, suggestUsername, applyTabAccess, getStaffSession } from '../../js/staff-auth.js';
 
 const MODULE = 'school';
 const INST_NAME = 'Future Tech Public School';
@@ -1167,6 +1168,7 @@ async function renderStaff() {
   const list = await getModuleRecords('staff');
   staffList.innerHTML = list.length ? list.map(s => `
     <li><strong>${esc(s.name)}</strong> <span class="tag">${esc(s.role||'Staff')}</span>
+    <span class="muted">@${esc(s.username||'—')}</span>
     <span class="muted">${esc(s.phone||'')}</span>
     <span class="amount">${s.salary != null ? formatMoney(s.salary) : ''}</span>
     <span class="actions"><button class="mini-btn danger" data-del-staff="${s.id}">Delete</button></span></li>`).join('')
@@ -1182,15 +1184,28 @@ async function renderStaff() {
 if (staffForm) {
   staffForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    await saveLocal('staff', {
-      name: document.getElementById('staff-name').value.trim(),
-      role: document.getElementById('staff-role').value.trim(),
-      phone: document.getElementById('staff-phone').value.trim(),
-      salary: Number(document.getElementById('staff-salary').value) || null,
+    const name = document.getElementById('staff-name').value.trim();
+    const role = document.getElementById('staff-role').value;
+    const phone = document.getElementById('staff-phone').value.trim();
+    const salary = Number(document.getElementById('staff-salary').value) || null;
+    const username = document.getElementById('staff-username')?.value.trim() || '';
+    const plainPw = document.getElementById('staff-password')?.value.trim() || '';
+    const base = {
+      name, role, phone, salary,
+      username: username || suggestUsername(name),
+      active: true,
       module: MODULE
-    });
+    };
+    const { username: u, password: pw, staff } = await ensureStaffCredentials(base, plainPw || null);
+    const box = document.getElementById('staff-cred-box');
+    if (box) {
+      box.style.display = 'block';
+      document.getElementById('cred-user').textContent = u;
+      document.getElementById('cred-pass').textContent = pw;
+    }
     staffForm.reset();
-    await renderStaff(); runSync();
+    await renderStaff();
+    runSync();
   });
 }
 

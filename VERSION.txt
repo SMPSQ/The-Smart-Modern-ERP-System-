@@ -10,3 +10,4 @@ Subjects, Homework, Certificates (Character/Bonafide/Leaving/Enrollment),
 ID Cards, Print forms, Parent Portal, Announcements
 
 Also: Trading Academy + Educational Academy modules (separate data)
+CACHE_VERSION=v5.1.0 — network-first HTML/JS + auto update banner

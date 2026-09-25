@@ -6,7 +6,8 @@
 <title>Future Tech Public School — Dashboard</title>
 <meta name="theme-color" content="#0A1628" />
 <link rel="manifest" href="manifest.json" />
-<link rel="icon" href="icons/logo-future-tech.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -408,7 +409,7 @@
   }
 </style>
 </head>
-<body class="dash-body" data-root="">
+<body class="dash-body" data-root="./">
 
 <header class="brand-bar">
   <div class="brand-bar__left">
@@ -421,6 +422,7 @@
   <div class="brand-bar__right">
     <span class="sync-pill" id="sync-pill">● checking…</span>
     <span class="user-chip" id="user-chip">—</span>
+    <button class="ghost-btn" id="pwa-install-btn" hidden>Install App</button>
     <button class="ghost-btn" id="logout-btn">Sign out</button>
   </div>
 </header>

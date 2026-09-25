@@ -6,7 +6,8 @@
 <title>Future Tech Public School — Sign In</title>
 <meta name="theme-color" content="#0A1628" />
 <link rel="manifest" href="manifest.json" />
-<link rel="icon" href="icons/logo-future-tech.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -256,7 +257,7 @@
   }
 </style>
 </head>
-<body data-root="">
+<body data-root="./">
 
 <aside class="brand-side">
   <div class="brand-logo">
@@ -312,7 +313,7 @@
     <form id="login-form">
       <div class="field">
         <label for="login-email">Email</label>
-        <input type="email" id="login-email" required autocomplete="username" placeholder="you@example.com" />
+        <input type="email" id="login-email" required autocomplete="username" placeholder="Email (admin) or staff username" />
       </div>
       <div class="field">
         <label for="login-password">Password</label>
@@ -322,18 +323,21 @@
       <p class="error-msg" id="login-error"></p>
     </form>
 
+    <button type="button" id="pwa-install-btn" hidden style="width:100%;margin-top:0.75rem;padding:0.75rem;border-radius:10px;border:2px solid #C9A227;background:#0A1628;color:#E8D48B;font-weight:700;font-family:inherit;cursor:pointer;">
+      Install App
+    </button>
     <div class="links">
       <a href="parent.html">Parent Portal →</a>
     </div>
-    <p class="secure">Secure staff access · Firebase Auth</p>
+    <p class="secure">Admin: email login · Staff: username + password (created when staff is added)</p>
   </div>
 </main>
 
 <script type="module">
   import { auth } from './js/firebase-config.js';
   import { signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+  import { loginStaff, getStaffSession, clearStaffSession } from './js/staff-auth.js';
 
-  // Role UI only (visual preference stored)
   document.querySelectorAll('#role-row button').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#role-row button').forEach(b => b.classList.remove('active'));
@@ -342,9 +346,11 @@
     });
   });
 
+  const staff = getStaffSession();
   onAuthStateChanged(auth, (user) => {
-    if (user) window.location.href = 'dashboard.html';
+    if (user || staff) window.location.href = 'dashboard.html';
   });
+  if (staff) window.location.href = 'dashboard.html';
 
   const form = document.getElementById('login-form');
   const errEl = document.getElementById('login-error');
@@ -357,7 +363,22 @@
     btn.textContent = 'Signing in…';
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
+
+    // Staff username (no @)
+    if (!email.includes('@')) {
+      const result = await loginStaff(email, password);
+      if (result.ok) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      errEl.textContent = result.error || 'Invalid username or password.';
+      btn.disabled = false;
+      btn.textContent = 'Login to Dashboard';
+      return;
+    }
+
     try {
+      clearStaffSession();
       await signInWithEmailAndPassword(auth, email, password);
       window.location.href = 'dashboard.html';
     } catch (err) {
