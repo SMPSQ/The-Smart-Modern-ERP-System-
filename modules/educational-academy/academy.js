@@ -1,7 +1,7 @@
 // modules/educational-academy/academy.js — Separate data + Print support
 import { saveLocal, getAllLocal, deleteLocal, getLocal } from '../../js/db.js';
 import { runSync } from '../../js/sync.js';
-import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint } from '../../js/print.js';
+import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint, buildIdCardPrint } from '../../js/print.js';
 
 const MODULE = 'academy';
 const INST_NAME = 'Future Tech Educational Academy';
@@ -614,6 +614,295 @@ async function renderReports() {
 }
 document.getElementById('reports-refresh')?.addEventListener('click', renderReports);
 
+
+// ========== COURSES ==========
+const courseForm = document.getElementById('course-form');
+const courseList = document.getElementById('course-list');
+async function renderCourses() {
+  if (!courseList) return;
+  const list = (await getAllLocal('courses')).filter(r => r.module === MODULE);
+  courseList.innerHTML = list.length ? list.map(c => `
+    <li><strong>${esc(c.name)}</strong> <span class="muted">${esc(c.duration||'')}</span>
+    <span class="amount">${c.fee!=null?'Rs '+Number(c.fee).toLocaleString():''}</span>
+    <span class="muted">${esc(c.teacher||'')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-c="${c.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No courses.</li>';
+  courseList.querySelectorAll('[data-del-c]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('courses', btn.dataset.delC);
+      await renderCourses(); runSync();
+    });
+  });
+}
+if (courseForm) {
+  courseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('courses', {
+      name: document.getElementById('course-name').value.trim(),
+      duration: document.getElementById('course-duration').value.trim(),
+      fee: Number(document.getElementById('course-fee').value)||null,
+      teacher: document.getElementById('course-teacher').value.trim(),
+      description: document.getElementById('course-desc').value.trim(),
+      module: MODULE
+    });
+    courseForm.reset(); await renderCourses(); runSync();
+  });
+}
+
+// ========== BATCHES ==========
+const batchForm = document.getElementById('batch-form');
+const batchList = document.getElementById('batch-list');
+async function renderBatches() {
+  if (!batchList) return;
+  const list = (await getAllLocal('batches')).filter(r => r.module === MODULE);
+  batchList.innerHTML = list.length ? list.map(b => `
+    <li><strong>${esc(b.name)}</strong> <span class="tag">${esc(b.course)}</span>
+    <span class="muted">${esc(b.timing||'')} ${esc(b.days||'')}</span>
+    <span class="muted">${esc(b.teacher||'')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-b="${b.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No batches.</li>';
+  batchList.querySelectorAll('[data-del-b]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('batches', btn.dataset.delB);
+      await renderBatches(); runSync();
+    });
+  });
+}
+if (batchForm) {
+  batchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('batches', {
+      name: document.getElementById('batch-name').value.trim(),
+      course: document.getElementById('batch-course').value.trim(),
+      teacher: document.getElementById('batch-teacher').value.trim(),
+      timing: document.getElementById('batch-timing').value.trim(),
+      days: document.getElementById('batch-days').value.trim(),
+      maxStudents: Number(document.getElementById('batch-max').value)||null,
+      module: MODULE
+    });
+    batchForm.reset(); await renderBatches(); runSync();
+  });
+}
+
+// ========== STAFF ==========
+const staffForm = document.getElementById('staff-form');
+const staffList = document.getElementById('staff-list');
+async function renderStaff() {
+  if (!staffList) return;
+  const list = (await getAllLocal('staff')).filter(r => r.module === MODULE);
+  staffList.innerHTML = list.length ? list.map(s => `
+    <li><strong>${esc(s.name)}</strong> <span class="tag">${esc(s.role||'')}</span>
+    <span class="muted">${esc(s.phone||'')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-s="${s.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No staff.</li>';
+  staffList.querySelectorAll('[data-del-s]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('staff', btn.dataset.delS);
+      await renderStaff(); runSync();
+    });
+  });
+}
+if (staffForm) {
+  staffForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('staff', {
+      name: document.getElementById('staff-name').value.trim(),
+      role: document.getElementById('staff-role').value.trim(),
+      phone: document.getElementById('staff-phone').value.trim(),
+      salary: Number(document.getElementById('staff-salary').value)||null,
+      module: MODULE
+    });
+    staffForm.reset(); await renderStaff(); runSync();
+  });
+}
+
+// ========== TIMETABLE ==========
+const ttForm = document.getElementById('tt-form');
+const ttList = document.getElementById('tt-list');
+async function renderTimetable() {
+  if (!ttList) return;
+  const list = (await getAllLocal('timetable')).filter(r => r.module === MODULE);
+  ttList.innerHTML = list.length ? list.map(t => `
+    <li><strong>${esc(t.className||t.batch)}</strong> <span class="tag">${esc(t.day)}</span>
+    <span class="muted">${esc(t.period)}</span> <span>${esc(t.subject)}</span>
+    <span class="muted">${esc(t.teacher||'')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-tt="${t.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No slots.</li>';
+  ttList.querySelectorAll('[data-del-tt]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('timetable', btn.dataset.delTt);
+      await renderTimetable(); runSync();
+    });
+  });
+}
+if (ttForm) {
+  ttForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('timetable', {
+      className: document.getElementById('tt-batch').value.trim(),
+      batch: document.getElementById('tt-batch').value.trim(),
+      day: document.getElementById('tt-day').value,
+      period: document.getElementById('tt-period').value.trim(),
+      subject: document.getElementById('tt-subject').value.trim(),
+      teacher: document.getElementById('tt-teacher').value.trim(),
+      module: MODULE
+    });
+    ttForm.reset(); await renderTimetable(); runSync();
+  });
+}
+
+// ========== LIBRARY ==========
+const libForm = document.getElementById('lib-form');
+const libList = document.getElementById('lib-list');
+async function renderLibrary() {
+  if (!libList) return;
+  const list = (await getAllLocal('library')).filter(r => r.module === MODULE && r.type !== 'issue');
+  libList.innerHTML = list.length ? list.map(b => `
+    <li><strong>${esc(b.title)}</strong> <span class="muted">${esc(b.author||'')}</span>
+    <span class="tag">${esc(b.category||'')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-l="${b.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No books.</li>';
+  libList.querySelectorAll('[data-del-l]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('library', btn.dataset.delL);
+      await renderLibrary(); runSync();
+    });
+  });
+}
+if (libForm) {
+  libForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('library', {
+      type: 'book',
+      title: document.getElementById('lib-title').value.trim(),
+      author: document.getElementById('lib-author').value.trim(),
+      category: document.getElementById('lib-cat').value.trim(),
+      qty: Number(document.getElementById('lib-qty').value)||1,
+      module: MODULE
+    });
+    libForm.reset(); await renderLibrary(); runSync();
+  });
+}
+
+// ========== INVENTORY ==========
+const invForm = document.getElementById('inv-form');
+const invList = document.getElementById('inv-list');
+async function renderInventory() {
+  if (!invList) return;
+  const list = (await getAllLocal('inventory')).filter(r => r.module === MODULE);
+  invList.innerHTML = list.length ? list.map(i => `
+    <li><strong>${esc(i.item)}</strong> <span class="tag">${esc(i.category)}</span>
+    <span class="muted">${esc(i.moveType)} × ${i.qty}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-i="${i.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No inventory.</li>';
+  invList.querySelectorAll('[data-del-i]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('inventory', btn.dataset.delI);
+      await renderInventory(); runSync();
+    });
+  });
+}
+if (invForm) {
+  invForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('inventory', {
+      item: document.getElementById('inv-item').value.trim(),
+      category: document.getElementById('inv-cat').value,
+      qty: Number(document.getElementById('inv-qty').value),
+      moveType: document.getElementById('inv-type').value,
+      module: MODULE
+    });
+    invForm.reset(); await renderInventory(); runSync();
+  });
+}
+
+// ========== ID CARDS ==========
+const idcardForm = document.getElementById('idcard-form');
+const idcardStudent = document.getElementById('idcard-student');
+async function populateIdStudents() {
+  if (!idcardStudent) return;
+  const list = (await getAllLocal('academyEnrollments')).filter(e => e.module === MODULE);
+  idcardStudent.innerHTML = '<option value="">Select student</option>' +
+    list.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+}
+if (idcardForm) {
+  idcardForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = idcardStudent?.value;
+    if (!id) return;
+    const s = await getLocal('academyEnrollments', id);
+    if (!s) return;
+    s.admissionNo = s.admissionNo || ('EA-' + String(s.id).replace(/\W/g,'').slice(-8).toUpperCase());
+    printDocument('Student ID Card', buildIdCardPrint(s, INST_NAME), { subtitle: INST_NAME, showDate: false });
+  });
+}
+
+// ========== SETTINGS ==========
+const settingsForm = document.getElementById('settings-form');
+async function loadSettings() {
+  const all = (await getAllLocal('settings')).filter(r => r.module === MODULE);
+  const s = all[0]; if (!s) return;
+  const set = (id,v) => { const el=document.getElementById(id); if(el&&v!=null) el.value=v; };
+  set('set-name', s.schoolName); set('set-city', s.city); set('set-phone', s.phone);
+  set('set-email', s.email); set('set-address', s.address); set('set-session', s.session);
+}
+if (settingsForm) {
+  settingsForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const all = (await getAllLocal('settings')).filter(r => r.module === MODULE);
+    await saveLocal('settings', {
+      id: all[0]?.id,
+      schoolName: document.getElementById('set-name').value.trim(),
+      city: document.getElementById('set-city').value.trim(),
+      phone: document.getElementById('set-phone').value.trim(),
+      email: document.getElementById('set-email').value.trim(),
+      address: document.getElementById('set-address').value.trim(),
+      session: document.getElementById('set-session').value.trim(),
+      module: MODULE
+    });
+    const st = document.getElementById('settings-status');
+    if (st) st.textContent = 'Saved.';
+    runSync();
+  });
+}
+
+// ========== BACKUP ==========
+document.getElementById('backup-export')?.addEventListener('click', async () => {
+  const stores = ['academyEnrollments','admissions','tutors','classes','feeChallans','attendance','exams','homework','courses','batches','staff','timetable','library','inventory','settings','income','expenses'];
+  const data = { exportedAt: new Date().toISOString(), academy: INST_NAME, records: {} };
+  for (const s of stores) {
+    data.records[s] = (await getAllLocal(s)).filter(r => r.module === MODULE);
+  }
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `future-tech-edu-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  const st = document.getElementById('backup-status');
+  if (st) st.textContent = 'Backup downloaded.';
+});
+document.getElementById('backup-import')?.addEventListener('change', async (e) => {
+  const file = e.target.files?.[0]; if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const records = data.records || data;
+    let n = 0;
+    for (const [store, list] of Object.entries(records)) {
+      if (!Array.isArray(list)) continue;
+      for (const rec of list) { rec.module = MODULE; await saveLocal(store, rec); n++; }
+    }
+    const st = document.getElementById('backup-status');
+    if (st) st.textContent = `Imported ${n} records. Refresh page.`;
+    runSync();
+  } catch (err) { alert('Import failed: ' + err.message); }
+});
+
 // ========== FINANCE ==========
 const incomeForm = document.getElementById('income-form');
 const expenseForm = document.getElementById('expense-form');
@@ -640,6 +929,14 @@ async function renderIncome() {
   await renderHomework();
   await populateCertStudents();
   await renderReports();
+  await renderCourses();
+  await renderBatches();
+  await renderStaff();
+  await renderTimetable();
+  await renderLibrary();
+  await renderInventory();
+  await populateIdStudents();
+  await loadSettings();
   await renderIncome(); runSync();
     });
   });

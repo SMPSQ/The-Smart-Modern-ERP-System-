@@ -166,6 +166,15 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     <button type="button" class="tab-btn" data-tab="homework">Homework</button>
     <button type="button" class="tab-btn" data-tab="certificates">Certificates</button>
     <button type="button" class="tab-btn" data-tab="finance">Finance</button>
+    <button type="button" class="tab-btn" data-tab="courses">Courses</button>
+    <button type="button" class="tab-btn" data-tab="batches">Batches</button>
+    <button type="button" class="tab-btn" data-tab="staff">Staff</button>
+    <button type="button" class="tab-btn" data-tab="timetable">Timetable</button>
+    <button type="button" class="tab-btn" data-tab="library">Library</button>
+    <button type="button" class="tab-btn" data-tab="inventory">Inventory</button>
+    <button type="button" class="tab-btn" data-tab="idcards">ID Cards</button>
+    <button type="button" class="tab-btn" data-tab="settings">Settings</button>
+    <button type="button" class="tab-btn" data-tab="backup">Backup</button>
     <button type="button" class="tab-btn" data-tab="reports">Reports</button>
   </div>
 
@@ -359,6 +368,127 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
       <h3>Academy Snapshot</h3>
       <div id="reports-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;"></div>
       <button type="button" class="btn-primary" id="reports-refresh" style="margin-top:0.75rem">Refresh</button>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-courses">
+    <div class="form-card">
+      <h3>Courses</h3>
+      <form id="course-form" class="inline-form">
+        <input type="text" id="course-name" placeholder="Course name" required />
+        <input type="text" id="course-duration" placeholder="Duration (e.g. 3 months)" />
+        <input type="number" id="course-fee" placeholder="Fee (Rs)" min="0" />
+        <input type="text" id="course-teacher" placeholder="Teacher" />
+        <input type="text" id="course-desc" placeholder="Description" />
+        <button type="submit">Add Course</button>
+      </form>
+      <ul id="course-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-batches">
+    <div class="form-card">
+      <h3>Batches</h3>
+      <form id="batch-form" class="inline-form">
+        <input type="text" id="batch-name" placeholder="Batch name" required />
+        <input type="text" id="batch-course" placeholder="Course" required />
+        <input type="text" id="batch-teacher" placeholder="Teacher" />
+        <input type="text" id="batch-timing" placeholder="Timing (e.g. 4-6 PM)" />
+        <input type="text" id="batch-days" placeholder="Days (Mon-Wed-Fri)" />
+        <input type="number" id="batch-max" placeholder="Max students" min="1" />
+        <button type="submit">Add Batch</button>
+      </form>
+      <ul id="batch-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-staff">
+    <div class="form-card">
+      <h3>Staff</h3>
+      <form id="staff-form" class="inline-form">
+        <input type="text" id="staff-name" placeholder="Name" required />
+        <input type="text" id="staff-role" placeholder="Designation" />
+        <input type="tel" id="staff-phone" placeholder="Phone" />
+        <input type="number" id="staff-salary" placeholder="Salary" min="0" />
+        <button type="submit">Add Staff</button>
+      </form>
+      <ul id="staff-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-timetable">
+    <div class="form-card">
+      <h3>Timetable</h3>
+      <form id="tt-form" class="inline-form">
+        <input type="text" id="tt-batch" placeholder="Batch / Course" required />
+        <select id="tt-day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select>
+        <input type="text" id="tt-period" placeholder="Time slot" required />
+        <input type="text" id="tt-subject" placeholder="Subject / Topic" required />
+        <input type="text" id="tt-teacher" placeholder="Teacher" />
+        <button type="submit">Add Slot</button>
+      </form>
+      <ul id="tt-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-library">
+    <div class="form-card">
+      <h3>Library</h3>
+      <form id="lib-form" class="inline-form">
+        <input type="text" id="lib-title" placeholder="Book / Material title" required />
+        <input type="text" id="lib-author" placeholder="Author" />
+        <input type="text" id="lib-cat" placeholder="Category" />
+        <input type="number" id="lib-qty" value="1" min="1" />
+        <button type="submit">Add</button>
+      </form>
+      <ul id="lib-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-inventory">
+    <div class="form-card">
+      <h3>Inventory</h3>
+      <form id="inv-form" class="inline-form">
+        <input type="text" id="inv-item" placeholder="Item (PC, projector…)" required />
+        <select id="inv-cat"><option>Equipment</option><option>Stationery</option><option>Furniture</option><option>Other</option></select>
+        <input type="number" id="inv-qty" min="0" required />
+        <select id="inv-type"><option value="In">Stock In</option><option value="Out">Stock Out</option></select>
+        <button type="submit">Save</button>
+      </form>
+      <ul id="inv-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-idcards">
+    <div class="form-card">
+      <h3>Student ID Card</h3>
+      <form id="idcard-form" class="inline-form">
+        <select id="idcard-student" required><option value="">Select student</option></select>
+        <button type="submit">Print ID Card</button>
+      </form>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-settings">
+    <div class="form-card">
+      <h3>Academy Settings</h3>
+      <form id="settings-form">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;">
+          <input type="text" id="set-name" value="Future Tech Educational Academy" />
+          <input type="text" id="set-city" value="Qamber" />
+          <input type="tel" id="set-phone" placeholder="Phone" />
+          <input type="email" id="set-email" placeholder="Email" />
+          <textarea id="set-address" placeholder="Address" rows="2" style="grid-column:1/-1"></textarea>
+          <input type="text" id="set-session" placeholder="Session" />
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top:0.75rem">Save</button>
+      </form>
+      <p class="hint" id="settings-status"></p>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-backup">
+    <div class="form-card">
+      <h3>Backup &amp; Restore</h3>
+      <button type="button" class="btn-primary" id="backup-export">Download Backup (JSON)</button>
+      <label class="btn-secondary" style="display:inline-block;margin-left:0.5rem;cursor:pointer;padding:0.7rem 1rem;">
+        Import
+        <input type="file" id="backup-import" accept=".json" style="display:none" />
+      </label>
+      <p class="hint" id="backup-status"></p>
     </div>
   </div>
 

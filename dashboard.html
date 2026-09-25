@@ -506,22 +506,47 @@
       </a>
     </section>
 
-    <!-- VISITORS -->
+    <!-- VISITORS / INQUIRIES -->
     <section class="panel">
-      <h3>Walk-in Reception Log</h3>
-      <form id="visitor-form" class="inline-form">
-        <input type="text" id="visitor-name" placeholder="Visitor name" required />
-        <select id="visitor-for">
-          <option value="school">Future Tech Public School</option>
-          <option value="trading">Future Tech Trading Academy</option>
-          <option value="academy">Future Tech Educational Academy</option>
-          <option value="general">General inquiry</option>
-        </select>
-        <input type="text" id="visitor-reason" placeholder="Reason for visit" />
-        <button type="submit">Log visit</button>
+      <h3>Walk-in / Inquiry Log — Full Contact</h3>
+      <form id="visitor-form">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+          <input type="text" id="visitor-name" placeholder="Visitor / Student name *" required />
+          <input type="tel" id="visitor-phone" placeholder="Phone *" required />
+          <input type="tel" id="visitor-whatsapp" placeholder="WhatsApp" />
+          <select id="visitor-for">
+            <option value="school">Future Tech Public School</option>
+            <option value="trading">Future Tech Trading Academy</option>
+            <option value="academy">Future Tech Educational Academy</option>
+            <option value="general">General inquiry</option>
+          </select>
+          <input type="text" id="visitor-course" placeholder="Interested course / class" />
+          <select id="visitor-status">
+            <option value="New">New</option>
+            <option value="Follow-up">Follow-up needed</option>
+            <option value="Interested">Interested</option>
+            <option value="Converted">Converted</option>
+            <option value="Closed">Closed</option>
+          </select>
+          <input type="date" id="visitor-followup" title="Follow-up date" />
+          <input type="text" id="visitor-counselor" placeholder="Counselor / staff" />
+          <textarea id="visitor-reason" placeholder="Notes / reason" rows="2" style="grid-column:1/-1;font-family:inherit;padding:0.6rem;border:1px solid #E2E6ED;border-radius:8px;"></textarea>
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top:0.75rem">Save inquiry</button>
       </form>
-      <ul id="visitor-list" class="visitor-list"></ul>
-      <p class="hint">Saved on this device · Syncs when online</p>
+      <div style="display:flex;gap:0.5rem;margin:0.85rem 0 0.5rem;flex-wrap:wrap;">
+        <input type="text" id="visitor-search" placeholder="Search name / phone..." style="flex:1;min-width:140px;padding:0.5rem 0.7rem;border:1px solid #E2E6ED;border-radius:8px;" />
+        <select id="visitor-filter-status" style="padding:0.5rem;border:1px solid #E2E6ED;border-radius:8px;">
+          <option value="">All status</option>
+          <option value="New">New</option>
+          <option value="Follow-up">Follow-up</option>
+          <option value="Interested">Interested</option>
+          <option value="Converted">Converted</option>
+          <option value="Closed">Closed</option>
+        </select>
+      </div>
+      <ul id="visitor-list" class="data-list visitor-list"></ul>
+      <p class="hint">Phone / WhatsApp save — baad mein rabta ke liye list se call ya follow-up</p>
     </section>
 
     <!-- ANNOUNCEMENTS -->

@@ -45,7 +45,7 @@ async function loadKPIs() {
   }
 }
 
-// ---------- Walk-in Visitor Log ----------
+// ---------- Walk-in / Inquiry Log (full contact) ----------
 const form = document.getElementById('visitor-form');
 const list = document.getElementById('visitor-list');
 
@@ -59,40 +59,82 @@ const FOR_LABELS = {
   school: 'School',
   trading: 'Trading Academy',
   academy: 'Educational Academy',
-  general: 'General inquiry'
+  general: 'General'
 };
 
 async function renderVisitors() {
   if (!list) return;
-  const visitors = await getAllLocal('visitors');
+  let visitors = await getAllLocal('visitors');
+  const q = (document.getElementById('visitor-search')?.value || '').toLowerCase().trim();
+  const st = document.getElementById('visitor-filter-status')?.value || '';
+  if (q) {
+    visitors = visitors.filter(v =>
+      (v.name || '').toLowerCase().includes(q) ||
+      (v.phone || '').includes(q) ||
+      (v.whatsapp || '').includes(q)
+    );
+  }
+  if (st) visitors = visitors.filter(v => (v.status || 'New') === st);
   visitors.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
   list.innerHTML = visitors.length
-    ? visitors.map((v) => `
+    ? visitors.map((v) => {
+        const tel = (v.phone || '').replace(/\D/g, '');
+        const wa = (v.whatsapp || v.phone || '').replace(/\D/g, '');
+        return `
         <li>
           <strong>${esc(v.name)}</strong>
           <span class="tag">${esc(FOR_LABELS[v.for] || v.for)}</span>
+          <span class="tag">${esc(v.status || 'New')}</span>
+          ${v.course ? `<span class="muted">${esc(v.course)}</span>` : ''}
+          <span class="muted">${esc(v.phone || '')}</span>
+          ${v.followUp ? `<span class="muted">Follow-up: ${esc(v.followUp)}</span>` : ''}
+          ${v.counselor ? `<span class="muted">${esc(v.counselor)}</span>` : ''}
           ${v.reason ? `<span class="reason">${esc(v.reason)}</span>` : ''}
-          <span class="visitor-time">${new Date(v.updatedAt).toLocaleString()}</span>
-        </li>
-      `).join('')
-    : '<li class="muted">No visitors logged yet.</li>';
+          <span class="visitor-time">${v.updatedAt ? new Date(v.updatedAt).toLocaleString() : ''}</span>
+          <span class="actions">
+            ${tel ? `<a class="mini-btn ghost" href="tel:${tel}">Call</a>` : ''}
+            ${wa ? `<a class="mini-btn edit" href="https://wa.me/${wa.startsWith('92') ? wa : '92' + wa.replace(/^0/, '')}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+            <button type="button" class="mini-btn danger" data-del-vis="${v.id}">Delete</button>
+          </span>
+        </li>`;
+      }).join('')
+    : '<li class="muted">No inquiries yet.</li>';
+
+  list.querySelectorAll('[data-del-vis]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this inquiry?')) return;
+      await deleteLocal('visitors', btn.dataset.delVis);
+      await renderVisitors();
+      drainQueue();
+    });
+  });
 }
 
 if (form) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('visitor-name').value.trim();
-    const forWhom = document.getElementById('visitor-for').value;
-    const reason = document.getElementById('visitor-reason').value.trim();
-    if (!name) return;
-
-    await saveLocal('visitors', { name, for: forWhom, reason });
+    const phone = document.getElementById('visitor-phone').value.trim();
+    if (!name || !phone) return;
+    await saveLocal('visitors', {
+      name,
+      phone,
+      whatsapp: document.getElementById('visitor-whatsapp')?.value.trim() || phone,
+      for: document.getElementById('visitor-for').value,
+      course: document.getElementById('visitor-course')?.value.trim() || '',
+      status: document.getElementById('visitor-status')?.value || 'New',
+      followUp: document.getElementById('visitor-followup')?.value || '',
+      counselor: document.getElementById('visitor-counselor')?.value.trim() || '',
+      reason: document.getElementById('visitor-reason')?.value.trim() || ''
+    });
     form.reset();
     await renderVisitors();
     drainQueue();
   });
 }
+document.getElementById('visitor-search')?.addEventListener('input', renderVisitors);
+document.getElementById('visitor-filter-status')?.addEventListener('change', renderVisitors);
 
 // Init
 loadKPIs();
