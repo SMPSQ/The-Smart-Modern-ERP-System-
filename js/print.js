@@ -202,6 +202,7 @@ export function printDocument(title, bodyHtml, options = {}) {
   ${bodyHtml}
   <div class="footer">
     Future Tech Public School · Qamber · Quest for Excellence<br>
+    Administrator: Imran Khan Chandio · Contact: 0336-2506588<br>
     This is a computer-generated document.
   </div>
   <script>
