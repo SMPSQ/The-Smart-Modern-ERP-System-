@@ -359,6 +359,48 @@
   }
   .dash-footer strong { color: var(--navy); }
 
+
+  /* Uniform school logo treatment */
+  .brand-bar__left img {
+    height: 52px !important;
+    width: 52px !important;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 12px;
+    padding: 3px;
+    border: 2px solid var(--gold);
+  }
+  .hero-top img {
+    width: 88px !important;
+    height: 88px !important;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 16px;
+    padding: 5px;
+    border: 3px solid var(--gold);
+    box-shadow: 0 4px 16px rgba(201,162,39,0.25);
+  }
+  .sidebar a img {
+    width: 28px !important;
+    height: 28px !important;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 6px;
+    padding: 2px;
+  }
+  .module-card__head img {
+    width: 52px !important;
+    height: 52px !important;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 12px;
+    padding: 3px;
+    border: 2px solid rgba(201,162,39,0.5);
+  }
+  .module-card--school .module-card__head {
+    background: linear-gradient(135deg, #06101C 0%, #0A1628 50%, #0F2A4A 100%);
+  }
+
   @media (max-width: 800px) {
     .sidebar { display: none; }
     .kpi-row { grid-template-columns: 1fr 1fr; }
@@ -387,14 +429,15 @@
   <nav class="sidebar">
     <div class="side-label">Navigation</div>
     <a href="dashboard.html" class="active"><span>📊</span> Dashboard</a>
+    <div class="side-label" style="margin-top:0.75rem">Future Tech</div>
     <a href="modules/school/index.html">
-      <img src="icons/logo-future-tech.png" alt="" /> School ERP
+      <img src="icons/logo-future-tech.png" alt="" /> Public School
     </a>
     <a href="modules/trading-academy/index.html">
       <img src="icons/logo-trading-academy.png" alt="" /> Trading Academy
     </a>
     <a href="modules/educational-academy/index.html">
-      <img src="icons/logo-edu-academy.png" alt="" /> Edu Academy
+      <img src="icons/logo-edu-academy.png" alt="" /> Educational Academy
     </a>
     <a href="parent.html"><span>👨‍👩‍👧</span> Parent Portal</a>
   </nav>
@@ -407,7 +450,8 @@
         <div>
           <h1>Future Tech Public School</h1>
           <div class="loc">QAMBER</div>
-          <div class="tagline">Quest for Excellence · Nurturing Minds, Building Futures</div>
+          <div class="tagline">Future Tech Public School · Qamber</div>
+          <div class="tagline" style="margin-top:0.2rem;color:var(--gold-light);">Quest for Excellence · Nurturing Minds, Building Futures</div>
         </div>
       </div>
       <div class="hero-strength">
@@ -458,12 +502,12 @@
 
     <!-- MODULES -->
     <section class="module-grid">
-      <a class="module-card" href="modules/school/index.html">
+      <a class="module-card module-card--school" href="modules/school/index.html">
         <div class="module-card__head">
-          <img src="icons/logo-future-tech.png" alt="School" />
+          <img src="icons/logo-future-tech.png" alt="Future Tech Public School" />
           <div>
             <h3>Future Tech Public School</h3>
-            <p>Qamber · Full School ERP</p>
+            <p>Qamber · Primary School ERP</p>
           </div>
         </div>
         <div class="module-card__body">
@@ -567,8 +611,9 @@
     </section>
 
     <div class="dash-footer">
+      <img src="icons/logo-future-tech.png" alt="" style="height:36px;width:36px;object-fit:contain;background:#fff;border-radius:8px;padding:2px;vertical-align:middle;margin-bottom:0.35rem;border:1px solid #C9A227;" /><br>
       <strong>FUTURE TECH PUBLIC SCHOOL · QAMBER</strong><br>
-      Quest for Excellence · Together for a Better Tomorrow
+      Quest for Excellence · Nurturing Minds, Building Futures
     </div>
   </main>
 </div>
