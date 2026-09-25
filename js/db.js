@@ -278,3 +278,23 @@ export async function getTotalPendingAmount() {
   const pending = await getPendingFees();
   return pending.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
 }
+
+
+/** Re-queue all local records that are not synced (e.g. students stuck offline) */
+export async function requeueUnsynced(storeNames = null) {
+  const names = storeNames || STORES.filter(s => s !== 'sync_queue' && s !== 'activity_logs');
+  let count = 0;
+  for (const storeName of names) {
+    try {
+      const all = await getAllLocal(storeName);
+      for (const rec of all) {
+        if (rec && rec.synced === false) {
+          await queueSync(storeName, rec.id, 'upsert', rec);
+          count++;
+        }
+      }
+    } catch (_) {}
+  }
+  return count;
+}
+

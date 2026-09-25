@@ -181,3 +181,23 @@ if (annForm) {
   });
   renderAnnouncements();
 }
+
+
+// Force re-queue + sync (fixes stuck students)
+document.getElementById('force-sync-btn')?.addEventListener('click', async () => {
+  const btn = document.getElementById('force-sync-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+  try {
+    const { requeueUnsynced } = await import('./db.js');
+    const n = await requeueUnsynced(['students', 'admissions', 'feeChallans', 'attendance', 'teachers', 'staff']);
+    const result = await drainQueue();
+    alert(
+      result?.ok
+        ? `Synced. Re-queued ${n} local item(s).`
+        : `Still pending: ${result?.remaining ?? '?'}. ${result?.reason || ''}\n\nTip: Admin email login required for Firebase sync. Data is saved on this device.`
+    );
+  } catch (e) {
+    alert('Sync error: ' + (e.message || e));
+  }
+  if (btn) { btn.disabled = false; btn.textContent = 'Sync now'; }
+});
