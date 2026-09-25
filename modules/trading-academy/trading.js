@@ -4,7 +4,7 @@ import { runSync } from '../../js/sync.js';
 import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint } from '../../js/print.js';
 
 const MODULE = 'trading';
-const INST_NAME = 'FKC Trading Academy';
+const INST_NAME = 'Future Tech Trading Academy';
 
 function esc(str = '') {
   return String(str).replace(/[&<>"']/g, c =>

@@ -20,15 +20,18 @@ export function printDocument(title, bodyHtml, options = {}) {
   });
 
   const root = (document.body && document.body.dataset && document.body.dataset.root) || '';
+  const sub = String(subtitle || '');
+  let logoFile = 'icons/logo-future-tech.png';
+  if (sub.includes('Trading')) logoFile = 'icons/logo-trading-academy.png';
+  else if (sub.includes('Educational')) logoFile = 'icons/logo-edu-academy.png';
   let logoSrc = '';
   try {
-    logoSrc = new URL((root || './') + 'icons/logo-future-tech.png', window.location.href).href;
+    logoSrc = new URL((root || './') + logoFile, window.location.href).href;
   } catch (_) {
-    logoSrc = (root || '') + 'icons/logo-future-tech.png';
+    logoSrc = (root || '') + logoFile;
   }
-  const sub = String(subtitle || '');
-  const subLine = sub.includes('Trading') ? 'Learn | Trade | Succeed'
-    : sub.includes('Educational') ? 'Skills | Knowledge | Excellence'
+  const subLine = sub.includes('Trading') ? 'Learn · Analyze · Trade · Grow'
+    : sub.includes('Educational') ? 'Qamber · Quest for Excellence'
     : 'Qamber · Nurturing Minds, Building Futures';
 
   win.document.write(`
