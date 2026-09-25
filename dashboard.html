@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>The Smart Modern ERP — Master Dashboard</title>
+<title>Future Tech Public School — Dashboard</title>
 <meta name="theme-color" content="#0A1628" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/logo-future-tech.png" />
@@ -14,19 +14,22 @@
 <style>
   :root {
     --navy: #0A1628;
+    --navy-mid: #0F2A4A;
     --dark-navy: #06101C;
     --gold: #C9A227;
-    --light-gold: #E8D48B;
+    --gold-light: #E8D48B;
   }
   body.dash-body {
-    background: #F0F3F7;
+    background: #EEF1F6;
     font-family: Inter, system-ui, sans-serif;
     margin: 0;
   }
+
+  /* TOP BAR */
   .brand-bar {
-    background: var(--navy);
+    background: linear-gradient(90deg, #06101C 0%, #0A1628 50%, #0F2A4A 100%);
     border-bottom: 4px solid var(--gold);
-    padding: 0.85rem 1.5rem;
+    padding: 0.7rem 1.4rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -39,200 +42,233 @@
     align-items: center;
     gap: 0.85rem;
   }
+  .brand-bar__left img {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 10px;
+    padding: 3px;
+  }
   .brand-bar__titles h1 {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     color: #fff;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
   }
   .brand-bar__titles p {
     margin: 0.15rem 0 0;
     font-size: 0.72rem;
-    color: var(--light-gold);
-    letter-spacing: 1.5px;
+    color: var(--gold-light);
+    letter-spacing: 1px;
     text-transform: uppercase;
   }
   .brand-bar__right {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.7rem;
     font-size: 0.85rem;
     color: #fff;
   }
   .sync-pill {
-    padding: 0.3rem 0.75rem;
+    padding: 0.28rem 0.7rem;
     border-radius: 999px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.2);
   }
   .sync-pill--ok { color: #4ade80; border-color: #4ade80; }
-  .sync-pill--busy { color: var(--light-gold); border-color: var(--gold); }
+  .sync-pill--busy { color: var(--gold-light); border-color: var(--gold); }
   .sync-pill--offline { color: #fbbf24; border-color: #fbbf24; }
-  .user-chip { opacity: 0.9; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user-chip { opacity: 0.9; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ghost-btn {
     background: transparent;
     border: 1px solid rgba(255,255,255,0.35);
     color: #fff;
     padding: 0.35rem 0.85rem;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 0.8rem;
+    font-family: inherit;
   }
   .ghost-btn:hover { background: rgba(255,255,255,0.1); }
-  .dash-layout { display: flex; min-height: calc(100vh - 64px); }
+
+  .dash-layout { display: flex; min-height: calc(100vh - 68px); }
+
+  /* SIDEBAR */
   .sidebar {
-    width: 240px;
+    width: 230px;
     background: var(--dark-navy);
-    padding: 1.25rem 0;
+    padding: 1.2rem 0;
     flex-shrink: 0;
   }
   .sidebar .side-label {
-    padding: 0 1.2rem 0.5rem;
-    font-size: 0.68rem;
+    padding: 0 1.15rem 0.5rem;
+    font-size: 0.65rem;
     letter-spacing: 1.5px;
     color: var(--gold);
     text-transform: uppercase;
-    font-weight: 600;
+    font-weight: 700;
   }
   .sidebar a {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.7rem 1.2rem;
+    gap: 0.55rem;
+    padding: 0.65rem 1.15rem;
     color: #AAB4C4;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     border-left: 3px solid transparent;
-    transition: all 0.15s;
     text-decoration: none;
+    transition: all 0.15s;
   }
   .sidebar a:hover, .sidebar a.active {
     background: #0F2A4A;
     color: var(--gold);
     border-left-color: var(--gold);
   }
-  .sidebar a img { width: 22px; height: 22px; object-fit: contain; }
+  .sidebar a img { width: 26px; height: 26px; object-fit: contain; border-radius: 6px; background: #fff; padding: 2px; }
+
   .dash-main {
     flex: 1;
-    padding: 1.5rem 1.75rem 2.5rem;
-    max-width: 1200px;
+    padding: 1.35rem 1.5rem 2.5rem;
+    max-width: 1140px;
   }
+
+  /* HERO — matches staff banner branding */
   .hero-brand {
-    background: linear-gradient(135deg, var(--navy) 0%, #0F2A4A 100%);
-    border-radius: 14px;
-    padding: 1.5rem 1.75rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid rgba(201,162,39,0.25);
+    background: linear-gradient(135deg, #06101C 0%, #0A1628 40%, #0F2A4A 100%);
+    border-radius: 16px;
+    padding: 1.5rem 1.6rem 1.35rem;
+    margin-bottom: 1.35rem;
+    border: 1px solid rgba(201,162,39,0.3);
     position: relative;
     overflow: hidden;
+  }
+  .hero-brand::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--gold), #E8D48B, var(--gold));
   }
   .hero-brand::after {
     content: '';
     position: absolute;
-    top: 0; right: 0; bottom: 0;
-    width: 6px;
-    background: var(--gold);
+    bottom: -30px; right: -30px;
+    width: 160px; height: 160px;
+    border: 24px solid rgba(201,162,39,0.07);
+    border-radius: 50%;
   }
-  .hero-brand h1 {
-    margin: 0 0 0.3rem;
-    font-size: 1.5rem;
-    color: #fff;
-    font-weight: 700;
-  }
-  .hero-brand .tagline {
-    color: var(--light-gold);
-    font-size: 0.9rem;
-    margin: 0 0 1rem;
-    letter-spacing: 0.5px;
-  }
-  .hero-logos {
+  .hero-top {
     display: flex;
-    gap: 1.25rem;
+    align-items: center;
+    gap: 1.15rem;
     flex-wrap: wrap;
-    align-items: center;
+    position: relative;
+    z-index: 1;
   }
-  .hero-logo-item {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(201,162,39,0.2);
-    border-radius: 10px;
-    padding: 0.5rem 0.9rem;
-  }
-  .hero-logo-item img {
-    width: 42px;
-    height: 42px;
+  .hero-top img {
+    width: 72px; height: 72px;
     object-fit: contain;
+    background: #fff;
+    border-radius: 14px;
+    padding: 4px;
+    border: 2px solid var(--gold);
   }
-  .hero-logo-item span {
-    font-size: 0.78rem;
-    color: #E0E6F0;
-    line-height: 1.3;
+  .hero-top h1 {
+    margin: 0;
+    font-size: 1.45rem;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
-  .hero-logo-item strong {
-    display: block;
+  .hero-top .loc {
     color: var(--gold);
-    font-size: 0.82rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
   }
+  .hero-top .tagline {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+  .hero-strength {
+    margin-top: 1.1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-strength span {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(201,162,39,0.25);
+    color: var(--gold-light);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    letter-spacing: 0.03em;
+  }
+
+  /* KPIs */
   .kpi-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.35rem;
   }
   .kpi-card {
     background: #fff;
     border-radius: 12px;
-    padding: 1.15rem 1.25rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-    border-left: 5px solid var(--navy);
+    padding: 1.1rem 1.15rem;
+    box-shadow: 0 4px 14px rgba(10,22,40,0.06);
+    border-top: 3px solid var(--navy);
   }
-  .kpi-card.green { border-left-color: #2D6A4F; }
-  .kpi-card.gold { border-left-color: var(--gold); }
-  .kpi-card.red { border-left-color: #9B2226; }
+  .kpi-card.green { border-top-color: #1B7A4E; }
+  .kpi-card.gold { border-top-color: var(--gold); }
+  .kpi-card.red { border-top-color: #B91C1C; }
   .kpi-card .label {
-    font-size: 0.72rem;
-    color: #777;
+    font-size: 0.68rem;
+    color: #6B7280;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-    font-weight: 600;
-    margin-bottom: 0.35rem;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
   }
   .kpi-card .value {
-    font-size: 1.6rem;
+    font-size: 1.55rem;
     font-weight: 800;
     color: var(--navy);
   }
-  .kpi-card .sub {
-    font-size: 0.75rem;
-    color: #888;
-    margin-top: 0.3rem;
-  }
+  .kpi-card .sub { font-size: 0.72rem; color: #9CA3AF; margin-top: 0.25rem; }
+
+  /* MODULE CARDS */
   .module-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.15rem;
-    margin-bottom: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.35rem;
   }
   .module-card {
     background: #fff;
     border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-    transition: transform 0.18s, box-shadow 0.18s;
-    border: 1px solid #e8e8e8;
+    box-shadow: 0 4px 16px rgba(10,22,40,0.06);
+    border: 1px solid #E5E8EF;
     display: block;
     color: inherit;
     text-decoration: none;
+    transition: transform 0.18s, box-shadow 0.18s;
   }
   .module-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 28px rgba(10,22,40,0.12);
   }
   .module-card__head {
-    background: var(--navy);
+    background: linear-gradient(135deg, #0A1628, #0F2A4A);
     color: #fff;
     padding: 0.9rem 1.1rem;
     display: flex;
@@ -241,70 +277,92 @@
     border-bottom: 3px solid var(--gold);
   }
   .module-card__head img {
-    width: 48px;
-    height: 48px;
+    width: 48px; height: 48px;
     object-fit: contain;
-    background: rgba(255,255,255,0.08);
-    border-radius: 8px;
-    padding: 4px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 3px;
   }
-  .module-card__head .titles h3 {
-    margin: 0;
-    font-size: 0.95rem;
-    font-weight: 700;
-  }
-  .module-card__head .titles p {
-    margin: 0.15rem 0 0;
-    font-size: 0.7rem;
-    color: var(--light-gold);
-  }
+  .module-card__head h3 { margin: 0; font-size: 0.95rem; font-weight: 800; }
+  .module-card__head p { margin: 0.15rem 0 0; font-size: 0.7rem; color: var(--gold-light); }
   .module-card__body {
-    padding: 1rem 1.15rem 0.5rem;
-    font-size: 0.85rem;
-    color: #444;
-    line-height: 1.55;
+    padding: 0.95rem 1.1rem 0.4rem;
+    font-size: 0.84rem;
+    color: #4B5563;
+    line-height: 1.5;
   }
-  .module-card__body ul {
-    margin: 0.5rem 0 0;
-    padding-left: 1.15rem;
-  }
-  .module-card__body li { margin-bottom: 0.2rem; }
+  .module-card__body ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+  .module-card__body li { margin-bottom: 0.15rem; }
   .module-card__foot {
-    padding: 0.6rem 1.15rem 0.95rem;
+    padding: 0.55rem 1.1rem 0.9rem;
     font-size: 0.8rem;
     color: var(--navy);
-    font-weight: 600;
+    font-weight: 700;
   }
   .module-card__foot span { color: var(--gold); }
+
+  /* STAFF STRIP */
+  .staff-strip {
+    background: linear-gradient(90deg, #0A1628, #0F2A4A);
+    border-radius: 12px;
+    padding: 1rem 1.15rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(201,162,39,0.25);
+  }
+  .staff-strip h3 {
+    margin: 0 0 0.75rem;
+    color: var(--gold);
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+  .staff-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+  .staff-roles span {
+    background: rgba(255,255,255,0.08);
+    color: #E5E7EB;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+    border-radius: 8px;
+    border: 1px solid rgba(201,162,39,0.2);
+  }
+
   .panel {
     background: #fff;
     border-radius: 12px;
-    padding: 1.15rem 1.3rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-    margin-bottom: 1.25rem;
-    border: 1px solid #eee;
+    padding: 1.15rem 1.25rem;
+    box-shadow: 0 4px 14px rgba(10,22,40,0.05);
+    margin-bottom: 1.15rem;
+    border: 1px solid #E8ECF1;
   }
   .panel h3 {
-    margin: 0 0 0.9rem;
+    margin: 0 0 0.85rem;
     color: var(--navy);
-    font-size: 1.05rem;
+    font-size: 1rem;
     border-bottom: 2px solid var(--gold);
-    padding-bottom: 0.4rem;
+    padding-bottom: 0.35rem;
     display: inline-block;
+    font-weight: 800;
   }
+
   .dash-footer {
     text-align: center;
     padding: 1rem;
-    font-size: 0.78rem;
-    color: #888;
-    border-top: 1px solid #e0e0e0;
-    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: #9CA3AF;
+    border-top: 1px solid #E5E8EF;
+    margin-top: 0.5rem;
   }
   .dash-footer strong { color: var(--navy); }
+
   @media (max-width: 800px) {
     .sidebar { display: none; }
     .kpi-row { grid-template-columns: 1fr 1fr; }
-    .brand-bar__titles h1 { font-size: 0.95rem; }
+    .brand-bar__titles h1 { font-size: 0.9rem; }
   }
 </style>
 </head>
@@ -312,7 +370,7 @@
 
 <header class="brand-bar">
   <div class="brand-bar__left">
-    <img src="icons/logo-future-tech.png" alt="Future Tech" style="height:42px;width:auto;object-fit:contain;background:#fff;border-radius:8px;padding:2px;" />
+    <img src="icons/logo-future-tech.png" alt="Future Tech Public School" />
     <div class="brand-bar__titles">
       <h1>FUTURE TECH PUBLIC SCHOOL</h1>
       <p>Qamber · Nurturing Minds, Building Futures</p>
@@ -328,48 +386,50 @@
 <div class="dash-layout">
   <nav class="sidebar">
     <div class="side-label">Navigation</div>
-    <a href="dashboard.html" class="active"><span>📊</span> Master Dashboard</a>
+    <a href="dashboard.html" class="active"><span>📊</span> Dashboard</a>
     <a href="modules/school/index.html">
-      <img src="icons/logo-future-tech.png" alt="" /> Future Tech
+      <img src="icons/logo-future-tech.png" alt="" /> School ERP
     </a>
     <a href="modules/trading-academy/index.html">
-      <img src="icons/logo-trading.svg" alt="" /> FKC Trading
+      <img src="icons/logo-trading.svg" alt="" /> Trading Academy
     </a>
     <a href="modules/educational-academy/index.html">
       <img src="icons/logo-academy.svg" alt="" /> Edu Academy
     </a>
+    <a href="parent.html"><span>👨‍👩‍👧</span> Parent Portal</a>
   </nav>
 
   <main class="dash-main">
+    <!-- HERO -->
     <section class="hero-brand">
-      <h1>Master ERP Dashboard</h1>
-      <p class="tagline">One system for School · Trading Academy · Educational Academy</p>
-      <div class="hero-logos">
-        <div class="hero-logo-item">
-          <img src="icons/logo-future-tech.png" alt="School" />
-          <span><strong>Future Tech Public School</strong>Qamber · Nurturing Minds, Building Futures</span>
+      <div class="hero-top">
+        <img src="icons/logo-future-tech.png" alt="Future Tech Public School" />
+        <div>
+          <h1>Future Tech Public School</h1>
+          <div class="loc">QAMBER</div>
+          <div class="tagline">Quest for Excellence · Nurturing Minds, Building Futures</div>
         </div>
-        <div class="hero-logo-item">
-          <img src="icons/logo-trading.svg" alt="Trading" />
-          <span><strong>FKC Trading Academy</strong>Learn | Trade | Succeed</span>
-        </div>
-        <div class="hero-logo-item">
-          <img src="icons/logo-academy.svg" alt="Academy" />
-          <span><strong>Educational Academy</strong>Skills | Knowledge | Excellence</span>
-        </div>
+      </div>
+      <div class="hero-strength">
+        <span>Quality Education</span>
+        <span>Caring Staff</span>
+        <span>Modern Facilities</span>
+        <span>Holistic Development</span>
+        <span>Safe &amp; Secure</span>
       </div>
     </section>
 
+    <!-- KPIs -->
     <section class="kpi-row">
       <div class="kpi-card">
         <div class="label">Total Students</div>
         <div class="value" id="kpi-students">—</div>
-        <div class="sub">School · Trading · Academy</div>
+        <div class="sub">All modules</div>
       </div>
       <div class="kpi-card green">
-        <div class="label">Active Batches / Classes</div>
+        <div class="label">Active Classes / Batches</div>
         <div class="value" id="kpi-batches">—</div>
-        <div class="sub">Across all modules</div>
+        <div class="sub">School · Trading · Academy</div>
       </div>
       <div class="kpi-card gold">
         <div class="label">Today's Collection</div>
@@ -379,26 +439,39 @@
       <div class="kpi-card red">
         <div class="label">Pending Fees</div>
         <div class="value" id="kpi-pending">—</div>
-        <div class="sub">All institutions</div>
+        <div class="sub">Outstanding</div>
       </div>
     </section>
 
+    <!-- STAFF STRIP -->
+    <div class="staff-strip">
+      <h3>Our Staff · Our Strength</h3>
+      <div class="staff-roles">
+        <span>Teacher (Female)</span>
+        <span>Teacher (Male)</span>
+        <span>Office / Admin</span>
+        <span>Sweeper / Cleaner</span>
+        <span>Peon</span>
+        <span>Guard</span>
+      </div>
+    </div>
+
+    <!-- MODULES -->
     <section class="module-grid">
       <a class="module-card" href="modules/school/index.html">
         <div class="module-card__head">
-          <img src="icons/logo-future-tech.png" alt="School Logo" />
-          <div class="titles">
+          <img src="icons/logo-future-tech.png" alt="School" />
+          <div>
             <h3>Future Tech Public School</h3>
-            <p>Qamber · Nurturing Minds, Building Futures</p>
+            <p>Qamber · Full School ERP</p>
           </div>
         </div>
         <div class="module-card__body">
-          Complete school management — Admission, Students, Fee Structure, Challans, Certificates.
+          Admission, Students, Fees, Attendance, Exams, Teachers, Staff, Timetable, Homework, Certificates &amp; more.
           <ul>
-            <li>Full Admission Form + Print</li>
-            <li>Fee Structure → Auto Challan</li>
-            <li>Paid / Unpaid tracking</li>
-            <li>Enrollment Certificates</li>
+            <li>Admission + Print form</li>
+            <li>Fee challans &amp; collection</li>
+            <li>ID cards &amp; certificates</li>
           </ul>
         </div>
         <div class="module-card__foot">Open School Module <span>→</span></div>
@@ -406,45 +479,34 @@
 
       <a class="module-card" href="modules/trading-academy/index.html">
         <div class="module-card__head">
-          <img src="icons/logo-trading.svg" alt="Trading Logo" />
-          <div class="titles">
+          <img src="icons/logo-trading.svg" alt="Trading" />
+          <div>
             <h3>FKC Trading Academy</h3>
             <p>Learn | Trade | Succeed</p>
           </div>
         </div>
         <div class="module-card__body">
-          Batches, Enrollments, Fee Challans, Trading Journal with P/L tracking.
-          <ul>
-            <li>Separate Admission + Print</li>
-            <li>Batch Management</li>
-            <li>Trading Journal + Auto P/L</li>
-            <li>Certificates</li>
-          </ul>
+          Batches, enrollments, fee challans, trading journal with P/L.
         </div>
         <div class="module-card__foot">Open Trading Module <span>→</span></div>
       </a>
 
       <a class="module-card" href="modules/educational-academy/index.html">
         <div class="module-card__head">
-          <img src="icons/logo-academy.svg" alt="Academy Logo" />
-          <div class="titles">
+          <img src="icons/logo-academy.svg" alt="Academy" />
+          <div>
             <h3>Educational Academy</h3>
             <p>Skills | Knowledge | Excellence</p>
           </div>
         </div>
         <div class="module-card__body">
-          Tutors, Classes, Enrollments, Fee Challans — fully separate data.
-          <ul>
-            <li>Separate Admission + Print</li>
-            <li>Tutor &amp; Class Management</li>
-            <li>Fee Challans + Print</li>
-            <li>Certificates</li>
-          </ul>
+          Tutors, classes, enrollments, exams, fees — separate data.
         </div>
         <div class="module-card__foot">Open Academy Module <span>→</span></div>
       </a>
     </section>
 
+    <!-- VISITORS -->
     <section class="panel">
       <h3>Walk-in Reception Log</h3>
       <form id="visitor-form" class="inline-form">
@@ -459,17 +521,17 @@
         <button type="submit">Log visit</button>
       </form>
       <ul id="visitor-list" class="visitor-list"></ul>
-      <p class="hint">Saved instantly on this device · Syncs to cloud when online</p>
+      <p class="hint">Saved on this device · Syncs when online</p>
     </section>
 
-    
+    <!-- ANNOUNCEMENTS -->
     <section class="panel">
       <h3>Announcements</h3>
       <form id="announcement-form" class="inline-form">
         <input type="text" id="ann-title" placeholder="Title" required />
         <input type="text" id="ann-body" placeholder="Message" required style="flex:2" />
         <select id="ann-for">
-          <option value="all">All modules</option>
+          <option value="all">All</option>
           <option value="school">School</option>
           <option value="trading">Trading</option>
           <option value="academy">Academy</option>
@@ -480,8 +542,8 @@
     </section>
 
     <div class="dash-footer">
-      <strong>THE SMART MODERN GROUP</strong> — Educating Minds · Building Futures · Empowering Traders<br>
-      FKC ERP System v4
+      <strong>FUTURE TECH PUBLIC SCHOOL · QAMBER</strong><br>
+      Quest for Excellence · Together for a Better Tomorrow
     </div>
   </main>
 </div>
