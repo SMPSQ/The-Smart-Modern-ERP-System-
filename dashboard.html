@@ -100,7 +100,27 @@
   .dash-layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 70px); }
   .sidebar {
     background: linear-gradient(180deg, #06101C 0%, #0A1628 100%);
-    padding: 1.25rem 0.9rem; border-right: 1px solid rgba(201,162,39,0.2);
+    padding: 1.25rem 0.75rem;
+    border-right: 1px solid rgba(201,162,39,0.25);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+  }
+  .sidebar-brand {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.5rem 0.75rem 1rem;
+    border-bottom: 1px solid rgba(201,162,39,0.25);
+    margin-bottom: 0.75rem;
+  }
+  .sidebar-brand img {
+    width: 40px; height: 40px; object-fit: contain;
+    background: #fff; border-radius: 10px; padding: 2px;
+    border: 1px solid var(--gold);
+  }
+  .sidebar-brand strong {
+    color: #fff; font-size: 0.78rem; font-weight: 800;
+    line-height: 1.25; display: block;
+  }
+  .sidebar-brand small {
+    color: var(--gold-light); font-size: 0.65rem; letter-spacing: 0.5px;
   }
   .side-label {
     font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px;
@@ -184,28 +204,30 @@
     gap: 0.9rem; margin-bottom: 1.25rem;
   }
   .kpi-card {
-    background: var(--card); border-radius: var(--radius);
-    padding: 1.15rem 1.2rem; box-shadow: var(--shadow);
-    border: 1px solid #E8ECF1; position: relative; overflow: hidden;
+    border-radius: 16px;
+    padding: 1.15rem 1.2rem;
+    box-shadow: 0 8px 28px rgba(10,22,40,0.1);
+    border: none;
+    position: relative;
+    overflow: hidden;
     transition: transform 0.2s, box-shadow 0.2s;
+    color: #fff;
+    background: linear-gradient(135deg, #1D4ED8, #3B82F6);
   }
-  .kpi-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
-  .kpi-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
-    background: linear-gradient(90deg, var(--navy), var(--navy-mid));
-  }
-  .kpi-card.green::before { background: linear-gradient(90deg, #059669, #34d399); }
-  .kpi-card.gold::before { background: linear-gradient(90deg, #A16207, var(--gold)); }
-  .kpi-card.red::before { background: linear-gradient(90deg, #B91C1C, #F87171); }
+  .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(10,22,40,0.18); }
+  .kpi-card::before { display: none; }
+  .kpi-card.green { background: linear-gradient(135deg, #059669, #34D399); }
+  .kpi-card.gold { background: linear-gradient(135deg, #B45309, #F59E0B); }
+  .kpi-card.red { background: linear-gradient(135deg, #7C3AED, #A78BFA); }
   .kpi-card .label {
-    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--muted); font-weight: 700; margin-bottom: 0.35rem;
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.85); font-weight: 700; margin-bottom: 0.4rem;
   }
   .kpi-card .value {
-    font-size: 1.55rem; font-weight: 800; color: var(--navy);
+    font-size: 1.7rem; font-weight: 800; color: #fff;
     letter-spacing: -0.02em;
   }
-  .kpi-card .sub { font-size: 0.72rem; color: #94A3B8; margin-top: 0.25rem; }
+  .kpi-card .sub { font-size: 0.72rem; color: rgba(255,255,255,0.75); margin-top: 0.3rem; }
 
   /* STAFF STRIP */
   .staff-strip {
@@ -395,6 +417,13 @@
       </div>
     </section>
 
+    <div class="dash-welcome" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+      <div>
+        <h2 style="margin:0;font-size:1.25rem;font-weight:800;color:#0A1628;">Dashboard</h2>
+        <p style="margin:0.2rem 0 0;color:#64748B;font-size:0.85rem;">Welcome back — here&apos;s what&apos;s happening at Future Tech</p>
+      </div>
+      <div style="font-size:0.8rem;color:#64748B;background:#fff;padding:0.45rem 0.85rem;border-radius:10px;border:1px solid #E2E8F0;font-weight:600;" id="dash-date"></div>
+    </div>
     <!-- KPIs -->
     <section class="kpi-row">
       <div class="kpi-card">

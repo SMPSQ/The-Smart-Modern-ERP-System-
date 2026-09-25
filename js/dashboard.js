@@ -139,6 +139,8 @@ document.getElementById('visitor-filter-status')?.addEventListener('change', ren
 // Init
 loadKPIs();
 renderVisitors();
+const dd = document.getElementById('dash-date');
+if (dd) dd.textContent = new Date().toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 
 // Refresh KPIs every 30 seconds
 setInterval(loadKPIs, 30000);

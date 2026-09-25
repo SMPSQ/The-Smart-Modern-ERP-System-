@@ -71,7 +71,14 @@ export async function drainQueue() {
     }
 
     if (!auth.currentUser) {
-      setPill('error', 'Admin email login needed for cloud sync. Data is safe on this device.');
+      // Staff local login → try anonymous Firebase auth so rules allow write
+      try {
+        const { ensureFirebaseAuthForSync } = await import('./staff-auth.js');
+        await ensureFirebaseAuthForSync();
+      } catch (_) {}
+    }
+    if (!auth.currentUser) {
+      setPill('error', 'Cloud sync needs login. Enable Anonymous Auth in Firebase Console.');
       return { ok: false, remaining: queue.length, reason: 'no-auth' };
     }
 
@@ -141,7 +148,13 @@ export async function drainQueue() {
 /** Force push ALL local students (and core stores) to Firestore */
 export async function forceSyncStudents() {
   if (!auth.currentUser) {
-    return { ok: false, reason: 'Login with Admin email first' };
+    try {
+      const { ensureFirebaseAuthForSync } = await import('./staff-auth.js');
+      await ensureFirebaseAuthForSync();
+    } catch (_) {}
+  }
+  if (!auth.currentUser) {
+    return { ok: false, reason: 'Enable Anonymous Auth in Firebase (Authentication → Sign-in method)' };
   }
   try { await purgeQueueNoise(); } catch (_) {}
   const n = await requeueUnsynced(

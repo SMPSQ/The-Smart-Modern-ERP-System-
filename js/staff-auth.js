@@ -97,6 +97,8 @@ export async function loginStaff(username, password) {
   if (hash !== user.passwordHash) return { ok: false, error: 'Invalid username or password' };
   if (user.active === false) return { ok: false, error: 'Account disabled' };
   setStaffSession(user);
+  // Enable cloud sync for staff (attendance, students, etc.)
+  try { await ensureFirebaseAuthForSync(); } catch (_) {}
   return { ok: true, staff: user };
 }
 
@@ -146,3 +148,19 @@ export function applyTabAccess(role) {
     main.prepend(note);
   }
 }
+
+
+/** Ensure Firebase Auth session exists so Firestore rules allow write (staff sync). */
+export async function ensureFirebaseAuthForSync() {
+  try {
+    const { auth } = await import('./firebase-config.js');
+    const { signInAnonymously } = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js');
+    if (auth.currentUser) return auth.currentUser;
+    const cred = await signInAnonymously(auth);
+    return cred.user;
+  } catch (err) {
+    console.warn('Anonymous auth for sync failed:', err?.message || err);
+    return null;
+  }
+}
+

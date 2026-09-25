@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Logged-in users (email admin OR anonymous staff) can sync all ERP data
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    match /students/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /admissions/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /feeChallans/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /feeStructure/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /attendance/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /teachers/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /staff/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /exams/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /expenses/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /income/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /leaves/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /timetable/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /announcements/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /schoolClasses/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /subjects/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /homework/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /library/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /transport/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /inventory/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /payroll/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /settings/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /courses/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /batches/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /tradingEnrollments/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /tradingJournal/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /tutors/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /classes/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /academyEnrollments/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /visitors/{id} {
+      allow read, write: if isSignedIn();
+    }
+    match /activity_logs/{id} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Catch-all for any other ERP collection
+    match /{document=**} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}
