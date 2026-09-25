@@ -4,7 +4,7 @@ import { runSync } from '../../js/sync.js';
 import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint, buildIdCardPrint } from '../../js/print.js';
 
 const MODULE = 'school';
-const INST_NAME = 'The Smart Modern Public School';
+const INST_NAME = 'Future Tech Public School';
 
 // Edit mode state
 let editingAdmissionId = null;
@@ -342,6 +342,7 @@ async function renderStudents(filter = '') {
       await populateAttStudentSelect();
       await populateExamStudentSelect();
       await populateLeaveStudents();
+      await populateCertStudents();
       runSync();
     });
   });
@@ -967,6 +968,179 @@ if (ttForm) {
 }
 if (ttFilter) ttFilter.addEventListener('input', () => renderTimetable(ttFilter.value.trim()));
 
+
+// ========== CLASSES / SUBJECTS ==========
+const classMgmtForm = document.getElementById('class-mgmt-form');
+const classMgmtList = document.getElementById('class-mgmt-list');
+const subjectForm = document.getElementById('subject-form');
+const subjectList = document.getElementById('subject-list');
+
+async function renderClassMgmt() {
+  if (!classMgmtList) return;
+  const list = await getModuleRecords('schoolClasses');
+  list.sort((a,b) => (a.className||'').localeCompare(b.className||'') || (a.section||'').localeCompare(b.section||''));
+  classMgmtList.innerHTML = list.length ? list.map(c => `
+    <li><strong>${esc(c.className)}</strong> <span class="tag">${esc(c.section||'—')}</span>
+    <span class="muted">${esc(c.teacher||'')}</span>
+    <span class="muted">Cap: ${c.capacity||'—'}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-cm="${c.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No classes configured.</li>';
+  classMgmtList.querySelectorAll('[data-del-cm]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete class?')) return;
+      await deleteLocal('schoolClasses', btn.dataset.delCm);
+      await renderClassMgmt(); runSync();
+    });
+  });
+}
+if (classMgmtForm) {
+  classMgmtForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('schoolClasses', {
+      className: document.getElementById('cm-class').value,
+      section: document.getElementById('cm-section').value.trim(),
+      teacher: document.getElementById('cm-teacher').value.trim(),
+      capacity: Number(document.getElementById('cm-capacity').value) || null,
+      module: MODULE
+    });
+    classMgmtForm.reset();
+    await renderClassMgmt(); runSync();
+  });
+}
+async function renderSubjects() {
+  if (!subjectList) return;
+  const list = await getModuleRecords('subjects');
+  subjectList.innerHTML = list.length ? list.map(s => `
+    <li><strong>${esc(s.name)}</strong> <span class="muted">${esc(s.className||'All')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-sub="${s.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No subjects yet.</li>';
+  subjectList.querySelectorAll('[data-del-sub]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('subjects', btn.dataset.delSub);
+      await renderSubjects(); runSync();
+    });
+  });
+}
+if (subjectForm) {
+  subjectForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('subjects', {
+      name: document.getElementById('sub-name').value.trim(),
+      className: document.getElementById('sub-class').value.trim(),
+      module: MODULE
+    });
+    subjectForm.reset();
+    await renderSubjects(); runSync();
+  });
+}
+
+// ========== HOMEWORK ==========
+const hwForm = document.getElementById('hw-form');
+const hwList = document.getElementById('hw-list');
+async function renderHomework() {
+  if (!hwList) return;
+  const list = await getModuleRecords('homework');
+  list.sort((a,b) => (b.due||'').localeCompare(a.due||''));
+  hwList.innerHTML = list.length ? list.map(h => `
+    <li><strong>${esc(h.title)}</strong> <span class="tag">${esc(h.className)}</span>
+    <span class="muted">${esc(h.subject)}</span> <span class="muted">Due: ${esc(h.due)}</span>
+    <span class="muted">${esc(h.note||'')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-hw="${h.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No homework posted.</li>';
+  hwList.querySelectorAll('[data-del-hw]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('homework', btn.dataset.delHw);
+      await renderHomework(); runSync();
+    });
+  });
+}
+if (hwForm) {
+  hwForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('homework', {
+      className: document.getElementById('hw-class').value.trim(),
+      subject: document.getElementById('hw-subject').value.trim(),
+      title: document.getElementById('hw-title').value.trim(),
+      due: document.getElementById('hw-due').value,
+      note: document.getElementById('hw-note').value.trim(),
+      module: MODULE
+    });
+    hwForm.reset();
+    await renderHomework(); runSync();
+  });
+}
+
+// ========== CERTIFICATES (types) ==========
+const certForm = document.getElementById('cert-form');
+const certStudent = document.getElementById('cert-student');
+async function populateCertStudents() {
+  if (!certStudent) return;
+  const students = await getModuleRecords('students');
+  students.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  certStudent.innerHTML = '<option value="">Select student</option>' +
+    students.map(s => `<option value="${s.id}">${esc(s.name)} (${esc(s.className)})</option>`).join('');
+}
+if (certForm) {
+  certForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const opt = certStudent?.selectedOptions[0];
+    if (!opt?.value) return;
+    const s = await getLocal('students', opt.value);
+    if (!s) return;
+    const type = document.getElementById('cert-type').value;
+    const bodies = {
+      Character: `is a student of good moral character at <strong>${INST_NAME}</strong>, Class ${s.className}.`,
+      Bonafide: `is a bonafide student of <strong>${INST_NAME}</strong>, currently enrolled in Class ${s.className}.`,
+      Leaving: `was a student of <strong>${INST_NAME}</strong> in Class ${s.className} and is leaving the school.`,
+      Enrollment: `has been duly enrolled in Class ${s.className} at <strong>${INST_NAME}</strong>.`
+    };
+    printDocument(type + ' Certificate', buildCertificatePrint({
+      studentName: s.name,
+      type,
+      course: s.className,
+      className: s.className,
+      body: bodies[type] || bodies.Enrollment
+    }, INST_NAME), { subtitle: INST_NAME });
+  });
+}
+
+// ========== STAFF ==========
+const staffForm = document.getElementById('staff-form');
+const staffList = document.getElementById('staff-list');
+async function renderStaff() {
+  if (!staffList) return;
+  const list = await getModuleRecords('staff');
+  staffList.innerHTML = list.length ? list.map(s => `
+    <li><strong>${esc(s.name)}</strong> <span class="tag">${esc(s.role||'Staff')}</span>
+    <span class="muted">${esc(s.phone||'')}</span>
+    <span class="amount">${s.salary != null ? formatMoney(s.salary) : ''}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-staff="${s.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No staff records.</li>';
+  staffList.querySelectorAll('[data-del-staff]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('staff', btn.dataset.delStaff);
+      await renderStaff(); runSync();
+    });
+  });
+}
+if (staffForm) {
+  staffForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('staff', {
+      name: document.getElementById('staff-name').value.trim(),
+      role: document.getElementById('staff-role').value.trim(),
+      phone: document.getElementById('staff-phone').value.trim(),
+      salary: Number(document.getElementById('staff-salary').value) || null,
+      module: MODULE
+    });
+    staffForm.reset();
+    await renderStaff(); runSync();
+  });
+}
+
 // ========== INIT ==========
 (async function init() {
   await renderAdmissions();
@@ -985,4 +1159,9 @@ if (ttFilter) ttFilter.addEventListener('input', () => renderTimetable(ttFilter.
   await populateLeaveStudents();
   await renderLeaves();
   await renderTimetable();
+  await renderClassMgmt();
+  await renderSubjects();
+  await renderHomework();
+  await populateCertStudents();
+  await renderStaff();
 })();

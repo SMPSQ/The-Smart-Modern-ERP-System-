@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>The Smart Modern Public School — ERP</title>
+<title>Future Tech Public School — ERP</title>
 <meta name="theme-color" content="#0A1628" />
 <link rel="manifest" href="../../manifest.json" />
 <link rel="icon" href="../../icons/icon.svg" />
@@ -238,7 +238,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
 <header class="dash-header">
   <div class="dash-header__brand">
     <span class="crest-sm">FKC</span>
-    <span>The Smart Modern Public School</span>
+    <span>Future Tech Public School · Qamber</span>
   </div>
   <div class="dash-header__right">
     <span class="sync-pill" id="sync-pill">● checking…</span>
@@ -252,10 +252,10 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
 
   <!-- School branding hero -->
   <div class="school-hero">
-    <img src="../../icons/logo-school-official.jpg" alt="School Logo" />
+    <img src="../../icons/logo-future-tech.png" alt="School Logo" />
     <div>
-      <h1>The Smart Modern Public School</h1>
-      <p>Nurturing Minds, Building Futures · Quest for Excellence</p>
+      <h1>Future Tech Public School</h1>
+      <p>Qamber · Nurturing Minds, Building Futures · Quest for Excellence</p>
     </div>
   </div>
 
@@ -271,6 +271,10 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     <button type="button" class="tab-btn" data-tab="finance">Finance</button>
     <button type="button" class="tab-btn" data-tab="leave">Leave</button>
     <button type="button" class="tab-btn" data-tab="timetable">Timetable</button>
+    <button type="button" class="tab-btn" data-tab="classes">Classes</button>
+    <button type="button" class="tab-btn" data-tab="homework">Homework</button>
+    <button type="button" class="tab-btn" data-tab="certificates">Certificates</button>
+    <button type="button" class="tab-btn" data-tab="staff">Staff</button>
   </div>
 
   <!-- ========== TAB: ADMISSION ========== -->
@@ -278,10 +282,10 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     <div class="form-card">
       
       <div style="display:flex;align-items:center;gap:0.85rem;margin-bottom:1.1rem;padding-bottom:0.85rem;border-bottom:2px solid #C9A227;">
-        <img src="../../icons/logo-school-official.jpg" alt="School Logo" style="width:64px;height:64px;object-fit:contain;border-radius:8px;background:#fff;" />
+        <img src="../../icons/logo-future-tech.png" alt="School Logo" style="width:64px;height:64px;object-fit:contain;border-radius:8px;background:#fff;" />
         <div>
-          <div style="font-size:1.05rem;font-weight:800;color:#0A1628;letter-spacing:-0.02em;">THE SMART MODERN PUBLIC SCHOOL</div>
-          <div style="font-size:0.78rem;color:#C9A227;font-weight:600;margin-top:0.15rem;">Nurturing Minds, Building Futures</div>
+          <div style="font-size:1.05rem;font-weight:800;color:#0A1628;letter-spacing:-0.02em;">FUTURE TECH PUBLIC SCHOOL</div>
+          <div style="font-size:0.78rem;color:#C9A227;font-weight:600;margin-top:0.15rem;">Qamber · Nurturing Minds, Building Futures</div>
           <div style="font-size:0.72rem;color:#5A6270;margin-top:0.1rem;">Student Admission Form</div>
         </div>
       </div>
@@ -593,6 +597,81 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
         <input type="text" id="tt-filter" placeholder="Filter by class..." />
       </div>
       <ul id="tt-list" class="data-list"></ul>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-classes">
+    <div class="form-card">
+      <h3>Classes & Sections (Nursery – 8)</h3>
+      <form id="class-mgmt-form" class="inline-form">
+        <select id="cm-class" required>
+          <option value="">Class</option>
+          <option>Nursery</option><option>Prep</option>
+          <option>1</option><option>2</option><option>3</option><option>4</option>
+          <option>5</option><option>6</option><option>7</option><option>8</option>
+        </select>
+        <input type="text" id="cm-section" placeholder="Section (A/B)" />
+        <input type="text" id="cm-teacher" placeholder="Class teacher" />
+        <input type="number" id="cm-capacity" placeholder="Capacity" min="1" />
+        <button type="submit">Add Class</button>
+      </form>
+      <ul id="class-mgmt-list" class="data-list"></ul>
+    </div>
+    <div class="form-card">
+      <h3>Subjects</h3>
+      <form id="subject-form" class="inline-form">
+        <input type="text" id="sub-name" placeholder="Subject name" required />
+        <input type="text" id="sub-class" placeholder="For class (optional)" />
+        <button type="submit">Add Subject</button>
+      </form>
+      <ul id="subject-list" class="data-list"></ul>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-homework">
+    <div class="form-card">
+      <h3>Assign Homework</h3>
+      <form id="hw-form" class="inline-form">
+        <input type="text" id="hw-class" placeholder="Class" required />
+        <input type="text" id="hw-subject" placeholder="Subject" required />
+        <input type="text" id="hw-title" placeholder="Title / Task" required />
+        <input type="date" id="hw-due" required />
+        <input type="text" id="hw-note" placeholder="Teacher note" />
+        <button type="submit">Post Homework</button>
+      </form>
+      <ul id="hw-list" class="data-list"></ul>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-certificates">
+    <div class="form-card">
+      <h3>Generate Certificate</h3>
+      <form id="cert-form" class="inline-form">
+        <select id="cert-student" required><option value="">Select student</option></select>
+        <select id="cert-type" required>
+          <option value="Character">Character Certificate</option>
+          <option value="Bonafide">Bonafide Certificate</option>
+          <option value="Leaving">Leaving Certificate</option>
+          <option value="Enrollment">Enrollment Certificate</option>
+        </select>
+        <button type="submit">Print Certificate</button>
+      </form>
+      <p class="hint">Select student + certificate type → opens print-ready certificate.</p>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-staff">
+    <div class="form-card">
+      <h3>Staff / Employees</h3>
+      <form id="staff-form" class="inline-form">
+        <input type="text" id="staff-name" placeholder="Name" required />
+        <input type="text" id="staff-role" placeholder="Role (Clerk, Peon…)" />
+        <input type="tel" id="staff-phone" placeholder="Phone" />
+        <input type="number" id="staff-salary" placeholder="Salary (Rs)" min="0" />
+        <button type="submit">Add Staff</button>
+      </form>
+      <ul id="staff-list" class="data-list"></ul>
     </div>
   </div>
 
