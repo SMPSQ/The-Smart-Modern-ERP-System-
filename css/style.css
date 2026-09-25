@@ -455,3 +455,22 @@ ul.visitor-list li .actions {
   background: #0A1628 !important;
   color: #fff !important;
 }
+
+/* FONT CLARITY AUDIT */
+html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  font-family: var(--font) !important;
+  color: #0F172A;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+h1, h2, h3, h4 { letter-spacing: -0.01em; color: #0A1628; }
+input, select, textarea, button {
+  font-family: var(--font) !important;
+  font-size: 0.95rem;
+}
+.muted, .hint { color: #64748B !important; font-size: 0.85rem !important; }
+.tag { font-size: 0.75rem !important; font-weight: 700; }
+.data-list li, .visitor-list li { font-size: 0.9rem !important; line-height: 1.45; }
+.mini-btn { font-size: 0.8rem !important; font-weight: 700 !important; }
+
