@@ -2,7 +2,7 @@
 // IndexedDB + Sync Queue + Automatic Activity Logging
 
 const DB_NAME = 'fkc-erp-v4';
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 
 const STORES = [
   // Core
@@ -22,6 +22,11 @@ const STORES = [
   'subjects',
   'homework',
   'staff',
+  'library',
+  'transport',
+  'inventory',
+  'payroll',
+  'settings',
 
   // Trading Academy
   'batches',

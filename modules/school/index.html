@@ -275,6 +275,13 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     <button type="button" class="tab-btn" data-tab="homework">Homework</button>
     <button type="button" class="tab-btn" data-tab="certificates">Certificates</button>
     <button type="button" class="tab-btn" data-tab="staff">Staff</button>
+    <button type="button" class="tab-btn" data-tab="payroll">Payroll</button>
+    <button type="button" class="tab-btn" data-tab="library">Library</button>
+    <button type="button" class="tab-btn" data-tab="transport">Transport</button>
+    <button type="button" class="tab-btn" data-tab="inventory">Inventory</button>
+    <button type="button" class="tab-btn" data-tab="reports">Reports</button>
+    <button type="button" class="tab-btn" data-tab="settings">Settings</button>
+    <button type="button" class="tab-btn" data-tab="backup">Backup</button>
   </div>
 
   <!-- ========== TAB: ADMISSION ========== -->
@@ -325,6 +332,22 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
           <div class="field">
             <label>Section</label>
             <input type="text" id="adm-section" placeholder="A / B / Morning" />
+          </div>
+          <div class="field">
+            <label>Roll No</label>
+            <input type="text" id="adm-roll" placeholder="Roll number" />
+          </div>
+          <div class="field">
+            <label>Blood Group</label>
+            <select id="adm-blood">
+              <option value="">—</option>
+              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Previous School</label>
+            <input type="text" id="adm-prev-school" placeholder="Optional" />
           </div>
         </div>
         <div class="form-row two">
@@ -672,6 +695,123 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
         <button type="submit">Add Staff</button>
       </form>
       <ul id="staff-list" class="data-list"></ul>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-payroll">
+    <div class="form-card">
+      <h3>Salary / Payroll Entry</h3>
+      <form id="payroll-form" class="inline-form">
+        <input type="text" id="pay-name" placeholder="Employee name" required />
+        <input type="text" id="pay-role" placeholder="Role" />
+        <input type="month" id="pay-month" required />
+        <input type="number" id="pay-basic" placeholder="Basic salary" min="0" required />
+        <input type="number" id="pay-allow" placeholder="Allowances" min="0" value="0" />
+        <input type="number" id="pay-deduct" placeholder="Deductions" min="0" value="0" />
+        <button type="submit">Save Salary</button>
+      </form>
+      <ul id="payroll-list" class="data-list"></ul>
+      <p class="hint">Net = Basic + Allowances − Deductions. Print slip from list.</p>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-library">
+    <div class="form-card">
+      <h3>Library Books</h3>
+      <form id="lib-form" class="inline-form">
+        <input type="text" id="lib-title" placeholder="Book title" required />
+        <input type="text" id="lib-author" placeholder="Author" />
+        <input type="text" id="lib-cat" placeholder="Category" />
+        <input type="number" id="lib-qty" placeholder="Qty" min="1" value="1" />
+        <button type="submit">Add Book</button>
+      </form>
+      <ul id="lib-list" class="data-list"></ul>
+    </div>
+    <div class="form-card">
+      <h3>Issue / Return</h3>
+      <form id="lib-issue-form" class="inline-form">
+        <input type="text" id="lib-issue-book" placeholder="Book title" required />
+        <input type="text" id="lib-issue-student" placeholder="Student name" required />
+        <input type="date" id="lib-issue-date" required />
+        <select id="lib-issue-status"><option value="Issued">Issued</option><option value="Returned">Returned</option></select>
+        <button type="submit">Save</button>
+      </form>
+      <ul id="lib-issue-list" class="data-list"></ul>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-transport">
+    <div class="form-card">
+      <h3>Vehicles & Routes</h3>
+      <form id="trans-form" class="inline-form">
+        <input type="text" id="trans-vehicle" placeholder="Vehicle (e.g. Van-01)" required />
+        <input type="text" id="trans-route" placeholder="Route" required />
+        <input type="text" id="trans-driver" placeholder="Driver name" />
+        <input type="tel" id="trans-phone" placeholder="Driver phone" />
+        <input type="number" id="trans-fee" placeholder="Monthly fee" min="0" />
+        <button type="submit">Add</button>
+      </form>
+      <ul id="trans-list" class="data-list"></ul>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-inventory">
+    <div class="form-card">
+      <h3>Inventory / Stock</h3>
+      <form id="inv-form" class="inline-form">
+        <input type="text" id="inv-item" placeholder="Item name" required />
+        <select id="inv-cat">
+          <option>Stationery</option><option>Uniform</option><option>Equipment</option><option>Books</option><option>Other</option>
+        </select>
+        <input type="number" id="inv-qty" placeholder="Qty" min="0" required />
+        <select id="inv-type"><option value="In">Stock In</option><option value="Out">Stock Out</option></select>
+        <button type="submit">Save</button>
+      </form>
+      <ul id="inv-list" class="data-list"></ul>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-reports">
+    <div class="form-card">
+      <h3>School Reports Snapshot</h3>
+      <div id="reports-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;"></div>
+      <p class="hint" style="margin-top:1rem">Live counts from this device. Use Print from browser for PDF.</p>
+      <button type="button" class="btn-primary" id="reports-refresh" style="margin-top:0.75rem">Refresh Reports</button>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-settings">
+    <div class="form-card">
+      <h3>School Settings</h3>
+      <form id="settings-form">
+        <div class="form-row two">
+          <div class="field"><label>School Name</label><input type="text" id="set-name" value="Future Tech Public School" /></div>
+          <div class="field"><label>City / Campus</label><input type="text" id="set-city" value="Qamber" /></div>
+          <div class="field"><label>Phone</label><input type="tel" id="set-phone" /></div>
+          <div class="field"><label>Email</label><input type="email" id="set-email" /></div>
+          <div class="field full"><label>Address</label><textarea id="set-address" rows="2"></textarea></div>
+          <div class="field"><label>Academic Session</label><input type="text" id="set-session" placeholder="2025-26" /></div>
+          <div class="field"><label>Website</label><input type="text" id="set-web" /></div>
+        </div>
+        <div class="btn-row"><button type="submit" class="btn-primary">Save Settings</button></div>
+      </form>
+      <p class="hint" id="settings-status"></p>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-backup">
+    <div class="form-card">
+      <h3>Backup &amp; Restore</h3>
+      <p class="hint">Export all school data as JSON file. Import to restore on this or another device.</p>
+      <div class="btn-row">
+        <button type="button" class="btn-primary" id="backup-export">Download Backup (JSON)</button>
+        <label class="btn-secondary" style="display:inline-block;cursor:pointer;padding:0.7rem 1.2rem;">
+          Import Backup
+          <input type="file" id="backup-import" accept=".json,application/json" style="display:none" />
+        </label>
+      </div>
+      <p class="hint" id="backup-status"></p>
     </div>
   </div>
 

@@ -68,6 +68,9 @@ function fillAdmissionForm(a) {
   setVal('adm-address', a.address);
   setVal('adm-city', a.city);
   setVal('adm-phone', a.phone);
+  setVal('adm-roll', a.rollNo);
+  setVal('adm-blood', a.bloodGroup);
+  setVal('adm-prev-school', a.previousSchool);
   const submitBtn = admissionForm?.querySelector('button[type="submit"]');
   if (submitBtn) submitBtn.textContent = 'Update Admission';
   // Switch to admission tab
@@ -182,6 +185,9 @@ if (admissionForm) {
       address: val('adm-address'),
       city: val('adm-city'),
       phone: val('adm-phone'),
+      rollNo: val('adm-roll'),
+      bloodGroup: val('adm-blood'),
+      previousSchool: val('adm-prev-school'),
       status: editingAdmissionId
         ? ((await getLocal('admissions', editingAdmissionId))?.status || 'pending')
         : 'pending',
@@ -1141,6 +1147,311 @@ if (staffForm) {
   });
 }
 
+
+// ========== PAYROLL ==========
+const payrollForm = document.getElementById('payroll-form');
+const payrollList = document.getElementById('payroll-list');
+async function renderPayroll() {
+  if (!payrollList) return;
+  const list = await getModuleRecords('payroll');
+  list.sort((a,b)=>(b.month||'').localeCompare(a.month||''));
+  payrollList.innerHTML = list.length ? list.map(r => {
+    const net = Number(r.basic||0)+Number(r.allowances||0)-Number(r.deductions||0);
+    return `<li><strong>${esc(r.name)}</strong> <span class="tag">${esc(r.role||'')}</span>
+      <span class="muted">${esc(r.month)}</span> <span class="amount">Net ${formatMoney(net)}</span>
+      <span class="actions">
+        <button class="mini-btn ghost" data-print-pay="${r.id}">Slip</button>
+        <button class="mini-btn danger" data-del-pay="${r.id}">Delete</button>
+      </span></li>`;
+  }).join('') : '<li class="muted">No payroll entries.</li>';
+  payrollList.querySelectorAll('[data-del-pay]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('payroll', btn.dataset.delPay);
+      await renderPayroll(); runSync();
+    });
+  });
+  payrollList.querySelectorAll('[data-print-pay]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const r = await getLocal('payroll', btn.dataset.printPay);
+      if (!r) return;
+      const net = Number(r.basic||0)+Number(r.allowances||0)-Number(r.deductions||0);
+      printDocument('Salary Slip', `
+        <div class="section-title">Salary Slip — ${esc(r.month)}</div>
+        <table class="info">
+          <tr><td class="label">Employee</td><td>${esc(r.name)}</td></tr>
+          <tr><td class="label">Role</td><td>${esc(r.role||'—')}</td></tr>
+          <tr><td class="label">Basic</td><td>${formatMoney(r.basic)}</td></tr>
+          <tr><td class="label">Allowances</td><td>${formatMoney(r.allowances)}</td></tr>
+          <tr><td class="label">Deductions</td><td>${formatMoney(r.deductions)}</td></tr>
+          <tr><td class="label"><strong>Net Pay</strong></td><td><strong>${formatMoney(net)}</strong></td></tr>
+        </table>`, { subtitle: INST_NAME });
+    });
+  });
+}
+if (payrollForm) {
+  const m = document.getElementById('pay-month');
+  if (m && !m.value) { const n=new Date(); m.value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; }
+  payrollForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('payroll', {
+      name: document.getElementById('pay-name').value.trim(),
+      role: document.getElementById('pay-role').value.trim(),
+      month: document.getElementById('pay-month').value,
+      basic: Number(document.getElementById('pay-basic').value),
+      allowances: Number(document.getElementById('pay-allow').value)||0,
+      deductions: Number(document.getElementById('pay-deduct').value)||0,
+      module: MODULE
+    });
+    payrollForm.reset();
+    await renderPayroll(); runSync();
+  });
+}
+
+// ========== LIBRARY ==========
+const libForm = document.getElementById('lib-form');
+const libList = document.getElementById('lib-list');
+const libIssueForm = document.getElementById('lib-issue-form');
+const libIssueList = document.getElementById('lib-issue-list');
+async function renderLibrary() {
+  if (!libList) return;
+  const list = (await getModuleRecords('library')).filter(x => x.type !== 'issue');
+  libList.innerHTML = list.length ? list.map(b => `
+    <li><strong>${esc(b.title)}</strong> <span class="muted">${esc(b.author||'')}</span>
+    <span class="tag">${esc(b.category||'')}</span> <span class="muted">Qty: ${b.qty||1}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-lib="${b.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No books.</li>';
+  libList.querySelectorAll('[data-del-lib]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('library', btn.dataset.delLib);
+      await renderLibrary(); runSync();
+    });
+  });
+}
+async function renderLibIssues() {
+  if (!libIssueList) return;
+  const list = (await getModuleRecords('library')).filter(x => x.type === 'issue');
+  libIssueList.innerHTML = list.length ? list.map(b => `
+    <li><strong>${esc(b.book)}</strong> → ${esc(b.student)} <span class="muted">${esc(b.date)}</span>
+    <span class="tag">${esc(b.status)}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-li="${b.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No issues.</li>';
+  libIssueList.querySelectorAll('[data-del-li]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('library', btn.dataset.delLi);
+      await renderLibIssues(); runSync();
+    });
+  });
+}
+if (libForm) {
+  libForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('library', {
+      type: 'book',
+      title: document.getElementById('lib-title').value.trim(),
+      author: document.getElementById('lib-author').value.trim(),
+      category: document.getElementById('lib-cat').value.trim(),
+      qty: Number(document.getElementById('lib-qty').value)||1,
+      module: MODULE
+    });
+    libForm.reset();
+    await renderLibrary(); runSync();
+  });
+}
+if (libIssueForm) {
+  const d = document.getElementById('lib-issue-date');
+  if (d && !d.value) d.value = new Date().toISOString().slice(0,10);
+  libIssueForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('library', {
+      type: 'issue',
+      book: document.getElementById('lib-issue-book').value.trim(),
+      student: document.getElementById('lib-issue-student').value.trim(),
+      date: document.getElementById('lib-issue-date').value,
+      status: document.getElementById('lib-issue-status').value,
+      module: MODULE
+    });
+    libIssueForm.reset();
+    if (d) d.value = new Date().toISOString().slice(0,10);
+    await renderLibIssues(); runSync();
+  });
+}
+
+// ========== TRANSPORT ==========
+const transForm = document.getElementById('trans-form');
+const transList = document.getElementById('trans-list');
+async function renderTransport() {
+  if (!transList) return;
+  const list = await getModuleRecords('transport');
+  transList.innerHTML = list.length ? list.map(t => `
+    <li><strong>${esc(t.vehicle)}</strong> <span class="tag">${esc(t.route)}</span>
+    <span class="muted">${esc(t.driver||'')} ${esc(t.phone||'')}</span>
+    <span class="amount">${t.fee!=null?formatMoney(t.fee):''}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-tr="${t.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No transport routes.</li>';
+  transList.querySelectorAll('[data-del-tr]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('transport', btn.dataset.delTr);
+      await renderTransport(); runSync();
+    });
+  });
+}
+if (transForm) {
+  transForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('transport', {
+      vehicle: document.getElementById('trans-vehicle').value.trim(),
+      route: document.getElementById('trans-route').value.trim(),
+      driver: document.getElementById('trans-driver').value.trim(),
+      phone: document.getElementById('trans-phone').value.trim(),
+      fee: Number(document.getElementById('trans-fee').value)||null,
+      module: MODULE
+    });
+    transForm.reset();
+    await renderTransport(); runSync();
+  });
+}
+
+// ========== INVENTORY ==========
+const invForm = document.getElementById('inv-form');
+const invList = document.getElementById('inv-list');
+async function renderInventory() {
+  if (!invList) return;
+  const list = await getModuleRecords('inventory');
+  invList.innerHTML = list.length ? list.map(i => `
+    <li><strong>${esc(i.item)}</strong> <span class="tag">${esc(i.category)}</span>
+    <span class="muted">${esc(i.moveType)} × ${i.qty}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-inv="${i.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No inventory records.</li>';
+  invList.querySelectorAll('[data-del-inv]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('inventory', btn.dataset.delInv);
+      await renderInventory(); runSync();
+    });
+  });
+}
+if (invForm) {
+  invForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('inventory', {
+      item: document.getElementById('inv-item').value.trim(),
+      category: document.getElementById('inv-cat').value,
+      qty: Number(document.getElementById('inv-qty').value),
+      moveType: document.getElementById('inv-type').value,
+      module: MODULE
+    });
+    invForm.reset();
+    await renderInventory(); runSync();
+  });
+}
+
+// ========== REPORTS ==========
+async function renderReports() {
+  const grid = document.getElementById('reports-grid');
+  if (!grid) return;
+  const count = async (store) => (await getModuleRecords(store)).length;
+  const students = await getModuleRecords('students');
+  const challans = await getModuleRecords('feeChallans');
+  const paid = challans.filter(c => (c.status||'').toLowerCase()==='paid');
+  const unpaid = challans.filter(c => (c.status||'').toLowerCase()!=='paid');
+  const coll = paid.reduce((s,c)=>s+Number(c.amount||0),0);
+  const pend = unpaid.reduce((s,c)=>s+Number(c.amount||0),0);
+  const items = [
+    ['Students', students.length],
+    ['Admissions', await count('admissions')],
+    ['Teachers', await count('teachers')],
+    ['Staff', await count('staff')],
+    ['Attendance rows', await count('attendance')],
+    ['Exam records', await count('exams')],
+    ['Homework', await count('homework')],
+    ['Classes', await count('schoolClasses')],
+    ['Paid collection', formatMoney(coll)],
+    ['Pending fees', formatMoney(pend)],
+    ['Library items', await count('library')],
+    ['Transport routes', await count('transport')],
+    ['Inventory rows', await count('inventory')],
+    ['Payroll entries', await count('payroll')],
+  ];
+  grid.innerHTML = items.map(([k,v]) => `
+    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:0.85rem;border-top:3px solid #0A1628;">
+      <div style="font-size:0.68rem;color:#64748B;text-transform:uppercase;font-weight:700;">${k}</div>
+      <div style="font-size:1.25rem;font-weight:800;color:#0A1628;margin-top:0.25rem;">${v}</div>
+    </div>`).join('');
+}
+document.getElementById('reports-refresh')?.addEventListener('click', renderReports);
+
+// ========== SETTINGS ==========
+const settingsForm = document.getElementById('settings-form');
+async function loadSettings() {
+  const all = await getModuleRecords('settings');
+  const s = all[0];
+  if (!s) return;
+  const set = (id,v) => { const el=document.getElementById(id); if(el&&v!=null) el.value=v; };
+  set('set-name', s.schoolName); set('set-city', s.city); set('set-phone', s.phone);
+  set('set-email', s.email); set('set-address', s.address); set('set-session', s.session); set('set-web', s.website);
+}
+if (settingsForm) {
+  settingsForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const all = await getModuleRecords('settings');
+    await saveLocal('settings', {
+      id: all[0]?.id,
+      schoolName: document.getElementById('set-name').value.trim(),
+      city: document.getElementById('set-city').value.trim(),
+      phone: document.getElementById('set-phone').value.trim(),
+      email: document.getElementById('set-email').value.trim(),
+      address: document.getElementById('set-address').value.trim(),
+      session: document.getElementById('set-session').value.trim(),
+      website: document.getElementById('set-web').value.trim(),
+      module: MODULE
+    });
+    const st = document.getElementById('settings-status');
+    if (st) st.textContent = 'Settings saved.';
+    runSync();
+  });
+}
+
+// ========== BACKUP ==========
+document.getElementById('backup-export')?.addEventListener('click', async () => {
+  const stores = ['students','admissions','feeStructure','feeChallans','attendance','teachers','exams','expenses','income','leaves','timetable','schoolClasses','subjects','homework','staff','library','transport','inventory','payroll','settings'];
+  const data = { exportedAt: new Date().toISOString(), school: INST_NAME, records: {} };
+  for (const s of stores) data.records[s] = await getModuleRecords(s);
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `future-tech-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  const st = document.getElementById('backup-status');
+  if (st) st.textContent = 'Backup downloaded.';
+});
+document.getElementById('backup-import')?.addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const records = data.records || data;
+    let n = 0;
+    for (const [store, list] of Object.entries(records)) {
+      if (!Array.isArray(list)) continue;
+      for (const rec of list) {
+        rec.module = MODULE;
+        await saveLocal(store, rec);
+        n++;
+      }
+    }
+    const st = document.getElementById('backup-status');
+    if (st) st.textContent = `Imported ${n} records. Refresh page.`;
+    runSync();
+  } catch (err) {
+    alert('Import failed: ' + (err.message || err));
+  }
+});
+
 // ========== INIT ==========
 (async function init() {
   await renderAdmissions();
@@ -1164,4 +1475,11 @@ if (staffForm) {
   await renderHomework();
   await populateCertStudents();
   await renderStaff();
+  await renderPayroll();
+  await renderLibrary();
+  await renderLibIssues();
+  await renderTransport();
+  await renderInventory();
+  await renderReports();
+  await loadSettings();
 })();
