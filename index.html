@@ -257,7 +257,7 @@
   }
 </style>
 </head>
-<body data-root="./">
+<body class="login-body" data-root="./">
 
 <aside class="brand-side">
   <div class="brand-logo">
@@ -293,7 +293,7 @@
     </div>
   </div>
 
-  <div class="brand-foot">Educating Minds · Building Futures · Empowering Traders</div>
+  <div class="brand-foot">Future Tech · Qamber · Quest for Excellence</div>
 </aside>
 
 <main class="login-side">
@@ -335,7 +335,7 @@
 
 <script type="module">
   import { auth } from './js/firebase-config.js';
-  import { signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+  import { signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js';
   import { loginStaff, getStaffSession, clearStaffSession } from './js/staff-auth.js';
 
   document.querySelectorAll('#role-row button').forEach(btn => {

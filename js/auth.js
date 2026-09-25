@@ -12,11 +12,15 @@ import {
   isStaffLoggedIn
 } from './staff-auth.js';
 
-const root = document.body.dataset.root || '';
+const root = document.body.dataset.root || './';
+const path = window.location.pathname || '';
+// Only the site root login page — NOT modules/*/index.html
 const isLoginPage =
   document.body.classList.contains('login-body') ||
-  (window.location.pathname.endsWith('index.html') ||
-    window.location.pathname.endsWith('/'));
+  (!path.includes('/modules/') &&
+    (path.endsWith('/index.html') ||
+      path.endsWith('/') ||
+      /\/The-Smart-Modern-ERP-System-?\/?$/.test(path)));
 
 function goDashboard() {
   window.location.href = (root || './') + 'dashboard.html';

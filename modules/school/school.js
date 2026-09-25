@@ -1639,4 +1639,8 @@ async function renderActivityLog() {
   await populatePromoteStudents();
   await renderTeacherAttendance();
   await renderActivityLog();
+  try {
+    const staffSess = getStaffSession();
+    if (staffSess && staffSess.role) applyTabAccess(staffSess.role);
+  } catch (_) {}
 })();

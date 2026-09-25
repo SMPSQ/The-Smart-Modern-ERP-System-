@@ -102,11 +102,11 @@ export async function loginStaff(username, password) {
 
 export async function ensureStaffCredentials(staffRecord, plainPassword) {
   const username = staffRecord.username || suggestUsername(staffRecord.name);
-  const password = plainPassword || generatePassword(8);
+  const password = (plainPassword && String(plainPassword).length) ? plainPassword : generatePassword(8);
   const passwordHash = await hashPassword(password);
   staffRecord.username = username;
   staffRecord.passwordHash = passwordHash;
-  staffRecord.mustChangePassword = !plainPassword;
+  staffRecord.mustChangePassword = !(plainPassword && String(plainPassword).length);
   await saveLocal('staff', staffRecord);
   return { username, password, staff: staffRecord };
 }
