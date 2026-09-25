@@ -120,21 +120,27 @@ async function renderAdmissions() {
     btn.addEventListener('click', async () => {
       const adm = await getLocal('admissions', btn.dataset.approve);
       if (!adm || adm.module !== MODULE) return;
+      const admNo = 'FT-' + new Date().getFullYear().toString().slice(-2) + '-' + String(Date.now()).slice(-6);
       await saveLocal('students', {
         name: adm.name,
         className: adm.className,
         section: adm.section || '',
+        rollNo: adm.rollNo || '',
         guardianName: adm.fatherName,
         guardianContact: adm.fatherPhone || adm.phone,
         phone: adm.phone,
         module: MODULE,
         admissionId: adm.id,
+        admissionNo: admNo,
         dob: adm.dob,
         gender: adm.gender,
         address: adm.address,
         city: adm.city,
-        session: adm.session
+        session: adm.session,
+        bloodGroup: adm.bloodGroup || '',
+        previousSchool: adm.previousSchool || ''
       });
+      adm.admissionNo = admNo;
       adm.status = 'approved';
       await saveLocal('admissions', adm);
       await renderAdmissions();
@@ -304,6 +310,7 @@ async function renderStudents(filter = '') {
       <li>
         <strong>${esc(s.name)}</strong>
         <span class="tag">${esc(s.className)}</span>
+        <span class="muted">${esc(s.admissionNo || '')}</span>
         <span class="muted">${esc(s.guardianName || '')}</span>
         <span class="muted">${esc(s.phone || s.guardianContact || '')}</span>
         <span class="actions">
@@ -366,12 +373,14 @@ async function renderStudents(filter = '') {
 if (studentForm) {
   studentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const existing = editingStudentId ? await getLocal('students', editingStudentId) : null;
     await saveLocal('students', {
       id: editingStudentId || undefined,
       name: val('student-name'),
       className: val('student-class'),
       guardianName: val('student-guardian'),
       phone: val('student-phone'),
+      admissionNo: existing?.admissionNo || ('FT-' + new Date().getFullYear().toString().slice(-2) + '-' + String(Date.now()).slice(-6)),
       module: MODULE
     });
     clearStudentForm();
