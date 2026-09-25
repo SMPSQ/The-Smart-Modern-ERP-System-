@@ -183,19 +183,28 @@ if (annForm) {
 }
 
 
-// Force re-queue + sync (fixes stuck students)
+// Force push ALL students + core data to cloud
 document.getElementById('force-sync-btn')?.addEventListener('click', async () => {
   const btn = document.getElementById('force-sync-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
   try {
-    const { requeueUnsynced } = await import('./db.js');
-    const n = await requeueUnsynced(['students', 'admissions', 'feeChallans', 'attendance', 'teachers', 'staff']);
-    const result = await drainQueue();
-    alert(
-      result?.ok
-        ? `Synced. Re-queued ${n} local item(s).`
-        : `Still pending: ${result?.remaining ?? '?'}. ${result?.reason || ''}\n\nTip: Admin email login required for Firebase sync. Data is saved on this device.`
-    );
+    const { forceSyncStudents } = await import('./sync.js');
+    const result = await forceSyncStudents();
+    if (result?.ok) {
+      alert('All local students/records pushed to cloud.
+Re-queued: ' + (result.requeued || 0));
+    } else {
+      alert(
+        'Sync incomplete.
+' +
+        (result?.reason || '') + '
+' +
+        'Remaining: ' + (result?.remaining ?? '?') + '
+
+' +
+        'Tip: Login with Admin EMAIL (not staff username) for Firebase sync.'
+      );
+    }
   } catch (e) {
     alert('Sync error: ' + (e.message || e));
   }

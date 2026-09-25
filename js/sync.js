@@ -1,7 +1,7 @@
-// js/sync.js — Offline → Firestore sync (sanitized + auth-aware)
+// js/sync.js — Offline → Firestore (robust student sync)
 import { auth, db } from './firebase-config.js';
 import { doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
-import { getQueue, removeFromQueue, markSynced } from './db.js';
+import { getQueue, removeFromQueue, markSynced, requeueUnsynced, purgeQueueNoise } from './db.js';
 
 function setPill(state, detail) {
   const pill = document.getElementById('sync-pill');
@@ -15,9 +15,9 @@ function setPill(state, detail) {
     pill.className = 'sync-pill sync-pill--busy';
     pill.title = detail || '';
   } else if (state === 'error') {
-    pill.textContent = '● sync error';
+    pill.textContent = '● sync issue';
     pill.className = 'sync-pill sync-pill--offline';
-    pill.title = detail || 'Check Firebase rules / login';
+    pill.title = detail || '';
   } else {
     pill.textContent = '● offline — saved on device';
     pill.className = 'sync-pill sync-pill--offline';
@@ -25,9 +25,8 @@ function setPill(state, detail) {
   }
 }
 
-/** Firestore rejects undefined — strip it recursively */
 function sanitize(value) {
-  if (value === undefined) return undefined; // signal skip
+  if (value === undefined) return undefined;
   if (value === null) return null;
   if (typeof value === 'number' && Number.isNaN(value)) return null;
   if (value instanceof Date) return value.toISOString();
@@ -37,8 +36,7 @@ function sanitize(value) {
   if (typeof value === 'object') {
     const out = {};
     for (const [k, v] of Object.entries(value)) {
-      if (v === undefined) continue;
-      if (typeof v === 'function') continue;
+      if (v === undefined || typeof v === 'function') continue;
       const sv = sanitize(v);
       if (sv !== undefined) out[k] = sv;
     }
@@ -47,37 +45,58 @@ function sanitize(value) {
   return value;
 }
 
+/** Firestore doc id cannot contain / */
+function safeDocId(id) {
+  return String(id || '').replace(/\//g, '_').slice(0, 700) || 'unknown';
+}
+
 let draining = false;
 
 export async function drainQueue() {
   if (draining) return { ok: true, remaining: 0 };
   draining = true;
-
   try {
     if (!navigator.onLine) {
       setPill('offline');
       return { ok: false, remaining: -1, reason: 'offline' };
     }
 
-    const queue = await getQueue();
+    // Drop activity_logs etc. that block the queue
+    try { await purgeQueueNoise(); } catch (_) {}
+
+    let queue = await getQueue();
     if (queue.length === 0) {
       setPill('synced');
       return { ok: true, remaining: 0 };
     }
 
-    // Firestore rules usually need request.auth != null
     if (!auth.currentUser) {
-      setPill('error', 'Login with Admin (email) required for cloud sync. Data is safe on this device.');
+      setPill('error', 'Admin email login needed for cloud sync. Data is safe on this device.');
       return { ok: false, remaining: queue.length, reason: 'no-auth' };
     }
 
     setPill('syncing', queue.length + ' pending');
 
-    let lastError = null;
+    let synced = 0;
+    let failed = 0;
+    let lastError = '';
+
+    // Prefer students / admissions first
+    const priority = ['students', 'admissions', 'feeChallans', 'attendance'];
+    queue = [...queue].sort((a, b) => {
+      const pa = priority.indexOf(a.storeName);
+      const pb = priority.indexOf(b.storeName);
+      return (pa === -1 ? 99 : pa) - (pb === -1 ? 99 : pb);
+    });
+
     for (const item of queue) {
       try {
-        const recordId = String(item.recordId || item.id || '').trim();
-        if (!recordId || !item.storeName) {
+        if (!item.storeName || item.storeName === 'activity_logs' || item.storeName === 'sync_queue') {
+          await removeFromQueue(item.id);
+          continue;
+        }
+        const recordId = safeDocId(item.recordId);
+        if (!recordId || recordId === 'unknown') {
           await removeFromQueue(item.id);
           continue;
         }
@@ -85,34 +104,52 @@ export async function drainQueue() {
         if (item.action === 'delete') {
           await deleteDoc(ref);
         } else {
-          const payload = sanitize(item.data || {});
-          // Ensure id field present
-          if (payload && typeof payload === 'object') payload.id = recordId;
+          let payload = sanitize(item.data || {});
+          if (!payload || typeof payload !== 'object') payload = { id: recordId };
+          payload.id = recordId;
+          // Flatten any residual undefined
+          payload = JSON.parse(JSON.stringify(payload));
           await setDoc(ref, payload, { merge: true });
-          try {
-            await markSynced(item.storeName, recordId);
-          } catch (_) {}
+          try { await markSynced(item.storeName, item.recordId); } catch (_) {}
         }
         await removeFromQueue(item.id);
+        synced++;
       } catch (err) {
-        lastError = err;
-        console.warn('Sync item failed:', item.storeName, item.recordId, err);
-        // permission / invalid data — stop ordered drain
-        break;
+        failed++;
+        lastError = err?.code || err?.message || String(err);
+        console.warn('Sync fail', item.storeName, item.recordId, err);
+        // Continue other items — do NOT break entire queue
+        // Remove permanently bad items after many failures
+        if (String(lastError).includes('invalid') || String(lastError).includes('Invalid')) {
+          await removeFromQueue(item.id);
+        }
       }
     }
 
     const remaining = await getQueue();
     if (remaining.length === 0) {
-      setPill('synced');
-      return { ok: true, remaining: 0 };
+      setPill('synced', synced + ' uploaded');
+      return { ok: true, remaining: 0, synced };
     }
-    const msg = lastError?.code || lastError?.message || 'pending';
-    setPill('error', String(msg));
-    return { ok: false, remaining: remaining.length, reason: msg };
+    setPill('error', lastError || (remaining.length + ' pending'));
+    return { ok: false, remaining: remaining.length, reason: lastError, synced, failed };
   } finally {
     draining = false;
   }
+}
+
+/** Force push ALL local students (and core stores) to Firestore */
+export async function forceSyncStudents() {
+  if (!auth.currentUser) {
+    return { ok: false, reason: 'Login with Admin email first' };
+  }
+  try { await purgeQueueNoise(); } catch (_) {}
+  const n = await requeueUnsynced(
+    ['students', 'admissions', 'feeChallans', 'attendance', 'teachers', 'staff', 'feeStructure'],
+    true
+  );
+  const result = await drainQueue();
+  return { ...result, requeued: n };
 }
 
 export const runSync = drainQueue;

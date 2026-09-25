@@ -120,7 +120,7 @@ async function logActivity(action, storeName, recordId, summary, before = null, 
       r.onsuccess = res;
       r.onerror = () => rej(r.error);
     });
-    await queueSync('activity_logs', entry.id, 'upsert', entry);
+    // activity_logs stay local only — avoid blocking student sync queue
   } catch (err) {
     console.warn('Activity log failed:', err);
   }
@@ -280,15 +280,16 @@ export async function getTotalPendingAmount() {
 }
 
 
-/** Re-queue all local records that are not synced (e.g. students stuck offline) */
-export async function requeueUnsynced(storeNames = null) {
+/** Re-queue local records. force=true pushes ALL records in those stores. */
+export async function requeueUnsynced(storeNames = null, force = false) {
   const names = storeNames || STORES.filter(s => s !== 'sync_queue' && s !== 'activity_logs');
   let count = 0;
   for (const storeName of names) {
     try {
       const all = await getAllLocal(storeName);
       for (const rec of all) {
-        if (rec && rec.synced === false) {
+        if (!rec || !rec.id) continue;
+        if (force || rec.synced === false) {
           await queueSync(storeName, rec.id, 'upsert', rec);
           count++;
         }
@@ -296,5 +297,22 @@ export async function requeueUnsynced(storeNames = null) {
     } catch (_) {}
   }
   return count;
+}
+
+/** Clear stuck queue items that will never sync (e.g. activity_logs) */
+export async function purgeQueueNoise() {
+  const q = await getQueue();
+  let n = 0;
+  for (const item of q) {
+    if (item.storeName === 'activity_logs' || !item.recordId || !item.storeName) {
+      await removeFromQueue(item.id);
+      n++;
+    }
+  }
+  return n;
+}
+
+export async function removeFromQueuePublic(id) {
+  return removeFromQueue(id);
 }
 
