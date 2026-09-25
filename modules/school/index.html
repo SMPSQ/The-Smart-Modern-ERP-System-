@@ -434,6 +434,15 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
       </div>
       <ul id="student-list" class="data-list"></ul>
     </div>
+    <div class="form-card">
+      <h3>Student Promotion</h3>
+      <form id="promote-form" class="inline-form">
+        <select id="promote-student" required><option value="">Select student</option></select>
+        <input type="text" id="promote-to" placeholder="Promote to class (e.g. 6)" required />
+        <button type="submit">Promote</button>
+      </form>
+      <p class="hint">Updates student class. Keeps history in activity.</p>
+    </div>
   </div>
 
   <!-- ========== TAB: FEES ========== -->
@@ -459,7 +468,19 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
           <option value="">Select student</option>
         </select>
         <input type="month" id="challan-month" required />
+        <select id="challan-type">
+          <option value="Monthly">Monthly Fee</option>
+          <option value="Admission">Admission Fee</option>
+          <option value="Exam">Exam Fee</option>
+          <option value="Transport">Transport Fee</option>
+          <option value="Other">Other</option>
+        </select>
         <input type="number" id="challan-amount" placeholder="Amount (Rs)" min="0" required />
+        <select id="challan-status-new">
+          <option value="Unpaid">Unpaid</option>
+          <option value="Partial">Partial</option>
+          <option value="Paid">Paid</option>
+        </select>
         <button type="submit">Create</button>
       </form>
     </div>
@@ -502,6 +523,20 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
         <input type="date" id="att-filter-date" />
       </div>
       <ul id="attendance-list" class="data-list"></ul>
+    </div>
+    <div class="form-card">
+      <h3>Teacher / Staff Attendance</h3>
+      <form id="tatt-form" class="inline-form">
+        <input type="date" id="tatt-date" required />
+        <input type="text" id="tatt-name" placeholder="Teacher / Staff name" required />
+        <select id="tatt-status">
+          <option value="Present">Present</option>
+          <option value="Absent">Absent</option>
+          <option value="Leave">Leave</option>
+        </select>
+        <button type="submit">Save</button>
+      </form>
+      <ul id="tatt-list" class="data-list"></ul>
     </div>
   </div>
 
@@ -778,6 +813,10 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
       <div id="reports-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;"></div>
       <p class="hint" style="margin-top:1rem">Live counts from this device. Use Print from browser for PDF.</p>
       <button type="button" class="btn-primary" id="reports-refresh" style="margin-top:0.75rem">Refresh Reports</button>
+    </div>
+    <div class="form-card">
+      <h3>Recent Activity Log</h3>
+      <ul id="activity-list" class="data-list"></ul>
     </div>
   </div>
 

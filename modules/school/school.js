@@ -19,6 +19,14 @@ function esc(str = '') {
 function formatMoney(n) {
   return 'Rs ' + Number(n || 0).toLocaleString('en-PK');
 }
+function calcGrade(pct) {
+  if (pct >= 90) return 'A+';
+  if (pct >= 80) return 'A';
+  if (pct >= 70) return 'B';
+  if (pct >= 60) return 'C';
+  if (pct >= 50) return 'D';
+  return 'F';
+}
 function monthLabel(ym) {
   if (!ym) return '—';
   const [y, m] = ym.split('-');
@@ -349,6 +357,7 @@ async function renderStudents(filter = '') {
       await populateExamStudentSelect();
       await populateLeaveStudents();
       await populateCertStudents();
+      await populatePromoteStudents();
       runSync();
     });
   });
@@ -454,9 +463,10 @@ async function renderChallans() {
             <strong>${esc(c.studentName)}</strong>
             <span class="tag">${esc(c.className || '')}</span>
             <span class="muted">${monthLabel(c.month)}</span>
+            <span class="tag">${esc(c.feeType || 'Monthly')}</span>
             <span class="amount">${formatMoney(c.amount)}</span>
-            <button class="status-btn ${isPaid ? 'status-btn--paid' : 'status-btn--unpaid'}" data-toggle="${c.id}">
-              ${isPaid ? 'Paid' : 'Unpaid'}
+            <button class="status-btn ${isPaid ? 'status-btn--paid' : ((c.status||'').toLowerCase()==='partial' ? 'status-btn--unpaid' : 'status-btn--unpaid')}" data-toggle="${c.id}">
+              ${isPaid ? 'Paid' : ((c.status||'').toLowerCase()==='partial' ? 'Partial' : 'Unpaid')}
             </button>
             <span class="actions">
               <button class="mini-btn edit" data-edit-challan="${c.id}">Edit</button>
@@ -473,9 +483,10 @@ async function renderChallans() {
       const all = await getAllLocal('feeChallans');
       const rec = all.find(c => c.id === btn.dataset.toggle && c.module === MODULE);
       if (!rec) return;
-      const isPaid = (rec.status || '').toLowerCase() === 'paid';
-      rec.status = isPaid ? 'Unpaid' : 'Paid';
-      rec.paidOn = isPaid ? null : Date.now();
+      const st = (rec.status || '').toLowerCase();
+      if (st === 'paid') { rec.status = 'Unpaid'; rec.paidOn = null; }
+      else if (st === 'partial') { rec.status = 'Paid'; rec.paidOn = Date.now(); }
+      else { rec.status = 'Partial'; rec.paidOn = null; }
       await saveLocal('feeChallans', rec);
       await renderChallans();
       runSync();
@@ -535,6 +546,9 @@ if (challanForm) {
       }
     }
 
+    const feeType = document.getElementById('challan-type')?.value || 'Monthly';
+    const statusNew = document.getElementById('challan-status-new')?.value;
+    if (!editingChallanId && statusNew) status = statusNew;
     await saveLocal('feeChallans', {
       id: editingChallanId || undefined,
       studentId: opt.value,
@@ -542,8 +556,9 @@ if (challanForm) {
       className: opt.dataset.class || '',
       month,
       amount,
+      feeType,
       status,
-      paidOn,
+      paidOn: status === 'Paid' ? (paidOn || Date.now()) : paidOn,
       module: MODULE
     });
     clearChallanForm();
@@ -700,14 +715,16 @@ async function renderExams() {
   examList.innerHTML = list.length
     ? list.map(x => {
         const pct = x.total ? Math.round((Number(x.marks) / Number(x.total)) * 100) : 0;
+        const grade = calcGrade(pct);
         return `
       <li>
         <strong>${esc(x.studentName)}</strong>
         <span class="tag">${esc(x.title)}</span>
         <span class="muted">${esc(x.subject)}</span>
-        <span class="amount">${x.marks}/${x.total} (${pct}%)</span>
+        <span class="amount">${x.marks}/${x.total} (${pct}% · ${grade})</span>
         <span class="muted">${esc(x.date || '')}</span>
         <span class="actions">
+          <button class="mini-btn ghost" data-result-card="${x.id}">Result Card</button>
           <button class="mini-btn danger" data-del-exam="${x.id}">Delete</button>
         </span>
       </li>`;
@@ -719,6 +736,27 @@ async function renderExams() {
       await deleteLocal('exams', btn.dataset.delExam);
       await renderExams();
       runSync();
+    });
+  });
+  examList.querySelectorAll('[data-result-card]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const x = await getLocal('exams', btn.dataset.resultCard);
+      if (!x) return;
+      const pct = x.total ? Math.round((Number(x.marks) / Number(x.total)) * 100) : 0;
+      const grade = calcGrade(pct);
+      const status = pct >= 50 ? 'PASS' : 'FAIL';
+      printDocument('Result Card', `
+        <div class="section-title">Result Card</div>
+        <table class="info">
+          <tr><td class="label">Student</td><td>${esc(x.studentName)}</td></tr>
+          <tr><td class="label">Exam</td><td>${esc(x.title)}</td></tr>
+          <tr><td class="label">Subject</td><td>${esc(x.subject)}</td></tr>
+          <tr><td class="label">Marks</td><td>${x.marks} / ${x.total}</td></tr>
+          <tr><td class="label">Percentage</td><td>${pct}%</td></tr>
+          <tr><td class="label">Grade</td><td><strong>${grade}</strong></td></tr>
+          <tr><td class="label">Status</td><td><strong>${status}</strong></td></tr>
+          <tr><td class="label">Date</td><td>${esc(x.date || '—')}</td></tr>
+        </table>`, { subtitle: INST_NAME });
     });
   });
 }
@@ -1452,6 +1490,98 @@ document.getElementById('backup-import')?.addEventListener('change', async (e) =
   }
 });
 
+
+// ========== PROMOTION ==========
+const promoteForm = document.getElementById('promote-form');
+const promoteStudent = document.getElementById('promote-student');
+async function populatePromoteStudents() {
+  if (!promoteStudent) return;
+  const students = await getModuleRecords('students');
+  students.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  promoteStudent.innerHTML = '<option value="">Select student</option>' +
+    students.map(s => `<option value="${s.id}">${esc(s.name)} (${esc(s.className)})</option>`).join('');
+}
+if (promoteForm) {
+  promoteForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = promoteStudent?.value;
+    const toClass = document.getElementById('promote-to')?.value.trim();
+    if (!id || !toClass) return;
+    const s = await getLocal('students', id);
+    if (!s || s.module !== MODULE) return;
+    const from = s.className;
+    s.className = toClass;
+    s.promotedFrom = from;
+    s.promotedAt = Date.now();
+    await saveLocal('students', s);
+    promoteForm.reset();
+    await populatePromoteStudents();
+    await renderStudents();
+    await populateStudentSelect();
+    await populateCertStudents();
+    runSync();
+    alert(`Promoted from ${from} → ${toClass}`);
+  });
+}
+
+// ========== TEACHER ATTENDANCE ==========
+const tattForm = document.getElementById('tatt-form');
+const tattList = document.getElementById('tatt-list');
+async function renderTeacherAttendance() {
+  if (!tattList) return;
+  const list = (await getModuleRecords('attendance')).filter(r => r.personType === 'staff');
+  list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  tattList.innerHTML = list.length ? list.map(r => {
+    const color = r.status === 'Present' ? '#1B7A4E' : r.status === 'Leave' ? '#B45309' : '#B91C1C';
+    return `<li><strong>${esc(r.studentName)}</strong> <span class="muted">${esc(r.date)}</span>
+      <span class="tag" style="background:${color};color:#fff">${esc(r.status)}</span>
+      <span class="actions"><button class="mini-btn danger" data-del-tatt="${r.id}">Delete</button></span></li>`;
+  }).join('') : '<li class="muted">No teacher/staff attendance.</li>';
+  tattList.querySelectorAll('[data-del-tatt]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('attendance', btn.dataset.delTatt);
+      await renderTeacherAttendance(); runSync();
+    });
+  });
+}
+if (tattForm) {
+  const d = document.getElementById('tatt-date');
+  if (d && !d.value) d.value = new Date().toISOString().slice(0,10);
+  tattForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('attendance', {
+      personType: 'staff',
+      studentName: document.getElementById('tatt-name').value.trim(),
+      studentId: 'staff_' + Date.now(),
+      date: document.getElementById('tatt-date').value,
+      status: document.getElementById('tatt-status').value,
+      module: MODULE
+    });
+    tattForm.reset();
+    if (d) d.value = new Date().toISOString().slice(0,10);
+    await renderTeacherAttendance(); runSync();
+  });
+}
+
+// ========== ACTIVITY LOG VIEW ==========
+async function renderActivityLog() {
+  const el = document.getElementById('activity-list');
+  if (!el) return;
+  try {
+    const { getActivityLogs } = await import('../../js/db.js');
+    const logs = await getActivityLogs(30);
+    el.innerHTML = logs.length ? logs.map(l => `
+      <li><strong>${esc(l.action || l.type || 'edit')}</strong>
+      <span class="tag">${esc(l.storeName || '')}</span>
+      <span class="muted">${esc(l.summary || l.recordId || '')}</span>
+      <span class="muted">${l.createdAt ? new Date(l.createdAt).toLocaleString() : ''}</span></li>`).join('')
+      : '<li class="muted">No activity yet.</li>';
+  } catch {
+    el.innerHTML = '<li class="muted">Activity log unavailable.</li>';
+  }
+}
+
 // ========== INIT ==========
 (async function init() {
   await renderAdmissions();
@@ -1482,4 +1612,7 @@ document.getElementById('backup-import')?.addEventListener('change', async (e) =
   await renderInventory();
   await renderReports();
   await loadSettings();
+  await populatePromoteStudents();
+  await renderTeacherAttendance();
+  await renderActivityLog();
 })();
