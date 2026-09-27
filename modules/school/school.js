@@ -868,12 +868,22 @@ async function renderMonthlyAccounting() {
     .reduce((s, r) => s + Number(r.amount || 0), 0);
   const expenses = await getModuleRecords('expenses');
   const monthExpenses = expenses.filter(r => (r.date || '').startsWith(ym));
-  const expTotal = monthExpenses.reduce((s, r) => s + Number(r.amount || 0), 0);
+  let expTotal = monthExpenses.reduce((s, r) => s + Number(r.amount || 0), 0);
   const byCat = {};
   monthExpenses.forEach(r => {
     const cat = r.category || 'Other';
     byCat[cat] = (byCat[cat] || 0) + Number(r.amount || 0);
   });
+  // Payroll paid this month
+  try {
+    const pays = await getModuleRecords('payroll');
+    const monthPay = pays.filter(r => (r.month || '').startsWith(ym) || (r.date || '').startsWith(ym));
+    const payTotal = monthPay.reduce((s, r) => s + Number(r.basic||0) + Number(r.allowances||0) - Number(r.deductions||0), 0);
+    if (payTotal) {
+      expTotal += payTotal;
+      byCat['Salaries (Payroll)'] = (byCat['Salaries (Payroll)'] || 0) + payTotal;
+    }
+  } catch (_) {}
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   set('m-fees', formatMoney(feeCollected));
   set('m-income', formatMoney(monthIncome));

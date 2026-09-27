@@ -2,7 +2,7 @@
 // IndexedDB + Sync Queue + Automatic Activity Logging
 
 const DB_NAME = 'fkc-erp-v4';
-const DB_VERSION = 10;
+const DB_VERSION = 11;
 
 const STORES = [
   // Core
@@ -43,6 +43,7 @@ const STORES = [
   // Shop
   'shopProducts',
   'shopSales',
+  'shopPurchases',
 
   // System
   'visitors',
