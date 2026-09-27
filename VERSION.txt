@@ -1,6 +1,4 @@
-Future Tech ERP v6.3 — 4 Modules Complete
-1. Public School
-2. Trading Academy  
-3. Educational Academy
-4. School Shop
-+ Master Dashboard (User Management for Super Admin)
+Future Tech Public School ERP — v6.4.0
+Full system + auto cache updates
+School · Trading · Educational · Shop · Library
+QR attendance · Barcode POS · Library auto scan
