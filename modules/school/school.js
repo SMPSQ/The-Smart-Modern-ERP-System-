@@ -662,6 +662,225 @@ if (attendanceForm) {
 if (attFilterDate) attFilterDate.addEventListener('change', renderAttendance);
 
 
+// ========== QR ATTENDANCE ==========
+function studentQrPayload(s) {
+  let idNo = s.idNumber || s.studentId || s.studentNo || '';
+  if (!idNo && s.id) {
+    const raw = String(s.id).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    idNo = 'FT-' + raw.slice(-8).padStart(8, '0');
+  }
+  if (!idNo) idNo = 'FT-' + String(s.id || 'X').slice(-8);
+  return JSON.stringify({
+    type: 'FT_STUDENT',
+    sid: s.id,
+    id: idNo,
+    name: s.name || '',
+    class: s.className || s.class || '',
+    school: 'Future Tech Public School'
+  });
+}
+function studentQrImg(s, size = 120) {
+  const data = encodeURIComponent(studentQrPayload(s));
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=6&data=${data}`;
+}
+
+async function markAttendanceRecord(studentId, studentName, date, status) {
+  const all = await getModuleRecords('attendance');
+  const existing = all.find(r => r.studentId === studentId && r.date === date && r.personType !== 'staff');
+  await saveLocal('attendance', {
+    id: existing?.id,
+    studentId,
+    studentName,
+    date,
+    status: status || 'Present',
+    method: 'qr',
+    module: MODULE
+  });
+  await renderAttendance();
+  runSync();
+}
+
+function parseStudentFromQr(raw) {
+  raw = String(raw || '').trim();
+  if (!raw) return null;
+  try {
+    const j = JSON.parse(raw);
+    if (j.sid || j.id) return j;
+  } catch (_) {}
+  // plain id
+  return { sid: raw, id: raw, name: '' };
+}
+
+async function resolveStudentFromQrData(data) {
+  const students = await getModuleRecords('students');
+  if (data.sid) {
+    const byId = students.find(s => String(s.id) === String(data.sid));
+    if (byId) return byId;
+  }
+  if (data.id) {
+    const idStr = String(data.id);
+    const byCode = students.find(s => {
+      let idNo = s.idNumber || s.studentId || s.studentNo || '';
+      if (!idNo && s.id) {
+        const raw = String(s.id).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        idNo = 'FT-' + raw.slice(-8).padStart(8, '0');
+      }
+      return idNo === idStr || String(s.id) === idStr;
+    });
+    if (byCode) return byCode;
+  }
+  if (data.name) {
+    const byName = students.find(s => (s.name || '').toLowerCase() === String(data.name).toLowerCase());
+    if (byName) return byName;
+  }
+  return null;
+}
+
+const attQrScan = document.getElementById('att-qr-scan');
+const attQrDate = document.getElementById('att-qr-date');
+if (attQrDate && !attQrDate.value) attQrDate.value = new Date().toISOString().slice(0, 10);
+
+if (attQrScan) {
+  attQrScan.addEventListener('keydown', async (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const raw = attQrScan.value.trim();
+    attQrScan.value = '';
+    const date = attQrDate?.value || new Date().toISOString().slice(0, 10);
+    const status = document.getElementById('att-qr-status')?.value || 'Present';
+    const parsed = parseStudentFromQr(raw);
+    const fb = document.getElementById('att-qr-feedback');
+    if (!parsed) {
+      if (fb) { fb.style.color = '#B91C1C'; fb.textContent = 'Invalid QR'; }
+      return;
+    }
+    const student = await resolveStudentFromQrData(parsed);
+    if (!student) {
+      if (fb) { fb.style.color = '#B91C1C'; fb.textContent = 'Student not found: ' + (parsed.name || parsed.id || raw).slice(0, 40); }
+      attQrScan.focus();
+      return;
+    }
+    await markAttendanceRecord(student.id, student.name, date, status);
+    if (fb) {
+      fb.style.color = '#059669';
+      fb.textContent = '✓ ' + status + ': ' + student.name + ' (' + (student.className || '') + ') · ' + date;
+    }
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 920; g.gain.value = 0.07;
+      o.start(); o.stop(ctx.currentTime + 0.07);
+    } catch (_) {}
+    attQrScan.focus();
+  });
+}
+
+async function renderStudentQrGrid() {
+  const grid = document.getElementById('student-qr-grid');
+  if (!grid) return;
+  let students = await getModuleRecords('students');
+  const cls = document.getElementById('att-qr-class-filter')?.value || '';
+  if (cls) students = students.filter(s => (s.className || s.class || '') === cls);
+  students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  // fill class filter
+  const all = await getModuleRecords('students');
+  const classes = [...new Set(all.map(s => s.className || s.class).filter(Boolean))].sort();
+  const filt = document.getElementById('att-qr-class-filter');
+  if (filt && filt.options.length <= 1) {
+    classes.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      filt.appendChild(o);
+    });
+  }
+
+  grid.innerHTML = students.length
+    ? students.map(s => {
+        const idNo = (() => {
+          let idNo = s.idNumber || s.studentId || s.studentNo || '';
+          if (!idNo && s.id) {
+            const raw = String(s.id).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            idNo = 'FT-' + raw.slice(-8).padStart(8, '0');
+          }
+          return idNo || s.id;
+        })();
+        return `<div style="border:1px solid #E2E8F0;border-radius:12px;padding:0.65rem;text-align:center;background:#fff;">
+          <img src="${studentQrImg(s, 110)}" alt="QR" width="110" height="110" style="border-radius:8px;" />
+          <div style="font-weight:800;font-size:0.8rem;margin-top:0.35rem;">${esc(s.name)}</div>
+          <div class="muted" style="font-size:0.72rem;">${esc(s.className || s.class || '')}</div>
+          <div style="font-family:monospace;font-size:0.68rem;color:#64748B;">${esc(idNo)}</div>
+          <button type="button" class="mini-btn edit" data-print-one-qr="${s.id}" style="margin-top:4px;">Print</button>
+        </div>`;
+      }).join('')
+    : '<p class="muted">No students — pehle Students tab se add karein.</p>';
+
+  grid.querySelectorAll('[data-print-one-qr]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const s = await getLocal('students', btn.dataset.printOneQr);
+      if (!s) return;
+      printStudentQrCards([s]);
+    });
+  });
+}
+
+function printStudentQrCards(students) {
+  const cards = students.map(s => {
+    let idNo = s.idNumber || s.studentId || s.studentNo || '';
+    if (!idNo && s.id) {
+      const raw = String(s.id).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      idNo = 'FT-' + raw.slice(-8).padStart(8, '0');
+    }
+    return `<div style="border:2px solid #C9A227;border-radius:12px;padding:10px;text-align:center;page-break-inside:avoid;width:160px;">
+      <div style="font-size:10px;font-weight:800;color:#0A1628;letter-spacing:0.05em;">FUTURE TECH</div>
+      <img src="${studentQrImg(s, 120)}" width="120" height="120" alt="QR" />
+      <div style="font-weight:800;font-size:12px;margin-top:4px;">${esc(s.name)}</div>
+      <div style="font-size:10px;color:#64748B;">${esc(s.className || s.class || '')}</div>
+      <div style="font-family:monospace;font-size:9px;">${esc(idNo)}</div>
+    </div>`;
+  }).join('');
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html><head><title>Student QR Cards</title>
+    <style>
+      body{font-family:system-ui,sans-serif;padding:12px;}
+      .grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-start;}
+      @media print{body{padding:0;}}
+    </style></head><body>
+    <p style="font-size:12px;color:#64748B;">${students.length} QR cards — attendance scan ke liye</p>
+    <div class="grid">${cards}</div>
+    <script>setTimeout(function(){window.print();},700);</script>
+    </body></html>`);
+  w.document.close();
+}
+
+document.getElementById('btn-print-all-student-qr')?.addEventListener('click', async () => {
+  let students = await getModuleRecords('students');
+  const cls = document.getElementById('att-qr-class-filter')?.value || '';
+  if (cls) students = students.filter(s => (s.className || s.class || '') === cls);
+  if (!students.length) { alert('No students'); return; }
+  printStudentQrCards(students);
+});
+document.getElementById('btn-refresh-qr-grid')?.addEventListener('click', () => renderStudentQrGrid());
+document.getElementById('att-qr-class-filter')?.addEventListener('change', () => renderStudentQrGrid());
+
+// When attendance tab opens
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.tab === 'attendance') {
+      renderStudentQrGrid();
+      const d = document.getElementById('att-qr-date');
+      if (d && !d.value) d.value = new Date().toISOString().slice(0, 10);
+      setTimeout(() => document.getElementById('att-qr-scan')?.focus(), 150);
+    }
+  });
+});
+
+
+
+
 // ========== TEACHERS ==========
 const teacherForm = document.getElementById('teacher-form');
 const teacherList = document.getElementById('teacher-list');

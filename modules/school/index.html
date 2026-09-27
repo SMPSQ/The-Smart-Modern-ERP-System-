@@ -504,7 +504,34 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
   <!-- ========== TAB: ATTENDANCE ========== -->
   <div class="tab-panel" id="tab-attendance">
     <div class="form-card">
-      <h3>Mark Attendance</h3>
+      <h3>📷 QR Scan Attendance</h3>
+      <p class="hint">Student ID card / QR sticker scan karein — automatic Present. Camera se bhi code padh sakte hain (USB scanner = keyboard mode).</p>
+      <div class="inline-form">
+        <input type="date" id="att-qr-date" required />
+        <input type="text" id="att-qr-scan" placeholder="📷 Scan student QR / ID code → Enter" autocomplete="off"
+          style="flex:2;min-width:200px;padding:0.65rem 0.85rem;border:2px solid #C9A227;border-radius:10px;font-weight:700;font-size:1rem;background:#FFFBEB;" />
+        <select id="att-qr-status">
+          <option value="Present">Present</option>
+          <option value="Absent">Absent</option>
+          <option value="Leave">Leave</option>
+        </select>
+      </div>
+      <div id="att-qr-feedback" style="min-height:1.5rem;font-weight:700;color:#059669;margin:0.35rem 0 0.5rem;"></div>
+    </div>
+    <div class="form-card">
+      <h3>All Students — QR Cards (print stickers)</h3>
+      <p class="hint">Har student ka unique QR. Print karke diary / ID pe chipkayein. Scan se attendance.</p>
+      <div class="inline-form">
+        <select id="att-qr-class-filter">
+          <option value="">All classes</option>
+        </select>
+        <button type="button" class="mini-btn edit" id="btn-print-all-student-qr">Print all QR cards</button>
+        <button type="button" class="mini-btn" id="btn-refresh-qr-grid">Refresh</button>
+      </div>
+      <div id="student-qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.75rem;margin-top:0.75rem;"></div>
+    </div>
+    <div class="form-card">
+      <h3>Mark Attendance (manual)</h3>
       <form id="attendance-form" class="inline-form">
         <input type="date" id="att-date" required />
         <select id="att-student" required>
