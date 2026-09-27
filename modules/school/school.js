@@ -1787,3 +1787,21 @@ async function renderActivityLog() {
     renderMonthlyAccounting();
   } catch (_) {}
 })();
+
+
+// Open tab from URL hash e.g. #library (dashboard Library card)
+function openTabFromHash() {
+  const hash = (location.hash || '').replace(/^#/, '').trim();
+  if (!hash) return;
+  const btn = document.querySelector(`.tab-btn[data-tab="${hash}"]`);
+  if (btn) {
+    btn.click();
+    setTimeout(() => btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  }
+}
+window.addEventListener('hashchange', openTabFromHash);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(openTabFromHash, 300));
+} else {
+  setTimeout(openTabFromHash, 300);
+}
