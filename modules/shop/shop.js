@@ -34,6 +34,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'inventory') renderInventory();
     if (btn.dataset.tab === 'reports') runPLReport();
     if (btn.dataset.tab === 'purchase') fillPurchaseProductSelect();
+    if (btn.dataset.tab === 'barcodes') renderBarcodeGrid();
   });
 });
 
@@ -70,6 +71,191 @@ async function renderKpis() {
   set('kpi-low', low);
 }
 
+
+// ========== BARCODE HELPERS ==========
+function generateBarcodeCode() {
+  // CODE128-friendly: FT + yymmdd + 6 digits
+  const d = new Date();
+  const stamp = String(d.getFullYear()).slice(2) +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    String(d.getDate()).padStart(2, '0');
+  const rnd = String(Math.floor(Math.random() * 1e6)).padStart(6, '0');
+  return 'FT' + stamp + rnd;
+}
+
+function barcodeImgUrl(code, h = 60) {
+  const text = encodeURIComponent(String(code || ''));
+  // Free public barcode API (Code 128)
+  return 'https://bwipjs-api.metafloor.com/?bcid=code128&text=' + text + '&scale=2&height=12&includetext&guardwhitespace';
+}
+
+function barcodeLabelHtml(p) {
+  const code = p.sku || p.barcode || '';
+  if (!code) return '';
+  return `<div class="bc-label" style="border:1px dashed #94A3B8;border-radius:10px;padding:0.65rem;text-align:center;background:#fff;">
+    <div style="font-weight:800;font-size:0.82rem;color:#0A1628;margin-bottom:0.35rem;">${esc(p.name)}</div>
+    <img src="${barcodeImgUrl(code)}" alt="${esc(code)}" style="max-width:100%;height:52px;object-fit:contain;" onerror="this.style.display='none'" />
+    <div style="font-family:monospace;font-size:0.75rem;font-weight:700;margin-top:0.25rem;letter-spacing:0.05em;">${esc(code)}</div>
+    <div style="font-size:0.72rem;color:#C9A227;font-weight:800;">${money(p.price)}</div>
+  </div>`;
+}
+
+async function ensureProductBarcode(p) {
+  if (p.sku || p.barcode) return p;
+  p.sku = generateBarcodeCode();
+  p.barcode = p.sku;
+  p.updatedAt = Date.now();
+  await saveLocal('shopProducts', p);
+  return p;
+}
+
+document.getElementById('btn-gen-barcode')?.addEventListener('click', () => {
+  const el = document.getElementById('prod-sku');
+  if (el) el.value = generateBarcodeCode();
+});
+
+// POS: scan barcode → Enter adds to cart
+async function addToCartByBarcode(code) {
+  code = String(code || '').trim();
+  if (!code) return false;
+  const products = await getProducts();
+  const p = products.find(
+    (x) =>
+      String(x.sku || '').toLowerCase() === code.toLowerCase() ||
+      String(x.barcode || '').toLowerCase() === code.toLowerCase()
+  );
+  if (!p) {
+    alert('Barcode not found: ' + code);
+    return false;
+  }
+  if (Number(p.stock || 0) <= 0) {
+    alert('Out of stock: ' + p.name);
+    return false;
+  }
+  const existing = cart.find((c) => c.productId === p.id);
+  const inCart = existing ? existing.qty : 0;
+  if (inCart + 1 > Number(p.stock || 0)) {
+    alert('Stock limit: only ' + p.stock + ' available');
+    return false;
+  }
+  if (existing) existing.qty += 1;
+  else
+    cart.push({
+      productId: p.id,
+      name: p.name,
+      price: Number(p.price || 0),
+      cost: Number(p.cost || 0),
+      qty: 1,
+      sku: p.sku || p.barcode || ''
+    });
+  renderCart();
+  return true;
+}
+
+const posBarcode = document.getElementById('pos-barcode');
+if (posBarcode) {
+  posBarcode.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const code = posBarcode.value.trim();
+      if (!code) return;
+      const ok = await addToCartByBarcode(code);
+      posBarcode.value = '';
+      posBarcode.focus();
+      if (ok) {
+        // brief flash
+        posBarcode.style.borderColor = '#059669';
+        setTimeout(() => { posBarcode.style.borderColor = '#C9A227'; }, 400);
+      }
+    }
+  });
+}
+
+async function renderBarcodeGrid() {
+  const grid = document.getElementById('barcode-grid');
+  if (!grid) return;
+  const list = await getProducts();
+  list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  grid.innerHTML = list.length
+    ? list
+        .map((p) => {
+          const code = p.sku || p.barcode || '';
+          if (!code) {
+            return `<div class="bc-label" style="border:1px solid #FECACA;border-radius:10px;padding:0.65rem;text-align:center;">
+              <div style="font-weight:700;">${esc(p.name)}</div>
+              <div class="muted" style="font-size:0.75rem;margin:0.35rem 0;">No barcode</div>
+              <button type="button" class="mini-btn edit" data-gen-one="${p.id}">Generate</button>
+            </div>`;
+          }
+          return barcodeLabelHtml(p) + '';
+        })
+        .join('')
+    : '<p class="muted">No products.</p>';
+
+  // Re-render labels properly with gen buttons
+  grid.innerHTML = list
+    .map((p) => {
+      const code = p.sku || p.barcode || '';
+      if (!code) {
+        return `<div style="border:1px solid #FECACA;border-radius:10px;padding:0.65rem;text-align:center;background:#FEF2F2;">
+          <div style="font-weight:700;font-size:0.85rem;">${esc(p.name)}</div>
+          <div class="muted" style="font-size:0.75rem;margin:0.35rem 0;">No barcode</div>
+          <button type="button" class="mini-btn edit" data-gen-one="${p.id}">Generate</button>
+        </div>`;
+      }
+      return barcodeLabelHtml(p);
+    })
+    .join('') || '<p class="muted">No products.</p>';
+
+  grid.querySelectorAll('[data-gen-one]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const p = await getLocal('shopProducts', btn.dataset.genOne);
+      if (!p) return;
+      await ensureProductBarcode(p);
+      await renderBarcodeGrid();
+      await renderProducts();
+      runSync();
+    });
+  });
+}
+
+document.getElementById('btn-gen-all-missing')?.addEventListener('click', async () => {
+  const list = await getProducts();
+  let n = 0;
+  for (const p of list) {
+    if (!p.sku && !p.barcode) {
+      await ensureProductBarcode(p);
+      n++;
+    }
+  }
+  alert(n ? n + ' barcodes generated' : 'All products already have barcodes');
+  await renderBarcodeGrid();
+  await renderProducts();
+  runSync();
+});
+
+document.getElementById('btn-print-barcodes')?.addEventListener('click', async () => {
+  const list = await getProducts();
+  const withCode = list.filter((p) => p.sku || p.barcode);
+  if (!withCode.length) {
+    alert('Pehle barcodes generate karein');
+    return;
+  }
+  const body = withCode.map((p) => barcodeLabelHtml(p)).join('');
+  const w = window.open('', '_blank', 'width=800,height=600');
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html><head><title>Barcode Labels</title>
+    <style>
+      body{font-family:system-ui,sans-serif;padding:12px;}
+      .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+      @media print {.grid{gap:8px;} body{padding:0;}}
+    </style></head><body><div class="grid">${body}</div>
+    <script>setTimeout(function(){window.print();},600);<\/script>
+    </body></html>`);
+  w.document.close();
+});
+
+
 const productForm = document.getElementById('product-form');
 const productList = document.getElementById('product-list');
 
@@ -86,7 +272,7 @@ async function renderProducts() {
       <span class="muted">Cost ${money(p.cost)} → Sale ${money(p.price)}</span>
       <span class="amount">Margin ${money(margin)}</span>
       <span class="muted">Stock: ${p.stock ?? 0}${low ? ' ⚠' : ''}</span>
-      ${p.sku ? `<span class="muted">${esc(p.sku)}</span>` : ''}
+      ${(p.sku||p.barcode) ? `<span class="tag" style="font-family:monospace;">${esc(p.sku||p.barcode)}</span>` : '<span class="muted">no barcode</span>'}
       <span class="actions">
         <button class="mini-btn edit" data-edit-prod="${p.id}">Edit</button>
         <button class="mini-btn danger" data-del-prod="${p.id}">Delete</button>
@@ -138,6 +324,7 @@ if (productForm) {
       module: MODULE,
       name: val('prod-name'),
       sku: val('prod-sku'),
+      barcode: val('prod-sku'),
       category: val('prod-category') || 'Other',
       cost: num('prod-cost'),
       price: num('prod-price'),
