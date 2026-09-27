@@ -154,7 +154,8 @@
         </select>
         <input type="number" id="prod-cost" placeholder="Cost / purchase price (Rs)" min="0" step="1" />
         <input type="number" id="prod-price" placeholder="Sale price (Rs) *" min="0" step="1" required />
-        <input type="number" id="prod-stock" placeholder="Opening stock" min="0" step="1" value="0" />
+        <input type="number" id="prod-stock" placeholder="Opening stock / units" min="0" step="1" value="1" />
+        <input type="number" id="prod-label-qty" placeholder="Barcode labels count" min="1" step="1" title="Kitni stickers print karni hain (default = stock)" />
         <input type="number" id="prod-low" placeholder="Low stock alert" min="0" value="5" />
         <input type="text" id="prod-unit" placeholder="Unit (pcs, box…)" value="pcs" />
         <button type="submit">Save Product</button>
@@ -213,10 +214,10 @@
   <div class="tab-panel" id="tab-barcodes">
     <div class="form-card">
       <h3>Product Barcodes — generate &amp; print labels</h3>
-      <p class="hint">Pehle product pe barcode generate karein (Products tab). Yahan se print / dekho. POS pe barcode scan karke Enter dabao — cart mein add ho jayega.</p>
+      <p class="hint">Product save + Generate Barcode. Print: har unit (stock) ke barabar labels. POS: barcode scan → Enter = 1 unit cart. Same barcode se baar baar scan = zyada units.</p>
       <div class="filter-row">
         <button type="button" class="mini-btn edit" id="btn-gen-all-missing">Generate missing barcodes</button>
-        <button type="button" class="mini-btn" id="btn-print-barcodes">Print all labels</button>
+        <button type="button" class="mini-btn edit" id="btn-print-barcodes">Print all unit labels</button>
       </div>
       <div id="barcode-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.85rem;margin-top:0.75rem;"></div>
     </div>

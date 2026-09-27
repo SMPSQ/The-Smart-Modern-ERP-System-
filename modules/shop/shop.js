@@ -89,16 +89,54 @@ function barcodeImgUrl(code, h = 60) {
   return 'https://bwipjs-api.metafloor.com/?bcid=code128&text=' + text + '&scale=2&height=12&includetext&guardwhitespace';
 }
 
-function barcodeLabelHtml(p) {
+function barcodeLabelHtml(p, copyIndex) {
   const code = p.sku || p.barcode || '';
   if (!code) return '';
-  return `<div class="bc-label" style="border:1px dashed #94A3B8;border-radius:10px;padding:0.65rem;text-align:center;background:#fff;">
-    <div style="font-weight:800;font-size:0.82rem;color:#0A1628;margin-bottom:0.35rem;">${esc(p.name)}</div>
+  const copyTxt = copyIndex != null ? (' · #' + (copyIndex + 1)) : '';
+  return `<div class="bc-label" style="border:1px dashed #94A3B8;border-radius:10px;padding:0.65rem;text-align:center;background:#fff;page-break-inside:avoid;">
+    <div style="font-weight:800;font-size:0.82rem;color:#0A1628;margin-bottom:0.35rem;">${esc(p.name)}${copyTxt}</div>
     <img src="${barcodeImgUrl(code)}" alt="${esc(code)}" style="max-width:100%;height:52px;object-fit:contain;" onerror="this.style.display='none'" />
     <div style="font-family:monospace;font-size:0.75rem;font-weight:700;margin-top:0.25rem;letter-spacing:0.05em;">${esc(code)}</div>
     <div style="font-size:0.72rem;color:#C9A227;font-weight:800;">${money(p.price)}</div>
   </div>`;
 }
+
+/** One product → qty labels (same barcode, print for each unit) */
+/** Units jitni → utni barcode labels (har pcs pe 1 sticker) */
+function unitCount(p) {
+  const n = Number(p.labelQty || p.stock || p.qty || p.copies || 0);
+  return Math.max(1, Math.floor(n) || 1);
+}
+function labelsForProduct(p, forceQty) {
+  const qty = forceQty != null ? Math.max(1, forceQty) : unitCount(p);
+  let html = '';
+  for (let i = 0; i < qty; i++) {
+    html += barcodeLabelHtml(p, i);
+  }
+  return html;
+}
+function openLabelPrintWindow(title, body, total) {
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if (!w) {
+    alert('Popup blocked — allow popups for print');
+    return;
+  }
+  w.document.write(
+    '<!DOCTYPE html><html><head><title>' + title + '</title>' +
+    '<style>' +
+    'body{font-family:system-ui,sans-serif;padding:10px;margin:0;}' +
+    '.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}' +
+    '.bc-label{border:1px dashed #333;border-radius:6px;padding:8px;text-align:center;page-break-inside:avoid;}' +
+    '@media print{body{padding:0;}.no-print{display:none;}.grid{gap:4px;}}' +
+    '</style></head><body>' +
+    '<p class="no-print" style="font-size:13px;">Total stickers: <b>' + total + '</b> — har pcs / unit pe 1 label chipkayein. ' +
+    '<button onclick="window.print()">Print</button></p>' +
+    '<div class="grid">' + body + '</div>' +
+    '<script>setTimeout(function(){window.print();},800);</script></body></html>'
+  );
+  w.document.close();
+}
+
 
 async function ensureProductBarcode(p) {
   if (p.sku || p.barcode) return p;
@@ -180,32 +218,24 @@ async function renderBarcodeGrid() {
     ? list
         .map((p) => {
           const code = p.sku || p.barcode || '';
+          const units = unitCount(p);
           if (!code) {
-            return `<div class="bc-label" style="border:1px solid #FECACA;border-radius:10px;padding:0.65rem;text-align:center;">
-              <div style="font-weight:700;">${esc(p.name)}</div>
-              <div class="muted" style="font-size:0.75rem;margin:0.35rem 0;">No barcode</div>
+            return `<div style="border:1px solid #FECACA;border-radius:10px;padding:0.65rem;text-align:center;background:#FEF2F2;">
+              <div style="font-weight:700;font-size:0.85rem;">${esc(p.name)}</div>
+              <div class="muted" style="font-size:0.75rem;margin:0.35rem 0;">No barcode · stock ${units}</div>
               <button type="button" class="mini-btn edit" data-gen-one="${p.id}">Generate</button>
             </div>`;
           }
-          return barcodeLabelHtml(p) + '';
+          return `<div>
+            ${barcodeLabelHtml(p)}
+            <div style="text-align:center;margin-top:4px;font-size:0.7rem;color:#64748B;">${units} unit label(s)</div>
+            <div style="text-align:center;margin-top:4px;">
+              <button type="button" class="mini-btn edit" data-print-one="${p.id}">Print ${units} labels</button>
+            </div>
+          </div>`;
         })
         .join('')
     : '<p class="muted">No products.</p>';
-
-  // Re-render labels properly with gen buttons
-  grid.innerHTML = list
-    .map((p) => {
-      const code = p.sku || p.barcode || '';
-      if (!code) {
-        return `<div style="border:1px solid #FECACA;border-radius:10px;padding:0.65rem;text-align:center;background:#FEF2F2;">
-          <div style="font-weight:700;font-size:0.85rem;">${esc(p.name)}</div>
-          <div class="muted" style="font-size:0.75rem;margin:0.35rem 0;">No barcode</div>
-          <button type="button" class="mini-btn edit" data-gen-one="${p.id}">Generate</button>
-        </div>`;
-      }
-      return barcodeLabelHtml(p);
-    })
-    .join('') || '<p class="muted">No products.</p>';
 
   grid.querySelectorAll('[data-gen-one]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -241,18 +271,41 @@ document.getElementById('btn-print-barcodes')?.addEventListener('click', async (
     alert('Pehle barcodes generate karein');
     return;
   }
-  const body = withCode.map((p) => barcodeLabelHtml(p)).join('');
-  const w = window.open('', '_blank', 'width=800,height=600');
-  if (!w) return;
-  w.document.write(`<!DOCTYPE html><html><head><title>Barcode Labels</title>
-    <style>
-      body{font-family:system-ui,sans-serif;padding:12px;}
-      .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-      @media print {.grid{gap:8px;} body{padding:0;}}
-    </style></head><body><div class="grid">${body}</div>
-    <script>setTimeout(function(){window.print();},600);<\/script>
-    </body></html>`);
-  w.document.close();
+  let body = '';
+  let total = 0;
+  for (const p of withCode) {
+    const q = unitCount(p);
+    total += q;
+    body += labelsForProduct(p, q);
+  }
+  openLabelPrintWindow('All barcode labels (' + total + ')', body, total);
+});
+
+document.getElementById('barcode-grid')?.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-print-one]');
+  if (!btn) return;
+  const p = await getLocal('shopProducts', btn.dataset.printOne);
+  if (!p || !(p.sku || p.barcode)) {
+    alert('Pehle barcode generate karein');
+    return;
+  }
+  const def = unitCount(p);
+  const raw = prompt(
+    p.name + '
+
+Kitni units / pcs hain?
+Utni hi barcode labels print hongi (har pcs pe 1 sticker).',
+    String(def)
+  );
+  if (raw === null) return;
+  const q = Math.max(1, parseInt(raw, 10) || def);
+  // save preference
+  p.labelQty = q;
+  if (!p.stock || Number(p.stock) < q) {
+    /* keep stock as is — labels can be for upcoming stock */
+  }
+  await saveLocal('shopProducts', p);
+  openLabelPrintWindow(p.name + ' — ' + q + ' labels', labelsForProduct(p, q), q);
 });
 
 
@@ -298,6 +351,8 @@ async function renderProducts() {
       document.getElementById('prod-cost').value = p.cost ?? '';
       document.getElementById('prod-price').value = p.price ?? '';
       document.getElementById('prod-stock').value = p.stock ?? 0;
+      const lq = document.getElementById('prod-label-qty');
+      if (lq) lq.value = p.labelQty ?? p.stock ?? 1;
       document.getElementById('prod-low').value = p.lowStock ?? 5;
       document.getElementById('prod-unit').value = p.unit || 'pcs';
       productForm.querySelector('button[type="submit"]').textContent = 'Update Product';
@@ -329,6 +384,7 @@ if (productForm) {
       cost: num('prod-cost'),
       price: num('prod-price'),
       stock: num('prod-stock'),
+      labelQty: num('prod-label-qty') || num('prod-stock') || 1,
       lowStock: num('prod-low') || 5,
       unit: val('prod-unit') || 'pcs',
       updatedAt: Date.now()

@@ -107,6 +107,7 @@
     <button type="button" class="tab-btn" data-tab="issue">Issue / Return</button>
     <button type="button" class="tab-btn" data-tab="issued">Currently Issued</button>
     <button type="button" class="tab-btn" data-tab="history">History</button>
+    <button type="button" class="tab-btn" data-tab="barcodes">Barcodes</button>
   </div>
 
   <div class="tab-panel active" id="tab-books">
@@ -115,6 +116,8 @@
       <form id="book-form" class="inline-form">
         <input type="hidden" id="book-edit-id" value="" />
         <input type="text" id="book-title" placeholder="Book title *" required />
+        <input type="text" id="book-barcode" placeholder="Barcode" />
+        <button type="button" id="btn-gen-book-bc" style="background:#14B8A6;color:#fff;">Generate Barcode</button>
         <input type="text" id="book-author" placeholder="Author" />
         <input type="text" id="book-cat" placeholder="Category (Science, Story…)" list="cat-list" />
         <datalist id="cat-list">
@@ -140,7 +143,8 @@
     <div class="form-card">
       <h3>Issue Book</h3>
       <form id="issue-form" class="inline-form">
-        <select id="issue-book" required><option value="">Select book *</option></select>
+        <input type="text" id="issue-barcode" placeholder="📷 Scan book barcode → Enter" style="flex:1.2;border:2px solid #14B8A6;border-radius:8px;padding:0.5rem;font-weight:600;" />
+        <select id="issue-book" required><option value="">Or select book *</option></select>
         <input type="text" id="issue-student" placeholder="Student name *" required list="student-names" />
         <datalist id="student-names"></datalist>
         <input type="text" id="issue-class" placeholder="Class" />
@@ -154,7 +158,8 @@
     <div class="form-card">
       <h3>Return Book</h3>
       <form id="return-form" class="inline-form">
-        <select id="return-issue" required><option value="">Select issued record *</option></select>
+        <input type="text" id="return-barcode" placeholder="📷 Scan book barcode to return" style="flex:1.2;border:2px solid #0F766E;border-radius:8px;padding:0.5rem;font-weight:600;" />
+        <select id="return-issue" required><option value="">Or select issued *</option></select>
         <input type="date" id="return-date" required />
         <button type="submit">Mark Returned</button>
       </form>
@@ -172,6 +177,15 @@
     <div class="form-card">
       <h3>Issue / Return History</h3>
       <ul id="history-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-barcodes">
+    <div class="form-card">
+      <h3>Book Barcodes</h3>
+      <p class="hint">Har book copy ke liye labels. Issue/Return barcode scan se.</p>
+      <button type="button" class="mini-btn edit" id="btn-lib-gen-missing">Generate missing barcodes</button>
+      <button type="button" class="mini-btn" id="btn-lib-print-labels">Print unit labels</button>
+      <div id="lib-barcode-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:0.75rem;margin-top:0.75rem;"></div>
     </div>
   </div>
 </main>
