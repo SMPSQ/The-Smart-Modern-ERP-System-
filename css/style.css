@@ -474,3 +474,38 @@ input, select, textarea, button {
 .data-list li, .visitor-list li { font-size: 0.9rem !important; line-height: 1.45; }
 .mini-btn { font-size: 0.8rem !important; font-weight: 700 !important; }
 
+
+
+/* Personal data privacy — non-admin roles hide sensitive fields
+   Append to css/style.css */
+
+body.privacy-mode .privacy-restricted {
+  display: none !important;
+}
+
+/* Mask patterns in lists when privacy-mode is on */
+body.privacy-mode [data-sensitive],
+body.privacy-mode .sensitive-phone,
+body.privacy-mode .sensitive-cnic,
+body.privacy-mode .sensitive-salary {
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}
+
+body.privacy-mode .sensitive-phone::after,
+body.privacy-mode .sensitive-cnic::after,
+body.privacy-mode .sensitive-salary::after {
+  content: ' (hidden)';
+  filter: none;
+  font-size: 0.75em;
+  color: #94A3B8;
+}
+
+/* Staff / payroll forms: salary fields hidden for non-admins via JS class */
+body.privacy-mode #staff-salary,
+body.privacy-mode #staff-phone,
+body.privacy-mode input[id*="cnic" i],
+body.privacy-mode input[id*="phone" i]:not(#login-email):not(#login-password) {
+  /* JS applyPersonalDataPrivacy already hides wrappers; this is backup */
+}

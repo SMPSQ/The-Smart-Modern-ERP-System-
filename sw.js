@@ -1,5 +1,6 @@
-/* Future Tech ERP — Service Worker with auto-update cache */
-const CACHE_VERSION = 'v5.1.0';
+/* Future Tech ERP — Service Worker with auto-update cache
+   BUMP CACHE_VERSION every time you deploy new features so clients refresh */
+const CACHE_VERSION = 'v6.0.0';
 const CACHE = 'future-tech-erp-' + CACHE_VERSION;
 
 const PRECACHE = [
@@ -14,6 +15,7 @@ const PRECACHE = [
   './js/auth.js',
   './js/dashboard.js',
   './js/print.js',
+  './js/staff-auth.js',
   './js/firebase-config.js',
   './js/sw-register.js',
   './icons/icon-192.png',
@@ -27,14 +29,17 @@ const PRECACHE = [
   './modules/trading-academy/index.html',
   './modules/trading-academy/trading.js',
   './modules/educational-academy/index.html',
-  './modules/educational-academy/academy.js'
+  './modules/educational-academy/academy.js',
+  './modules/shop/index.html',
+  './modules/shop/shop.js'
 ];
 
 // Install: precache + activate immediately
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(PRECACHE).catch(() => cache.addAll(PRECACHE.slice(0, 12))))
       .then(() => self.skipWaiting())
       .catch((err) => console.warn('Precache partial', err))
   );
@@ -43,22 +48,28 @@ self.addEventListener('install', (event) => {
 // Activate: drop old caches, take control of all tabs
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k.startsWith('future-tech-erp-') || k.startsWith('fkc-erp-'))
-          .filter((k) => k !== CACHE)
-          .map((k) => caches.delete(k))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter(
+              (k) =>
+                k.startsWith('future-tech-erp-') || k.startsWith('fkc-erp-')
+            )
+            .filter((k) => k !== CACHE)
+            .map((k) => caches.delete(k))
+        )
       )
-    ).then(() => self.clients.claim())
+      .then(() => self.clients.claim())
+      .then(() =>
+        self.clients.matchAll({ type: 'window' }).then((clients) => {
+          clients.forEach((c) =>
+            c.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION })
+          );
+        })
+      )
   );
-});
-
-// Allow page to trigger skipWaiting
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
 });
 
 function isHTML(request) {
@@ -67,7 +78,9 @@ function isHTML(request) {
 }
 
 function isCode(url) {
-  return /\.(js|css|json|html)$/i.test(url.pathname) || url.pathname.endsWith('/');
+  return (
+    /\.(js|css|json|html)$/i.test(url.pathname) || url.pathname.endsWith('/')
+  );
 }
 
 // Network-first for HTML/JS/CSS (always try fresh), cache fallback offline
@@ -77,7 +90,6 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Network-first for app shell & code — auto picks up updates
   if (isHTML(event.request) || isCode(url)) {
     event.respondWith(
       fetch(event.request)
@@ -88,12 +100,15 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         })
-        .catch(() => caches.match(event.request).then((c) => c || caches.match('./index.html')))
+        .catch(() =>
+          caches
+            .match(event.request)
+            .then((c) => c || caches.match('./index.html'))
+        )
     );
     return;
   }
 
-  // Cache-first for static assets
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetched = fetch(event.request)
@@ -108,4 +123,11 @@ self.addEventListener('fetch', (event) => {
       return cached || fetched;
     })
   );
+});
+
+// Allow page to force skipWaiting
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

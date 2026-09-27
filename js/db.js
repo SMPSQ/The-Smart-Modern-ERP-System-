@@ -1,8 +1,8 @@
-// js/db.js — Professional Offline-First Engine (ERP v4)
+// js/db.js — Professional Offline-First Engine (ERP v6)
 // IndexedDB + Sync Queue + Automatic Activity Logging
 
 const DB_NAME = 'fkc-erp-v4';
-const DB_VERSION = 9;
+const DB_VERSION = 10;
 
 const STORES = [
   // Core
@@ -39,6 +39,10 @@ const STORES = [
   'tutors',
   'classes',
   'academyEnrollments',
+
+  // Shop
+  'shopProducts',
+  'shopSales',
 
   // System
   'visitors',

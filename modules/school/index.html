@@ -576,48 +576,102 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
 
   <!-- FINANCE -->
   <div class="tab-panel" id="tab-finance">
-    <div class="form-card">
-      <h3>Income (other than fees)</h3>
-      <form id="income-form" class="inline-form">
-        <input type="date" id="income-date" required />
-        <input type="text" id="income-desc" placeholder="Description" required />
-        <input type="number" id="income-amount" placeholder="Amount (Rs)" min="0" required />
-        <button type="submit">Add Income</button>
-      </form>
-      <ul id="income-list" class="data-list"></ul>
+  <div class="form-card">
+    <h3>Monthly Accounting Overview</h3>
+    <div class="filter-row" style="margin-bottom:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+      <label style="font-size:0.75rem;font-weight:700;color:#64748B;">Month</label>
+      <input type="month" id="acct-month" />
+      <button type="button" class="mini-btn edit" id="acct-refresh-btn">Show Report</button>
     </div>
-    <div class="form-card">
-      <h3>Expenses</h3>
-      <form id="expense-form" class="inline-form">
-        <input type="date" id="expense-date" required />
-        <input type="text" id="expense-desc" placeholder="Description (rent, salary…)" required />
-        <input type="number" id="expense-amount" placeholder="Amount (Rs)" min="0" required />
-        <button type="submit">Add Expense</button>
-      </form>
-      <ul id="expense-list" class="data-list"></ul>
+    <div id="monthly-report" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.85rem;margin-bottom:1rem;">
+      <div style="background:#fff;border-radius:12px;padding:1rem;border-left:4px solid #C9A227;border:1px solid #E8ECF1;">
+        <div style="font-size:0.7rem;color:#64748B;text-transform:uppercase;font-weight:700;">Fee Collection</div>
+        <div id="m-fees" style="font-size:1.35rem;font-weight:800;color:#0A1628;">—</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:1rem;border-left:4px solid #1B7A4E;border:1px solid #E8ECF1;">
+        <div style="font-size:0.7rem;color:#64748B;text-transform:uppercase;font-weight:700;">Other + Shop Income</div>
+        <div id="m-income" style="font-size:1.35rem;font-weight:800;color:#0A1628;">—</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:1rem;border-left:4px solid #B91C1C;border:1px solid #E8ECF1;">
+        <div style="font-size:0.7rem;color:#64748B;text-transform:uppercase;font-weight:700;">Total Expenses</div>
+        <div id="m-expense" style="font-size:1.35rem;font-weight:800;color:#B91C1C;">—</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:1rem;border-left:4px solid #0A1628;border:1px solid #E8ECF1;">
+        <div style="font-size:0.7rem;color:#64748B;text-transform:uppercase;font-weight:700;">Net (Month)</div>
+        <div id="m-net" style="font-size:1.35rem;font-weight:800;color:#0A1628;">—</div>
+      </div>
     </div>
-    <div class="form-card">
-      <h3>School Finance Summary</h3>
-      <div id="finance-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;">
-        <div class="kpi-card gold" style="border-left:4px solid #C9A227;padding:0.9rem;background:#fff;border-radius:10px;">
-          <div class="label" style="font-size:0.7rem;color:#777;text-transform:uppercase;">Fee Collected</div>
-          <div class="value" id="sum-fees" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
-        </div>
-        <div class="kpi-card" style="border-left:4px solid #1B7A4E;padding:0.9rem;background:#fff;border-radius:10px;">
-          <div class="label" style="font-size:0.7rem;color:#777;text-transform:uppercase;">Other Income</div>
-          <div class="value" id="sum-income" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
-        </div>
-        <div class="kpi-card" style="border-left:4px solid #B91C1C;padding:0.9rem;background:#fff;border-radius:10px;">
-          <div class="label" style="font-size:0.7rem;color:#777;text-transform:uppercase;">Expenses</div>
-          <div class="value" id="sum-expense" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
-        </div>
-        <div class="kpi-card" style="border-left:4px solid #0A1628;padding:0.9rem;background:#fff;border-radius:10px;">
-          <div class="label" style="font-size:0.7rem;color:#777;text-transform:uppercase;">Net</div>
-          <div class="value" id="sum-net" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
-        </div>
+    <h4 style="margin:0.5rem 0 0.6rem;font-size:0.9rem;color:#0A1628;">Expense breakdown (this month)</h4>
+    <ul id="m-expense-breakdown" class="data-list"></ul>
+  </div>
+
+  <div class="form-card">
+    <h3>Other Income</h3>
+    <form id="income-form" class="inline-form">
+      <input type="date" id="income-date" required />
+      <input type="text" id="income-desc" placeholder="Description" required />
+      <input type="number" id="income-amount" placeholder="Amount (Rs)" min="0" required />
+      <select id="income-category">
+        <option value="General">General</option>
+        <option value="Donation">Donation</option>
+        <option value="Event">Event</option>
+        <option value="Shop">Shop</option>
+        <option value="Other">Other</option>
+      </select>
+      <button type="submit">Add Income</button>
+    </form>
+    <ul id="income-list" class="data-list"></ul>
+  </div>
+
+  <div class="form-card">
+    <h3>Expenses — monthly school costs</h3>
+    <form id="expense-form" class="inline-form">
+      <input type="date" id="expense-date" required />
+      <select id="expense-category" required>
+        <option value="">Category *</option>
+        <option value="Salaries">Salaries</option>
+        <option value="Rent">Rent / Building</option>
+        <option value="Utilities">Utilities (electricity, water, gas)</option>
+        <option value="Supplies">Supplies / Stationery</option>
+        <option value="Transport">Transport</option>
+        <option value="Maintenance">Maintenance / Repair</option>
+        <option value="Food">Food / Canteen</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Tax">Tax / Fees</option>
+        <option value="Other">Other</option>
+      </select>
+      <input type="text" id="expense-desc" placeholder="Description (e.g. April electricity)" required />
+      <input type="number" id="expense-amount" placeholder="Amount (Rs)" min="0" required />
+      <button type="submit">Add Expense</button>
+    </form>
+    <ul id="expense-list" class="data-list"></ul>
+  </div>
+
+  <div class="form-card">
+    <h3>All-time Finance Summary</h3>
+    <div id="finance-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;">
+      <div style="border-left:4px solid #C9A227;padding:0.9rem;background:#fff;border-radius:10px;border:1px solid #E8ECF1;">
+        <div style="font-size:0.7rem;color:#777;text-transform:uppercase;">Fee Collected</div>
+        <div class="value" id="sum-fees" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
+      </div>
+      <div style="border-left:4px solid #1B7A4E;padding:0.9rem;background:#fff;border-radius:10px;border:1px solid #E8ECF1;">
+        <div style="font-size:0.7rem;color:#777;text-transform:uppercase;">Other Income</div>
+        <div class="value" id="sum-income" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
+      </div>
+      <div style="border-left:4px solid #B91C1C;padding:0.9rem;background:#fff;border-radius:10px;border:1px solid #E8ECF1;">
+        <div style="font-size:0.7rem;color:#777;text-transform:uppercase;">Expenses</div>
+        <div class="value" id="sum-expense" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
+      </div>
+      <div style="border-left:4px solid #0A1628;padding:0.9rem;background:#fff;border-radius:10px;border:1px solid #E8ECF1;">
+        <div style="font-size:0.7rem;color:#777;text-transform:uppercase;">Net</div>
+        <div class="value" id="sum-net" style="font-size:1.3rem;font-weight:800;color:#0A1628;">—</div>
       </div>
     </div>
   </div>
+</div>
+
+
+  
 
 
   <div class="tab-panel" id="tab-leave">
@@ -738,6 +792,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
           <option value="Peon">Peon</option>
           <option value="Guard">Guard</option>
           <option value="Sweeper / Cleaner">Sweeper / Cleaner</option>
+                  <option value="Shop Salesman">Shop Salesman</option>
         </select>
         <input type="tel" id="staff-phone" placeholder="Phone" />
         <input type="number" id="staff-salary" placeholder="Salary (Rs)" min="0" />

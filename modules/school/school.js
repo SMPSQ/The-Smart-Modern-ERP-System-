@@ -2,7 +2,7 @@
 import { saveLocal, getAllLocal, deleteLocal, getLocal } from '../../js/db.js';
 import { runSync } from '../../js/sync.js';
 import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint, buildIdCardPrint } from '../../js/print.js';
-import { ensureStaffCredentials, suggestUsername, applyTabAccess, getStaffSession } from '../../js/staff-auth.js';
+import { ensureStaffCredentials, suggestUsername, applyTabAccess, getStaffSession, applyPersonalDataPrivacy, canSeePersonalDetails, maskSensitive } from '../../js/staff-auth.js';
 
 const MODULE = 'school';
 const INST_NAME = 'Future Tech Public School';
@@ -675,7 +675,7 @@ async function renderTeachers() {
       <li>
         <strong>${esc(t.name)}</strong>
         <span class="tag">${esc(t.subject || '—')}</span>
-        <span class="muted">${esc(t.phone || '')}</span>
+        <span class="muted">${canSeePersonalDetails() ? esc(t.phone || '') : maskSensitive(t.phone)}</span>
         <span class="actions">
           <button class="mini-btn danger" data-del-teacher="${t.id}">Delete</button>
         </span>
@@ -847,6 +847,47 @@ async function renderExpenses() {
     });
   });
 }
+
+async function renderMonthlyAccounting() {
+  const monthEl = document.getElementById('acct-month');
+  if (!monthEl) return;
+  if (!monthEl.value) monthEl.value = new Date().toISOString().slice(0, 7);
+  const ym = monthEl.value;
+  const challans = await getModuleRecords('feeChallans');
+  const feeCollected = challans
+    .filter(c => (c.status || '').toLowerCase() === 'paid' && (
+      (c.paidOn && String(c.paidOn).startsWith(ym)) ||
+      (c.month && String(c.month).startsWith(ym))
+    ))
+    .reduce((s, c) => s + Number(c.amount || 0), 0);
+  const incomes = await getModuleRecords('income');
+  // include shop-sourced income (module may be school)
+  const allIncome = await getAllLocal('income');
+  const monthIncome = allIncome
+    .filter(r => (r.date || '').startsWith(ym))
+    .reduce((s, r) => s + Number(r.amount || 0), 0);
+  const expenses = await getModuleRecords('expenses');
+  const monthExpenses = expenses.filter(r => (r.date || '').startsWith(ym));
+  const expTotal = monthExpenses.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const byCat = {};
+  monthExpenses.forEach(r => {
+    const cat = r.category || 'Other';
+    byCat[cat] = (byCat[cat] || 0) + Number(r.amount || 0);
+  });
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('m-fees', formatMoney(feeCollected));
+  set('m-income', formatMoney(monthIncome));
+  set('m-expense', formatMoney(expTotal));
+  set('m-net', formatMoney(feeCollected + monthIncome - expTotal));
+  const breakdown = document.getElementById('m-expense-breakdown');
+  if (breakdown) {
+    const rows = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    breakdown.innerHTML = rows.length
+      ? rows.map(([cat, amt]) => `<li><strong>${esc(cat)}</strong> <span class="amount">${formatMoney(amt)}</span></li>`).join('')
+      : '<li class="muted">Is month ki koi expense entry nahi.</li>';
+  }
+}
+
 async function renderFinanceSummary() {
   const challans = await getModuleRecords('feeChallans');
   const fees = challans.filter(c => (c.status || '').toLowerCase() === 'paid')
@@ -869,6 +910,7 @@ if (incomeForm) {
     e.preventDefault();
     await saveLocal('income', {
       date: val('income-date'),
+      category: val('income-category') || 'General',
       description: val('income-desc'),
       amount: Number(document.getElementById('income-amount')?.value),
       module: MODULE
@@ -877,6 +919,7 @@ if (incomeForm) {
     if (d) d.value = new Date().toISOString().slice(0, 10);
     await renderIncome();
     await renderFinanceSummary();
+    await renderMonthlyAccounting();
     runSync();
   });
 }
@@ -887,6 +930,7 @@ if (expenseForm) {
     e.preventDefault();
     await saveLocal('expenses', {
       date: val('expense-date'),
+      category: val('expense-category') || 'Other',
       description: val('expense-desc'),
       amount: Number(document.getElementById('expense-amount')?.value),
       module: MODULE
@@ -895,6 +939,7 @@ if (expenseForm) {
     if (d) d.value = new Date().toISOString().slice(0, 10);
     await renderExpenses();
     await renderFinanceSummary();
+    await renderMonthlyAccounting();
     runSync();
   });
 }
@@ -1169,8 +1214,8 @@ async function renderStaff() {
   staffList.innerHTML = list.length ? list.map(s => `
     <li><strong>${esc(s.name)}</strong> <span class="tag">${esc(s.role||'Staff')}</span>
     <span class="muted">@${esc(s.username||'—')}</span>
-    <span class="muted">${esc(s.phone||'')}</span>
-    <span class="amount">${s.salary != null ? formatMoney(s.salary) : ''}</span>
+    <span class="muted">${canSeePersonalDetails() ? esc(s.phone||'') : maskSensitive(s.phone)}</span>
+    <span class="amount">${s.salary != null ? canSeePersonalDetails() ? formatMoney(s.salary) : '••••' : ''}</span>
     <span class="actions"><button class="mini-btn danger" data-del-staff="${s.id}">Delete</button></span></li>`).join('')
     : '<li class="muted">No staff records.</li>';
   staffList.querySelectorAll('[data-del-staff]').forEach(btn => {
@@ -1642,5 +1687,12 @@ async function renderActivityLog() {
   try {
     const staffSess = getStaffSession();
     if (staffSess && staffSess.role) applyTabAccess(staffSess.role);
+    applyPersonalDataPrivacy();
+    // Monthly accounting UI
+    const acctMonth = document.getElementById('acct-month');
+    if (acctMonth && !acctMonth.value) acctMonth.value = new Date().toISOString().slice(0, 7);
+    document.getElementById('acct-refresh-btn')?.addEventListener('click', () => renderMonthlyAccounting());
+    acctMonth?.addEventListener('change', () => renderMonthlyAccounting());
+    renderMonthlyAccounting();
   } catch (_) {}
 })();
