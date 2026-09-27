@@ -1,14 +1,6 @@
-Future Tech Public School ERP — v6.2 Complete
-School · Shop · Trading · Educational Academy
-
-Features:
-- Role-based login (Shop Salesman → Shop only)
-- User create / edit / delete / password reset (Admin only)
-- School monthly accounting + payroll
-- Shop: inventory, purchase, sale, P&L
-- Educational: subjects auto-save + search-select
-- School admission: classes search-select from Classes module
-- Trading (Forex): courses search-select + auto-save
-- ID cards photo+QR, modern prints
-- Cache v6.2.0 auto-update banner
-- Back links on modules
+Future Tech ERP v6.3 — 4 Modules Complete
+1. Public School
+2. Trading Academy  
+3. Educational Academy
+4. School Shop
++ Master Dashboard (User Management for Super Admin)

@@ -371,6 +371,105 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     </div>
   </div>
 
+
+  <div class="tab-panel" id="tab-courses">
+    <div class="form-card">
+      <h3>Trading Courses</h3>
+      <form id="course-form" class="inline-form">
+        <input type="text" id="course-name" placeholder="Course name *" required list="course-pick-list" />
+        <input type="text" id="course-duration" placeholder="Duration" />
+        <input type="number" id="course-fee" placeholder="Fee (Rs)" min="0" />
+        <input type="text" id="course-teacher" placeholder="Instructor" />
+        <input type="text" id="course-desc" placeholder="Description" />
+        <button type="submit">Add Course</button>
+      </form>
+      <p class="hint">Courses admission form pe search-select mein aate hain.</p>
+      <ul id="course-list" class="data-list"></ul>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-staff">
+    <div class="form-card">
+      <h3>Staff / Users</h3>
+      <p class="hint">Users main Dashboard se bhi bana sakte hain (Super Admin). Yahan trading staff add karein.</p>
+      <form id="staff-form" class="inline-form">
+        <input type="text" id="staff-name" placeholder="Name *" required />
+        <select id="staff-role">
+          <option value="Teacher">Teacher / Instructor</option>
+          <option value="Admin">Admin</option>
+          <option value="Accountant">Accountant</option>
+          <option value="Receptionist">Receptionist</option>
+          <option value="Staff">Staff</option>
+        </select>
+        <input type="tel" id="staff-phone" placeholder="Phone" />
+        <input type="number" id="staff-salary" placeholder="Salary" min="0" />
+        <input type="text" id="staff-username" placeholder="Username" />
+        <input type="text" id="staff-password" placeholder="Password" />
+        <button type="submit">Add Staff</button>
+      </form>
+      <div id="staff-cred-box" style="display:none;padding:0.75rem;background:#ECFDF5;border-radius:10px;margin:0.5rem 0;">
+        User: <code id="cred-user"></code> · Pass: <code id="cred-pass"></code>
+      </div>
+      <ul id="staff-list" class="data-list"></ul>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-idcards">
+    <div class="form-card">
+      <h3>Student ID Cards</h3>
+      <p class="hint">Student select karke modern ID card print (photo + QR).</p>
+      <div class="inline-form">
+        <select id="idcard-student"><option value="">Select student</option></select>
+        <button type="button" id="idcard-print-btn" class="btn-primary">Print ID Card</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-homework">
+    <div class="form-card">
+      <h3>Homework / Assignments</h3>
+      <form id="hw-form" class="inline-form">
+        <input type="text" id="hw-class" placeholder="Batch / Course" required />
+        <input type="text" id="hw-subject" placeholder="Topic" required />
+        <input type="date" id="hw-due" />
+        <input type="text" id="hw-desc" placeholder="Description" style="flex:2" />
+        <button type="submit">Assign</button>
+      </form>
+      <ul id="hw-list" class="data-list"></ul>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-inventory">
+    <div class="form-card">
+      <h3>Inventory / Assets</h3>
+      <form id="inv-form" class="inline-form">
+        <input type="text" id="inv-name" placeholder="Item name *" required />
+        <input type="number" id="inv-qty" placeholder="Qty" min="0" value="1" />
+        <input type="text" id="inv-location" placeholder="Location" />
+        <input type="text" id="inv-note" placeholder="Note" />
+        <button type="submit">Add Item</button>
+      </form>
+      <ul id="inv-list" class="data-list"></ul>
+    </div>
+  </div>
+
+
+  <div class="tab-panel" id="tab-settings">
+    <div class="form-card">
+      <h3>Module Settings</h3>
+      <p class="hint">Trading Academy settings — institution name uses Future Tech branding.</p>
+      <form id="settings-form" class="inline-form">
+        <input type="text" id="set-name" placeholder="Display name" value="Future Tech Trading Academy" />
+        <input type="text" id="set-phone" placeholder="Contact" />
+        <button type="submit">Save</button>
+      </form>
+    </div>
+  </div>
+
 </main>
 
 <script>

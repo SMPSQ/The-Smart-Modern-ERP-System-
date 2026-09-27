@@ -753,3 +753,139 @@ async function fillCourseDatalist() {
   }
 }
 
+
+
+
+// ===== Extra complete features: Staff, ID cards, Homework, Inventory =====
+import {
+  ensureStaffCredentials, suggestUsername, getStaffSession, canManageUsers
+} from '../../js/staff-auth.js';
+import { buildIdCardPrint, printHtml } from '../../js/print.js';
+
+// Staff
+const staffFormT = document.getElementById('staff-form');
+const staffListT = document.getElementById('staff-list');
+async function renderStaffT() {
+  if (!staffListT) return;
+  const list = await getModuleRecords('staff');
+  staffListT.innerHTML = list.length ? list.map(s => `
+    <li><strong>${esc(s.name)}</strong> <span class="tag">${esc(s.role||'')}</span>
+    <span class="muted">@${esc(s.username||'')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-staff="${s.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No staff.</li>';
+  staffListT.querySelectorAll('[data-del-staff]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete?')) return;
+      await deleteLocal('staff', btn.dataset.delStaff);
+      await renderStaffT(); runSync();
+    });
+  });
+}
+if (staffFormT) {
+  staffFormT.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('staff-name').value.trim();
+    const role = document.getElementById('staff-role')?.value || 'Staff';
+    const phone = document.getElementById('staff-phone')?.value.trim() || '';
+    const salary = Number(document.getElementById('staff-salary')?.value) || null;
+    const username = document.getElementById('staff-username')?.value.trim() || '';
+    const plainPw = document.getElementById('staff-password')?.value.trim() || '';
+    const base = { name, role, phone, salary, username: username || suggestUsername(name), active: true, module: MODULE };
+    const { username: u, password: pw } = await ensureStaffCredentials(base, plainPw || null);
+    const box = document.getElementById('staff-cred-box');
+    if (box) { box.style.display = 'block'; document.getElementById('cred-user').textContent = u; document.getElementById('cred-pass').textContent = pw; }
+    staffFormT.reset();
+    await renderStaffT(); runSync();
+  });
+}
+
+// ID cards
+async function fillIdCardSelect() {
+  const sel = document.getElementById('idcard-student');
+  if (!sel) return;
+  const students = await getModuleRecords('students');
+  sel.innerHTML = '<option value="">Select student</option>' +
+    students.map(s => `<option value="${s.id}">${esc(s.name)} — ${esc(s.course||s.className||'')}</option>`).join('');
+}
+document.getElementById('idcard-print-btn')?.addEventListener('click', async () => {
+  const id = document.getElementById('idcard-student')?.value;
+  if (!id) { alert('Select student'); return; }
+  const s = await getLocal('students', id);
+  if (!s) return;
+  printHtml(buildIdCardPrint(s, 'Future Tech Trading Academy'));
+});
+
+// Homework
+const hwForm = document.getElementById('hw-form');
+const hwList = document.getElementById('hw-list');
+async function renderHw() {
+  if (!hwList) return;
+  const list = await getModuleRecords('homework');
+  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  hwList.innerHTML = list.length ? list.map(h => `
+    <li><strong>${esc(h.subject||h.topic||'')}</strong>
+    <span class="tag">${esc(h.className||h.batch||'')}</span>
+    <span class="muted">${esc(h.due||'')}</span>
+    <span class="muted">${esc(h.description||'')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-hw="${h.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No homework.</li>';
+  hwList.querySelectorAll('[data-del-hw]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await deleteLocal('homework', btn.dataset.delHw);
+      await renderHw(); runSync();
+    });
+  });
+}
+if (hwForm) {
+  hwForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('homework', {
+      className: document.getElementById('hw-class').value.trim(),
+      subject: document.getElementById('hw-subject').value.trim(),
+      due: document.getElementById('hw-due')?.value || '',
+      description: document.getElementById('hw-desc')?.value.trim() || '',
+      module: MODULE, createdAt: Date.now()
+    });
+    hwForm.reset(); await renderHw(); runSync();
+  });
+}
+
+// Inventory assets
+const invForm = document.getElementById('inv-form');
+const invList = document.getElementById('inv-list');
+async function renderInvAssets() {
+  if (!invList) return;
+  const list = await getModuleRecords('inventory');
+  invList.innerHTML = list.length ? list.map(i => `
+    <li><strong>${esc(i.name)}</strong> <span class="tag">×${i.qty||1}</span>
+    <span class="muted">${esc(i.location||'')}</span>
+    <span class="actions"><button class="mini-btn danger" data-del-inv="${i.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No items.</li>';
+  invList.querySelectorAll('[data-del-inv]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await deleteLocal('inventory', btn.dataset.delInv);
+      await renderInvAssets(); runSync();
+    });
+  });
+}
+if (invForm) {
+  invForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveLocal('inventory', {
+      name: document.getElementById('inv-name').value.trim(),
+      qty: Number(document.getElementById('inv-qty').value)||1,
+      location: document.getElementById('inv-location')?.value.trim()||'',
+      note: document.getElementById('inv-note')?.value.trim()||'',
+      module: MODULE
+    });
+    invForm.reset(); await renderInvAssets(); runSync();
+  });
+}
+
+// Boot extras
+renderStaffT();
+fillIdCardSelect();
+renderHw();
+renderInvAssets();
+if (typeof renderCourses === 'function') renderCourses();
+else if (typeof fillCourseDatalist === 'function') fillCourseDatalist();
