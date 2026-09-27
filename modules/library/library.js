@@ -346,47 +346,9 @@ async function findBookByBarcode(code) {
   );
 }
 
-document.getElementById('issue-barcode')?.addEventListener('keydown', async (e) => {
-  if (e.key !== 'Enter') return;
-  e.preventDefault();
-  const code = e.target.value.trim();
-  const book = await findBookByBarcode(code);
-  if (!book) { alert('Book barcode not found: ' + code); return; }
-  const sel = document.getElementById('issue-book');
-  if (sel) {
-    // ensure option exists
-    if (![...sel.options].some(o => o.value === book.id)) {
-      const opt = document.createElement('option');
-      opt.value = book.id;
-      opt.textContent = book.title || book.name;
-      sel.appendChild(opt);
-    }
-    sel.value = book.id;
-  }
-  e.target.value = '';
-  e.target.style.borderColor = '#059669';
-  setTimeout(() => { e.target.style.borderColor = '#14B8A6'; }, 400);
-});
 
-document.getElementById('return-barcode')?.addEventListener('keydown', async (e) => {
-  if (e.key !== 'Enter') return;
-  e.preventDefault();
-  const code = e.target.value.trim();
-  const book = await findBookByBarcode(code);
-  if (!book) { alert('Book not found: ' + code); return; }
-  const issues = (await getIssues()).filter(i =>
-    (i.status||'Issued') === 'Issued' &&
-    (i.bookId === book.id || (i.bookTitle||'') === (book.title||book.name))
-  );
-  if (!issues.length) { alert('Is book ki koi open issue nahi'); return; }
-  const sel = document.getElementById('return-issue');
-  if (sel) {
-    sel.value = issues[0].id;
-  }
-  e.target.value = '';
-  // auto return optional - select only
-  alert('Selected for return: ' + (book.title||book.name) + ' → ' + (issues[0].studentName||''));
-});
+
+
 
 async function renderLibBarcodeGrid() {
   const grid = document.getElementById('lib-barcode-grid');
@@ -481,3 +443,249 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'barcodes') renderLibBarcodeGrid();
   });
 });
+
+
+
+// ========== AUTOMATIC BARCODE DESK (Issue / Return / Add) ==========
+let scanMode = 'issue'; // issue | return | add
+
+function setScanFeedback(msg, ok) {
+  const fb = document.getElementById('auto-feedback');
+  if (!fb) return;
+  fb.style.color = ok ? '#059669' : '#B91C1C';
+  fb.textContent = msg;
+}
+
+function beep(ok) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = ok ? 880 : 220;
+    g.gain.value = 0.08;
+    o.start();
+    o.stop(ctx.currentTime + (ok ? 0.08 : 0.2));
+  } catch (_) {}
+}
+
+document.querySelectorAll('.mode-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    scanMode = btn.dataset.mode || 'issue';
+    const issueEx = document.getElementById('auto-issue-extra');
+    const addEx = document.getElementById('auto-add-extra');
+    if (issueEx) issueEx.style.display = scanMode === 'issue' ? 'block' : 'none';
+    if (addEx) addEx.style.display = scanMode === 'add' ? 'block' : 'none';
+    const scan = document.getElementById('auto-scan');
+    if (scan) {
+      scan.value = '';
+      scan.focus();
+      scan.placeholder =
+        scanMode === 'issue'
+          ? '📷 ISSUE — book barcode scan…'
+          : scanMode === 'return'
+            ? '📷 RETURN — book barcode scan…'
+            : '📷 ADD — new book barcode scan…';
+    }
+    setScanFeedback('Mode: ' + scanMode.toUpperCase(), true);
+  });
+});
+
+async function findBookByBarcode(code) {
+  code = String(code || '').trim();
+  if (!code) return null;
+  const books = await getBooks();
+  const c = code.toLowerCase();
+  return (
+    books.find(
+      (b) =>
+        String(b.barcode || '').toLowerCase() === c ||
+        String(b.isbn || '').toLowerCase() === c ||
+        String(b.id || '').toLowerCase() === c
+    ) || null
+  );
+}
+
+async function autoIssueByBarcode(code) {
+  const book = await findBookByBarcode(code);
+  if (!book) {
+    setScanFeedback('Book not found: ' + code + ' — pehle ADD mode se book save karein', false);
+    beep(false);
+    return;
+  }
+  let student = (document.getElementById('auto-student')?.value || '').trim();
+  if (!student) {
+    student = prompt('Student name (issue ke liye):', '') || '';
+  }
+  if (!student) {
+    setScanFeedback('Student name zaroori hai', false);
+    beep(false);
+    return;
+  }
+  const className = (document.getElementById('auto-class')?.value || '').trim();
+  const title = book.title || book.name || '';
+  // check already issued same book open?
+  const open = (await getIssues()).filter(
+    (i) =>
+      (i.status || 'Issued') === 'Issued' &&
+      (i.bookId === book.id || i.bookTitle === title)
+  );
+  if (open.length >= Number(book.qty || book.copies || 1)) {
+    setScanFeedback('No copies available: ' + title, false);
+    beep(false);
+    return;
+  }
+  await saveLocal('libraryIssues', {
+    bookId: book.id,
+    bookTitle: title,
+    studentName: student,
+    className,
+    issueDate: todayStr(),
+    dueDate: '',
+    status: 'Issued',
+    method: 'barcode',
+    module: MODULE,
+    createdAt: Date.now()
+  });
+  setScanFeedback('✓ ISSUED: ' + title + ' → ' + student, true);
+  beep(true);
+  if (document.getElementById('auto-student')) document.getElementById('auto-student').value = student;
+  await refresh();
+  await fillIssueSelects();
+  await renderIssued();
+  runSync();
+}
+
+async function autoReturnByBarcode(code) {
+  const book = await findBookByBarcode(code);
+  if (!book) {
+    setScanFeedback('Book not found: ' + code, false);
+    beep(false);
+    return;
+  }
+  const title = book.title || book.name || '';
+  const issues = (await getIssues()).filter(
+    (i) =>
+      (i.status || 'Issued') === 'Issued' &&
+      (i.bookId === book.id || (i.bookTitle || '') === title)
+  );
+  if (!issues.length) {
+    setScanFeedback('Koi open issue nahi: ' + title, false);
+    beep(false);
+    return;
+  }
+  // return most recent
+  issues.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const rec = issues[0];
+  rec.status = 'Returned';
+  rec.returnDate = todayStr();
+  rec.method = 'barcode';
+  rec.updatedAt = Date.now();
+  await saveLocal('libraryIssues', rec);
+  setScanFeedback('✓ RETURNED: ' + title + ' (was with ' + (rec.studentName || '') + ')', true);
+  beep(true);
+  await refresh();
+  await fillIssueSelects();
+  await renderIssued();
+  runSync();
+}
+
+async function autoAddBookByBarcode(code) {
+  const existing = await findBookByBarcode(code);
+  if (existing) {
+    setScanFeedback('Already exists: ' + (existing.title || existing.name) + ' · ' + code, false);
+    beep(false);
+    return;
+  }
+  let title = (document.getElementById('auto-title')?.value || '').trim();
+  if (!title) {
+    title = prompt('New book title:', code) || '';
+  }
+  if (!title) {
+    setScanFeedback('Title zaroori hai', false);
+    beep(false);
+    return;
+  }
+  const author = (document.getElementById('auto-author')?.value || '').trim();
+  await saveLocal('library', {
+    title,
+    name: title,
+    author,
+    barcode: code,
+    isbn: code,
+    qty: 1,
+    copies: 1,
+    type: 'book',
+    module: MODULE,
+    updatedAt: Date.now()
+  });
+  setScanFeedback('✓ BOOK ADDED: ' + title + ' · barcode ' + code, true);
+  beep(true);
+  if (document.getElementById('auto-title')) document.getElementById('auto-title').value = '';
+  await refresh();
+  await renderLibBarcodeGrid();
+  runSync();
+}
+
+async function handleAutoScan(code) {
+  code = String(code || '').trim();
+  if (!code) return;
+  if (scanMode === 'issue') await autoIssueByBarcode(code);
+  else if (scanMode === 'return') await autoReturnByBarcode(code);
+  else if (scanMode === 'add') await autoAddBookByBarcode(code);
+}
+
+function bindAutoScanInput() {
+  const scan = document.getElementById('auto-scan');
+  if (!scan || scan.dataset.bound === '1') return;
+  scan.dataset.bound = '1';
+
+  // Scanners send characters then Enter
+  scan.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      const code = scan.value.trim();
+      scan.value = '';
+      await handleAutoScan(code);
+      scan.focus();
+    }
+  });
+
+  // Some scanners fire change without Enter handling
+  scan.addEventListener('change', async () => {
+    const code = scan.value.trim();
+    if (!code) return;
+    scan.value = '';
+    await handleAutoScan(code);
+    scan.focus();
+  });
+}
+
+bindAutoScanInput();
+
+// Focus scan when Issue tab opens
+document.querySelectorAll('.tab-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.tab === 'issue') {
+      setTimeout(() => {
+        bindAutoScanInput();
+        document.getElementById('auto-scan')?.focus();
+      }, 100);
+    }
+  });
+});
+
+// Load student names for datalist
+(async function loadStudentNames() {
+  try {
+    const students = await getAllLocal('students');
+    const dl = document.getElementById('student-names');
+    if (dl) {
+      const names = [...new Set(students.map((s) => s.name).filter(Boolean))].sort();
+      dl.innerHTML = names.map((n) => '<option value="' + esc(n) + '"></option>').join('');
+    }
+  } catch (_) {}
+})();
