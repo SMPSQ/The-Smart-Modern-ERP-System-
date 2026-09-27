@@ -1,6 +1,6 @@
-/* Future Tech ERP — Service Worker with auto-update cache
-   BUMP CACHE_VERSION every time you deploy new features so clients refresh */
-const CACHE_VERSION = 'v6.3.0';
+/* Future Tech ERP — Service Worker
+   Bump CACHE_VERSION on every deploy → clients auto-detect + update banner */
+const CACHE_VERSION = 'v6.3.2';
 const CACHE = 'future-tech-erp-' + CACHE_VERSION;
 
 const PRECACHE = [
@@ -9,6 +9,7 @@ const PRECACHE = [
   './dashboard.html',
   './parent.html',
   './manifest.json',
+  './VERSION.txt',
   './css/style.css',
   './js/db.js',
   './js/sync.js',
@@ -31,21 +32,22 @@ const PRECACHE = [
   './modules/educational-academy/index.html',
   './modules/educational-academy/academy.js',
   './modules/shop/index.html',
-  './modules/shop/shop.js'
+  './modules/shop/shop.js',
+  './modules/library/index.html',
+  './modules/library/library.js'
 ];
 
-// Install: precache + activate immediately
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE).catch(() => cache.addAll(PRECACHE.slice(0, 12))))
+      .then((cache) =>
+        cache.addAll(PRECACHE).catch(() => cache.addAll(PRECACHE.slice(0, 10)))
+      )
       .then(() => self.skipWaiting())
-      .catch((err) => console.warn('Precache partial', err))
   );
 });
 
-// Activate: drop old caches, take control of all tabs
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
@@ -55,9 +57,9 @@ self.addEventListener('activate', (event) => {
           keys
             .filter(
               (k) =>
-                k.startsWith('future-tech-erp-') || k.startsWith('fkc-erp-')
+                (k.startsWith('future-tech-erp-') || k.startsWith('fkc-erp-')) &&
+                k !== CACHE
             )
-            .filter((k) => k !== CACHE)
             .map((k) => caches.delete(k))
         )
       )
@@ -72,6 +74,16 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.source &&
+      event.source.postMessage({ type: 'SW_VERSION', version: CACHE_VERSION });
+  }
+});
+
 function isHTML(request) {
   const accept = request.headers.get('accept') || '';
   return request.mode === 'navigate' || accept.includes('text/html');
@@ -79,55 +91,66 @@ function isHTML(request) {
 
 function isCode(url) {
   return (
-    /\.(js|css|json|html)$/i.test(url.pathname) || url.pathname.endsWith('/')
+    /\.(js|css|json|html|txt)$/i.test(url.pathname) ||
+    url.pathname.endsWith('/')
   );
 }
 
-// Network-first for HTML/JS/CSS (always try fresh), cache fallback offline
-// Cache-first for images/fonts
+// Network-first for HTML/JS/CSS/VERSION (fresh after deploy)
+// Cache-first for images/icons
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  let url;
+  try {
+    url = new URL(req.url);
+  } catch (_) {
+    return;
+  }
   if (url.origin !== self.location.origin) return;
 
-  if (isHTML(event.request) || isCode(url)) {
+  // Always network for version + SW itself
+  if (
+    url.pathname.endsWith('/VERSION.txt') ||
+    url.pathname.endsWith('/sw.js') ||
+    url.pathname.endsWith('/sw-register.js')
+  ) {
     event.respondWith(
-      fetch(event.request)
+      fetch(req, { cache: 'no-store' }).catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  if (isHTML(req) || isCode(url)) {
+    event.respondWith(
+      fetch(req)
         .then((res) => {
-          if (res && res.status === 200) {
+          if (res && res.ok) {
             const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(event.request, copy));
+            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
           }
           return res;
         })
         .catch(() =>
-          caches
-            .match(event.request)
-            .then((c) => c || caches.match('./index.html'))
+          caches.match(req).then((c) => c || caches.match('./dashboard.html'))
         )
     );
     return;
   }
 
+  // Images etc — cache first
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetched = fetch(event.request)
-        .then((res) => {
-          if (res && res.status === 200 && res.type === 'basic') {
+    caches.match(req).then(
+      (cached) =>
+        cached ||
+        fetch(req).then((res) => {
+          if (res && res.ok) {
             const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(event.request, copy));
+            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
           }
           return res;
         })
-        .catch(() => cached);
-      return cached || fetched;
-    })
+    )
   );
-});
-
-// Allow page to force skipWaiting
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
 });
