@@ -397,6 +397,43 @@ body.dash-body {
       </div>
     </section>
 
+
+    
+    <!-- USER MANAGEMENT — Super Admin / Admin only -->
+    <section class="panel admin-only" id="user-mgmt-panel" style="display:block;">
+      <h3>👥 User Management (Super Admin / Admin)</h3>
+      <p class="hint" style="margin-top:-0.5rem;margin-bottom:0.9rem;">Yahan se naya user banao. Role ke hisaab se login access milta hai. Shop Salesman → sirf Shop.</p>
+      <div class="cred-box" id="dash-cred-box">
+        <strong>Login credentials</strong><br>
+        Username: <code id="dash-cred-user"></code> &nbsp;·&nbsp; Password: <code id="dash-cred-pass"></code>
+        <div class="hint">Abhi save kar lein — baad mein Reset PW se naya password set ho sakta hai.</div>
+      </div>
+      <form id="dash-user-form" class="form-row-dash">
+        <input type="hidden" id="dash-user-edit-id" value="" />
+        <input type="text" id="dash-user-name" placeholder="Full name *" required />
+        <select id="dash-user-role" required>
+          <option value="">Role *</option>
+          <option value="Admin">Admin</option>
+          <option value="Principal">Principal</option>
+          <option value="Accountant">Accountant</option>
+          <option value="Teacher">Teacher</option>
+          <option value="Receptionist">Receptionist</option>
+          <option value="Clerk">Clerk</option>
+          <option value="Shop Salesman">Shop Salesman</option>
+          <option value="Librarian">Librarian</option>
+          <option value="Staff">Staff</option>
+        </select>
+        <input type="tel" id="dash-user-phone" placeholder="Phone" />
+        <input type="text" id="dash-user-username" placeholder="Username (auto if empty)" />
+        <input type="text" id="dash-user-password" placeholder="Password (auto if empty)" />
+        <button type="submit" id="dash-user-submit">Create User</button>
+      </form>
+      <ul id="dash-user-list" class="data-list"></ul>
+    </section>
+
+
+
+
     <!-- STAFF STRIP -->
     <div class="staff-strip">
       <h3>Our Staff · Our Strength</h3>
@@ -481,39 +518,6 @@ body.dash-body {
     </section>
 
     <!-- VISITORS / INQUIRIES -->
-    
-    <!-- USER MANAGEMENT — Super Admin / Admin only -->
-    <section class="panel admin-only" id="user-mgmt-panel" style="display:none;">
-      <h3>👥 User Management (Super Admin / Admin)</h3>
-      <p class="hint" style="margin-top:-0.5rem;margin-bottom:0.9rem;">Yahan se naya user banao. Role ke hisaab se login access milta hai. Shop Salesman → sirf Shop.</p>
-      <div class="cred-box" id="dash-cred-box">
-        <strong>Login credentials</strong><br>
-        Username: <code id="dash-cred-user"></code> &nbsp;·&nbsp; Password: <code id="dash-cred-pass"></code>
-        <div class="hint">Abhi save kar lein — baad mein Reset PW se naya password set ho sakta hai.</div>
-      </div>
-      <form id="dash-user-form" class="form-row-dash">
-        <input type="hidden" id="dash-user-edit-id" value="" />
-        <input type="text" id="dash-user-name" placeholder="Full name *" required />
-        <select id="dash-user-role" required>
-          <option value="">Role *</option>
-          <option value="Admin">Admin</option>
-          <option value="Principal">Principal</option>
-          <option value="Accountant">Accountant</option>
-          <option value="Teacher">Teacher</option>
-          <option value="Receptionist">Receptionist</option>
-          <option value="Clerk">Clerk</option>
-          <option value="Shop Salesman">Shop Salesman</option>
-          <option value="Librarian">Librarian</option>
-          <option value="Staff">Staff</option>
-        </select>
-        <input type="tel" id="dash-user-phone" placeholder="Phone" />
-        <input type="text" id="dash-user-username" placeholder="Username (auto if empty)" />
-        <input type="text" id="dash-user-password" placeholder="Password (auto if empty)" />
-        <button type="submit" id="dash-user-submit">Create User</button>
-      </form>
-      <ul id="dash-user-list" class="data-list"></ul>
-    </section>
-
 <section class="panel">
       <h3>Walk-in / Inquiry Log — Full Contact</h3>
       <form id="visitor-form">

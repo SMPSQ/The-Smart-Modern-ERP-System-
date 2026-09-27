@@ -229,36 +229,53 @@ function escHtml(str) {
   );
 }
 
+
 async function initUserManagement() {
   const panel = document.getElementById('user-mgmt-panel');
-  if (!panel) return;
+  if (!panel) {
+    console.warn('[FT] user-mgmt-panel not in DOM');
+    return;
+  }
 
-  // Firebase admin (no staff session) OR privileged staff role
   let allowed = false;
   try {
-    const staff = getStaffSession();
+    const staff = typeof getStaffSession === 'function' ? getStaffSession() : null;
     if (!staff) {
-      // likely Firebase Super Admin if on dashboard
+      // Firebase Super Admin (email login) — no staff session
       allowed = true;
-    } else {
+    } else if (typeof canManageUsers === 'function') {
       allowed = canManageUsers();
+    } else {
+      const role = (staff.role || '').toLowerCase();
+      allowed = ['super admin', 'principal', 'admin'].includes(role);
     }
-  } catch (_) {
+  } catch (err) {
+    console.warn('[FT] user mgmt auth check', err);
     allowed = true;
   }
 
   if (!allowed) {
     panel.style.display = 'none';
+    const nav = document.getElementById('nav-users-link');
+    if (nav) nav.style.display = 'none';
     return;
   }
+
   panel.style.display = 'block';
+  const nav = document.getElementById('nav-users-link');
+  if (nav) nav.style.display = '';
 
   const form = document.getElementById('dash-user-form');
   const listEl = document.getElementById('dash-user-list');
 
   async function renderUsers() {
     if (!listEl) return;
-    const all = await getAllLocal('staff');
+    let all = [];
+    try {
+      all = await getAllLocal('staff');
+    } catch (e) {
+      console.warn(e);
+    }
     all.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     listEl.innerHTML = all.length
       ? all.map((s) => `
@@ -273,7 +290,7 @@ async function initUserManagement() {
             <button type="button" class="mini-btn danger" data-del="${s.id}">Delete</button>
           </span>
         </li>`).join('')
-      : '<li class="muted">Abhi koi staff user nahi — upar se Create User karein.</li>';
+      : '<li class="muted">Abhi koi staff user nahi — form se Create User karein.</li>';
 
     listEl.querySelectorAll('[data-del]').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -315,7 +332,8 @@ async function initUserManagement() {
     });
   }
 
-  if (form) {
+  if (form && !form.dataset.bound) {
+    form.dataset.bound = '1';
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const editId = document.getElementById('dash-user-edit-id').value.trim();
@@ -324,54 +342,68 @@ async function initUserManagement() {
       const phone = document.getElementById('dash-user-phone').value.trim();
       const username = document.getElementById('dash-user-username').value.trim();
       const plainPw = document.getElementById('dash-user-password').value.trim();
-      if (!name || !role) return;
+      if (!name || !role) {
+        alert('Name aur Role zaroori hain');
+        return;
+      }
 
-      let base;
-      if (editId) {
-        base = (await getLocal('staff', editId)) || { id: editId };
-        base.name = name;
-        base.role = role;
-        base.phone = phone;
-        base.username = username || base.username || suggestUsername(name);
-        base.active = true;
-        base.module = base.module || 'school';
-        if (plainPw) {
-          const { username: u, password: pw } = await ensureStaffCredentials(base, plainPw);
+      try {
+        let base;
+        if (editId) {
+          base = (await getLocal('staff', editId)) || { id: editId };
+          base.name = name;
+          base.role = role;
+          base.phone = phone;
+          base.username = username || base.username || suggestUsername(name);
+          base.active = true;
+          base.module = base.module || 'school';
+          if (plainPw) {
+            const { username: u, password: pw } = await ensureStaffCredentials(base, plainPw);
+            const box = document.getElementById('dash-cred-box');
+            if (box) {
+              box.style.display = 'block';
+              document.getElementById('dash-cred-user').textContent = u;
+              document.getElementById('dash-cred-pass').textContent = pw;
+            }
+          } else {
+            await saveLocal('staff', base);
+          }
+        } else {
+          base = {
+            name,
+            role,
+            phone,
+            username: username || suggestUsername(name),
+            active: true,
+            module: 'school'
+          };
+          const { username: u, password: pw } = await ensureStaffCredentials(base, plainPw || null);
           const box = document.getElementById('dash-cred-box');
           if (box) {
             box.style.display = 'block';
             document.getElementById('dash-cred-user').textContent = u;
             document.getElementById('dash-cred-pass').textContent = pw;
           }
-        } else {
-          await saveLocal('staff', base);
+          alert('User ban gaya!\nUsername: ' + u + '\nPassword: ' + pw);
         }
-      } else {
-        base = {
-          name,
-          role,
-          phone,
-          username: username || suggestUsername(name),
-          active: true,
-          module: 'school'
-        };
-        const { username: u, password: pw } = await ensureStaffCredentials(base, plainPw || null);
-        const box = document.getElementById('dash-cred-box');
-        if (box) {
-          box.style.display = 'block';
-          document.getElementById('dash-cred-user').textContent = u;
-          document.getElementById('dash-cred-pass').textContent = pw;
-        }
+        form.reset();
+        document.getElementById('dash-user-edit-id').value = '';
+        document.getElementById('dash-user-password').placeholder = 'Password (auto if empty)';
+        document.getElementById('dash-user-submit').textContent = 'Create User';
+        await renderUsers();
+      } catch (err) {
+        console.error(err);
+        alert('User save error: ' + (err.message || err));
       }
-      form.reset();
-      document.getElementById('dash-user-edit-id').value = '';
-      document.getElementById('dash-user-password').placeholder = 'Password (auto if empty)';
-      document.getElementById('dash-user-submit').textContent = 'Create User';
-      await renderUsers();
     });
   }
 
   await renderUsers();
+  console.info('[FT] User Management panel active');
 }
 
+// Run after short delay so auth/session is ready
 initUserManagement();
+setTimeout(() => initUserManagement(), 500);
+setTimeout(() => initUserManagement(), 1500);
+
