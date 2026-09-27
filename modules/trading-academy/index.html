@@ -193,7 +193,8 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
           </div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Course <span class="req">*</span></label><input type="text" id="adm-course" required placeholder="e.g. Forex Basics" /></div>
+          <div class="field"><label>Course <span class="req">*</span></label><input type="text" id="adm-course" required placeholder="Type or select course" list="course-pick-list" autocomplete="off" />
+            <datalist id="course-pick-list"></datalist></div>
           <div class="field"><label>Timing</label><input type="text" id="adm-timing" placeholder="6-8 PM" /></div>
           <div class="field"><label>Guardian</label><input type="text" id="adm-guardian" /></div>
           <div class="field"><label>Admission Date <span class="req">*</span></label><input type="date" id="adm-date" required /></div>

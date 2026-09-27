@@ -169,6 +169,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     <button type="button" class="tab-btn" data-tab="certificates">Certificates</button>
     <button type="button" class="tab-btn" data-tab="finance">Finance</button>
     <button type="button" class="tab-btn" data-tab="courses">Courses</button>
+    <button type="button" class="tab-btn" data-tab="subjects">Subjects</button>
     <button type="button" class="tab-btn" data-tab="batches">Batches</button>
     <button type="button" class="tab-btn" data-tab="staff">Staff</button>
     <button type="button" class="tab-btn" data-tab="timetable">Timetable</button>
@@ -197,7 +198,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
           <div class="field"><label>Full Name <span class="req">*</span></label><input type="text" id="adm-name" required /></div>
           <div class="field"><label>Phone <span class="req">*</span></label><input type="tel" id="adm-phone" required /></div>
           <div class="field"><label>Guardian</label><input type="text" id="adm-guardian" /></div>
-          <div class="field"><label>Course <span class="req">*</span></label><input type="text" id="adm-course" required placeholder="e.g. Mathematics" /></div>
+          <div class="field"><label>Course <span class="req">*</span></label><input type="text" id="adm-course" required placeholder="e.g. Mathematics" / list="subject-pick-list" autocomplete="off"></div>
         </div>
         <div class="form-row">
           <div class="field"><label>Timing</label><input type="text" id="adm-timing" placeholder="4-6 PM" /></div>
@@ -223,7 +224,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
       <h3>Add Tutor</h3>
       <form id="tutor-form" class="inline-form">
         <input type="text" id="tutor-name" placeholder="Tutor name" required />
-        <input type="text" id="tutor-subject" placeholder="Subject" />
+        <input type="text" id="tutor-subject" placeholder="Subject" / list="subject-pick-list" autocomplete="off">
         <input type="tel" id="tutor-phone" placeholder="Phone" />
         <button type="submit">Add Tutor</button>
       </form>
@@ -287,7 +288,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
       <form id="exam-form" class="inline-form">
         <input type="text" id="exam-title" placeholder="Test title" required />
         <select id="exam-student" required><option value="">Select student</option></select>
-        <input type="text" id="exam-subject" placeholder="Subject" required />
+        <input type="text" id="exam-subject" placeholder="Subject" required / list="subject-pick-list" autocomplete="off">
         <input type="number" id="exam-marks" placeholder="Marks" min="0" required />
         <input type="number" id="exam-total" placeholder="Total" min="1" value="100" required />
         <button type="submit">Save</button>
@@ -342,7 +343,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
       <h3>Homework / Assignments</h3>
       <form id="hw-form" class="inline-form">
         <input type="text" id="hw-class" placeholder="Class / Course" required />
-        <input type="text" id="hw-subject" placeholder="Subject" required />
+        <input type="text" id="hw-subject" placeholder="Subject" required / list="subject-pick-list" autocomplete="off">
         <input type="text" id="hw-title" placeholder="Task title" required />
         <input type="date" id="hw-due" required />
         <input type="text" id="hw-note" placeholder="Instructions" />
@@ -388,6 +389,21 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
       <ul id="course-list" class="data-list"></ul>
     </div>
   </div>
+
+  <div class="tab-panel" id="tab-subjects">
+    <div class="form-card">
+      <h3>Subjects — search & select</h3>
+      <form id="subject-form" class="inline-form">
+        <input type="text" id="subject-name" placeholder="Subject name (e.g. Mathematics)" required list="subject-suggestions" autocomplete="off" />
+        <datalist id="subject-suggestions"></datalist>
+        <input type="text" id="subject-code" placeholder="Code (optional)" />
+        <button type="submit">Save Subject</button>
+      </form>
+      <p class="hint">Naya subject type karke Save — baad mein admission / tutors / exams mein search-select se choose hoga.</p>
+      <ul id="subject-list" class="data-list"></ul>
+    </div>
+  </div>
+
   <div class="tab-panel" id="tab-batches">
     <div class="form-card">
       <h3>Batches</h3>
@@ -494,6 +510,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
     </div>
   </div>
 
+<datalist id="subject-pick-list"></datalist>
 </main>
 
 <script>

@@ -328,7 +328,8 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
           </div>
           <div class="field">
             <label>Class <span class="req">*</span></label>
-            <input type="text" id="adm-class" required placeholder="e.g. 1, 5-A, Nursery" />
+            <input type="text" id="adm-class" required placeholder="Type or select class" list="class-list-options" autocomplete="off" />
+            <datalist id="class-list-options"></datalist>
           </div>
           <div class="field">
             <label>Section</label>
@@ -800,7 +801,14 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
         <input type="text" id="staff-password" placeholder="Password (auto if empty)" />
         <button type="submit">Add Staff + Login</button>
       </form>
-      <p class="hint">Staff add hote hi username/password ban jata hai. Login page se staff login karein — role ke hisaab se tabs khulte hain.</p>
+      <p class="hint">Sirf <strong>Super Admin / Admin / Principal</strong> users bana / edit / delete / password reset kar sakte hain. Role ke hisaab se login ke baad access milta hai (Shop Salesman → Shop only).</p>
+      <div id="staff-manage-gate" style="display:none;padding:1rem;background:#FEF2F2;border-radius:10px;margin-bottom:1rem;color:#991B1B;font-weight:600;">User management sirf Admin ke liye hai.</div>
+      <div id="staff-cred-box" style="display:none;padding:0.85rem 1rem;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;margin-bottom:1rem;">
+        <strong>Login credentials</strong><br>
+        Username: <code id="cred-user"></code> · Password: <code id="cred-pass"></code>
+        <div class="hint" style="margin-top:0.35rem;">Yeh password abhi save kar lein — baad mein reset kar sakte hain.</div>
+      </div>
+      <input type="hidden" id="staff-edit-id" value="" />
       <ul id="staff-list" class="data-list"></ul>
       <div id="staff-cred-box" class="form-card" style="display:none;margin-top:0.75rem;border:2px solid #C9A227;">
         <h3 style="color:#0A1628;">New login created</h3>

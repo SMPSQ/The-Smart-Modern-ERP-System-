@@ -80,6 +80,12 @@ export function isStaffLoggedIn() {
 }
 
 /** Firebase Admin OR privileged staff role */
+
+/** Only Super Admin / Principal / Admin can create, edit, delete users & reset passwords */
+export function canManageUsers() {
+  return canSeePersonalDetails();
+}
+
 export function canSeePersonalDetails() {
   // Firebase user = Super Admin path
   try {

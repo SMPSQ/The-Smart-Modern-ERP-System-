@@ -2,7 +2,7 @@
 import { saveLocal, getAllLocal, deleteLocal, getLocal } from '../../js/db.js';
 import { runSync } from '../../js/sync.js';
 import { printDocument, buildAdmissionPrint, buildChallanPrint, buildCertificatePrint, buildIdCardPrint } from '../../js/print.js';
-import { ensureStaffCredentials, suggestUsername, applyTabAccess, getStaffSession, applyPersonalDataPrivacy, canSeePersonalDetails, maskSensitive } from '../../js/staff-auth.js';
+import { ensureStaffCredentials, suggestUsername, applyTabAccess, getStaffSession, applyPersonalDataPrivacy, canSeePersonalDetails, maskSensitive, canManageUsers, hashPassword, generatePassword } from '../../js/staff-auth.js';
 
 const MODULE = 'school';
 const INST_NAME = 'Future Tech Public School';
@@ -1218,20 +1218,80 @@ if (certForm) {
 // ========== STAFF ==========
 const staffForm = document.getElementById('staff-form');
 const staffList = document.getElementById('staff-list');
+
+async function fillClassDatalist() {
+  const dl = document.getElementById('class-list-options');
+  if (!dl) return;
+  const classes = await getModuleRecords('schoolClasses');
+  const names = [...new Set(classes.map(c => c.name || c.className).filter(Boolean))];
+  // also unique from students/admissions
+  try {
+    const st = await getModuleRecords('students');
+    st.forEach(s => { if (s.className) names.push(s.className); });
+  } catch (_) {}
+  const uniq = [...new Set(names)].sort();
+  dl.innerHTML = uniq.map(n => `<option value="${esc(n)}"></option>`).join('');
+}
+
 async function renderStaff() {
   if (!staffList) return;
+  const manage = canManageUsers();
+  const gate = document.getElementById('staff-manage-gate');
+  const formEl = document.getElementById('staff-form');
+  if (gate) gate.style.display = manage ? 'none' : 'block';
+  if (formEl) formEl.style.display = manage ? '' : 'none';
+
   const list = await getModuleRecords('staff');
   staffList.innerHTML = list.length ? list.map(s => `
     <li><strong>${esc(s.name)}</strong> <span class="tag">${esc(s.role||'Staff')}</span>
     <span class="muted">@${esc(s.username||'—')}</span>
     <span class="muted">${canSeePersonalDetails() ? esc(s.phone||'') : maskSensitive(s.phone)}</span>
     <span class="amount">${s.salary != null ? canSeePersonalDetails() ? formatMoney(s.salary) : '••••' : ''}</span>
-    <span class="actions"><button class="mini-btn danger" data-del-staff="${s.id}">Delete</button></span></li>`).join('')
-    : '<li class="muted">No staff records.</li>';
+    <span class="actions">
+      ${manage ? `<button class="mini-btn edit" data-edit-staff="${s.id}">Edit</button>
+      <button class="mini-btn ghost" data-reset-pw="${s.id}">Reset PW</button>
+      <button class="mini-btn danger" data-del-staff="${s.id}">Delete</button>` : '<span class="muted">—</span>'}
+    </span></li>`).join('')
+    : '<li class="muted">No staff / users yet.</li>';
+
+  if (!manage) return;
+
   staffList.querySelectorAll('[data-del-staff]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('Delete?')) return;
+      if (!confirm('Delete this user permanently?')) return;
       await deleteLocal('staff', btn.dataset.delStaff);
+      await renderStaff(); runSync();
+    });
+  });
+  staffList.querySelectorAll('[data-edit-staff]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const s = await getLocal('staff', btn.dataset.editStaff);
+      if (!s) return;
+      document.getElementById('staff-edit-id').value = s.id;
+      document.getElementById('staff-name').value = s.name || '';
+      document.getElementById('staff-role').value = s.role || 'Staff';
+      document.getElementById('staff-phone').value = s.phone || '';
+      document.getElementById('staff-salary').value = s.salary ?? '';
+      document.getElementById('staff-username').value = s.username || '';
+      document.getElementById('staff-password').value = '';
+      document.getElementById('staff-password').placeholder = 'Leave blank to keep password';
+      staffForm.querySelector('button[type="submit"]').textContent = 'Update User';
+      staffForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
+  staffList.querySelectorAll('[data-reset-pw]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Reset password to a new auto password?')) return;
+      const s = await getLocal('staff', btn.dataset.resetPw);
+      if (!s) return;
+      const { username: u, password: pw } = await ensureStaffCredentials(s, null);
+      const box = document.getElementById('staff-cred-box');
+      if (box) {
+        box.style.display = 'block';
+        document.getElementById('cred-user').textContent = u;
+        document.getElementById('cred-pass').textContent = pw;
+      }
+      alert('New password: ' + pw);
       await renderStaff(); runSync();
     });
   });
@@ -1239,26 +1299,46 @@ async function renderStaff() {
 if (staffForm) {
   staffForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!canManageUsers()) { alert('Only Admin can manage users.'); return; }
+    const editId = document.getElementById('staff-edit-id')?.value || '';
     const name = document.getElementById('staff-name').value.trim();
     const role = document.getElementById('staff-role').value;
     const phone = document.getElementById('staff-phone').value.trim();
     const salary = Number(document.getElementById('staff-salary').value) || null;
     const username = document.getElementById('staff-username')?.value.trim() || '';
     const plainPw = document.getElementById('staff-password')?.value.trim() || '';
-    const base = {
-      name, role, phone, salary,
-      username: username || suggestUsername(name),
-      active: true,
-      module: MODULE
-    };
-    const { username: u, password: pw, staff } = await ensureStaffCredentials(base, plainPw || null);
-    const box = document.getElementById('staff-cred-box');
-    if (box) {
-      box.style.display = 'block';
-      document.getElementById('cred-user').textContent = u;
-      document.getElementById('cred-pass').textContent = pw;
+
+    let base;
+    if (editId) {
+      base = await getLocal('staff', editId) || { id: editId };
+      base.name = name; base.role = role; base.phone = phone; base.salary = salary;
+      base.username = username || base.username || suggestUsername(name);
+      base.active = true; base.module = MODULE;
+      if (plainPw) {
+        const { username: u, password: pw } = await ensureStaffCredentials(base, plainPw);
+        const box = document.getElementById('staff-cred-box');
+        if (box) { box.style.display = 'block'; document.getElementById('cred-user').textContent = u; document.getElementById('cred-pass').textContent = pw; }
+      } else {
+        await saveLocal('staff', base);
+      }
+    } else {
+      base = {
+        name, role, phone, salary,
+        username: username || suggestUsername(name),
+        active: true, module: MODULE
+      };
+      const { username: u, password: pw } = await ensureStaffCredentials(base, plainPw || null);
+      const box = document.getElementById('staff-cred-box');
+      if (box) {
+        box.style.display = 'block';
+        document.getElementById('cred-user').textContent = u;
+        document.getElementById('cred-pass').textContent = pw;
+      }
     }
     staffForm.reset();
+    document.getElementById('staff-edit-id').value = '';
+    document.getElementById('staff-password').placeholder = 'Password (auto if empty)';
+    staffForm.querySelector('button[type="submit"]').textContent = 'Add Staff / User';
     await renderStaff();
     runSync();
   });
@@ -1698,6 +1778,7 @@ async function renderActivityLog() {
     const staffSess = getStaffSession();
     if (staffSess && staffSess.role) applyTabAccess(staffSess.role);
     applyPersonalDataPrivacy();
+    fillClassDatalist();
     // Monthly accounting UI
     const acctMonth = document.getElementById('acct-month');
     if (acctMonth && !acctMonth.value) acctMonth.value = new Date().toISOString().slice(0, 7);

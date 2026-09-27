@@ -217,6 +217,8 @@ async function renderClasses() {
         if (!confirm('Delete this class?')) return;
         await deleteLocal('classes', btn.dataset.delClass);
         await renderClasses();
+  renderSubjects();
+  fillSubjectDatalists();
         runSync();
       });
     });
@@ -241,6 +243,8 @@ if (classForm) {
     });
     classForm.reset();
     await renderClasses();
+  renderSubjects();
+  fillSubjectDatalists();
     runSync();
   });
 }
@@ -995,8 +999,88 @@ if (expenseForm) {
   await renderAdmissions();
   await renderTutors();
   await renderClasses();
+  renderSubjects();
+  fillSubjectDatalists();
   await renderEnrollments();
   await renderChallans();
   await renderIncome();
   await renderExpenses();
 })();
+
+
+
+// ========== SUBJECTS (auto-save + search select) ==========
+async function fillSubjectDatalists() {
+  const all = await getModuleRecords('subjects');
+  const names = [...new Set(all.map(s => s.name).filter(Boolean))].sort();
+  const opts = names.map(n => `<option value="${esc(n)}"></option>`).join('');
+  ['subject-suggestions', 'subject-pick-list'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts;
+  });
+  // also course select if present
+  const courseSel = document.getElementById('adm-course');
+  if (courseSel && courseSel.tagName === 'SELECT') {
+    const cur = courseSel.value;
+    courseSel.innerHTML = '<option value="">Select course / subject</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    if (cur) courseSel.value = cur;
+  }
+}
+
+async function renderSubjects() {
+  const listEl = document.getElementById('subject-list');
+  if (!listEl) return;
+  const list = await getModuleRecords('subjects');
+  list.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  listEl.innerHTML = list.length ? list.map(s => `
+    <li><strong>${esc(s.name)}</strong>
+    ${s.code ? `<span class="tag">${esc(s.code)}</span>` : ''}
+    <span class="actions"><button class="mini-btn danger" data-del-subj="${s.id}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No subjects yet — add above.</li>';
+  listEl.querySelectorAll('[data-del-subj]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete subject?')) return;
+      await deleteLocal('subjects', btn.dataset.delSubj);
+      await renderSubjects(); await fillSubjectDatalists(); runSync();
+    });
+  });
+  await fillSubjectDatalists();
+}
+
+const subjectForm = document.getElementById('subject-form');
+if (subjectForm) {
+  subjectForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('subject-name').value.trim();
+    if (!name) return;
+    const existing = (await getModuleRecords('subjects')).find(s => (s.name||'').toLowerCase() === name.toLowerCase());
+    if (existing) {
+      alert('Subject already saved.');
+      return;
+    }
+    await saveLocal('subjects', {
+      name,
+      code: document.getElementById('subject-code')?.value.trim() || '',
+      module: MODULE
+    });
+    subjectForm.reset();
+    await renderSubjects();
+    runSync();
+  });
+}
+
+// Auto-save subject when typing in tutor-subject etc and blurring with new value
+['tutor-subject', 'exam-subject', 'hw-subject', 'adm-course'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('change', async () => {
+    const name = el.value.trim();
+    if (!name || name.length < 2) return;
+    const all = await getModuleRecords('subjects');
+    if (all.some(s => (s.name||'').toLowerCase() === name.toLowerCase())) return;
+    await saveLocal('subjects', { name, module: MODULE });
+    await fillSubjectDatalists();
+    runSync();
+  });
+});
+

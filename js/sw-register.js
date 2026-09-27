@@ -5,7 +5,7 @@
 (function () {
   if (!('serviceWorker' in navigator)) return;
 
-  const APP_VERSION = '6.1.0'; // keep in sync with sw.js CACHE_VERSION (without "v")
+  const APP_VERSION = '6.2.0'; // keep in sync with sw.js CACHE_VERSION (without "v")
 
   function showUpdateBanner() {
     if (document.getElementById('ft-update-banner')) return;

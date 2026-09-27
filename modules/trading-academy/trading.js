@@ -168,6 +168,7 @@ async function renderBatches() {
         if (!confirm('Delete this batch?')) return;
         await deleteLocal('batches', btn.dataset.delBatch);
         await renderBatches();
+  fillCourseDatalist();
         runSync();
       });
     });
@@ -193,6 +194,7 @@ if (batchForm) {
     });
     batchForm.reset();
     await renderBatches();
+  fillCourseDatalist();
     runSync();
   });
 }
@@ -719,9 +721,35 @@ if (expenseForm) {
 (async function init() {
   await renderAdmissions();
   await renderBatches();
+  fillCourseDatalist();
   await renderEnrollments();
   await renderChallans();
   await renderJournal();
   await renderIncome();
   await renderExpenses();
 })();
+
+
+
+async function fillCourseDatalist() {
+  const courses = await getModuleRecords('courses');
+  const names = [...new Set(courses.map(c => c.name).filter(Boolean))].sort();
+  const dl = document.getElementById('course-pick-list');
+  if (dl) dl.innerHTML = names.map(n => `<option value="${esc(n)}"></option>`).join('');
+  // auto-save when new course typed on admission
+  const adm = document.getElementById('adm-course');
+  if (adm && !adm.dataset.autoSaveBound) {
+    adm.dataset.autoSaveBound = '1';
+    adm.addEventListener('change', async () => {
+      const name = adm.value.trim();
+      if (!name || name.length < 2) return;
+      const all = await getModuleRecords('courses');
+      if (all.some(c => (c.name||'').toLowerCase() === name.toLowerCase())) return;
+      await saveLocal('courses', { name, module: MODULE, fee: 0 });
+      await fillCourseDatalist();
+      if (typeof renderCourses === 'function') renderCourses();
+      runSync();
+    });
+  }
+}
+

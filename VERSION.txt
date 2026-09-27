@@ -1,18 +1,14 @@
-Future Tech Public School ERP — v6.0
-School: Future Tech Public School, Qamber
-Tagline: Nurturing Minds, Building Futures · Quest for Excellence
-DB: fkc-erp-v4 version 10
+Future Tech Public School ERP — v6.2 Complete
+School · Shop · Trading · Educational Academy
 
-SCHOOL MODULES:
-Dashboard KPIs, Admissions, Students, Fees, Challans, Attendance,
-Teachers, Staff, Exams, Finance (monthly accounting), Leave, Timetable,
-Classes, Subjects, Homework, Certificates, ID Cards (photo+QR),
-Parent Portal, Announcements, Payroll, Library, Transport, Inventory
-
-SHOP MODULE:
-POS, Products, Stock, Sales History — Shop Salesman role
-
-PRIVACY:
-CNIC / phone / salary visible only to Super Admin, Principal, Admin
-
-CACHE_VERSION=v6.0.0 — network-first + update banner
+Features:
+- Role-based login (Shop Salesman → Shop only)
+- User create / edit / delete / password reset (Admin only)
+- School monthly accounting + payroll
+- Shop: inventory, purchase, sale, P&L
+- Educational: subjects auto-save + search-select
+- School admission: classes search-select from Classes module
+- Trading (Forex): courses search-select + auto-save
+- ID cards photo+QR, modern prints
+- Cache v6.2.0 auto-update banner
+- Back links on modules

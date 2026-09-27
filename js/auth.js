@@ -74,6 +74,11 @@ if (loginForm) {
     if (!emailOrUser.includes('@')) {
       const result = await loginStaff(emailOrUser, password);
       if (result.ok) {
+        const role = result.staff?.role || '';
+        if (role === 'Shop Salesman') {
+          window.location.href = (root || './') + 'modules/shop/index.html';
+          return;
+        }
         goDashboard();
         return;
       }

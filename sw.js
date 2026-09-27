@@ -1,6 +1,6 @@
 /* Future Tech ERP — Service Worker with auto-update cache
    BUMP CACHE_VERSION every time you deploy new features so clients refresh */
-const CACHE_VERSION = 'v6.1.0';
+const CACHE_VERSION = 'v6.2.0';
 const CACHE = 'future-tech-erp-' + CACHE_VERSION;
 
 const PRECACHE = [
