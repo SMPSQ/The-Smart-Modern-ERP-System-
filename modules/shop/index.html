@@ -115,28 +115,33 @@
   <div class="tab-panel active" id="tab-pos">
     <div class="pos-grid">
       <div class="form-card">
-        <h3>Products — tap to add to cart</h3>
-        <input type="text" id="pos-barcode" placeholder="📷 Scan / type barcode → Enter" autocomplete="off" style="width:100%;margin-bottom:0.45rem;padding:0.7rem 0.85rem;border:2px solid #C9A227;border-radius:10px;font-family:inherit;font-size:1rem;font-weight:600;" />
-        <input type="search" id="pos-search" placeholder="Search by name…" style="width:100%;margin-bottom:0.75rem;padding:0.55rem 0.75rem;border:1px solid #E2E6ED;border-radius:8px;font-family:inherit;" />
+        <h3>Scan to sell (Amazon-style)</h3>
+        <p class="hint" style="margin-top:-0.4rem;">Barcode scan / type → Enter = 1 unit cart. Same code dobara = +1. Phir Complete Sale.</p>
+        <input type="text" id="pos-barcode" placeholder="📷 Scan product barcode here…" autocomplete="off" autofocus
+          style="width:100%;margin-bottom:0.5rem;padding:0.85rem 1rem;border:3px solid #C9A227;border-radius:12px;font-family:inherit;font-size:1.15rem;font-weight:700;letter-spacing:0.04em;background:#FFFBEB;" />
+        <div id="pos-last-scan" style="min-height:1.4rem;font-size:0.85rem;color:#059669;font-weight:600;margin-bottom:0.5rem;"></div>
+        <input type="search" id="pos-search" placeholder="Or search by name…" style="width:100%;margin-bottom:0.75rem;padding:0.55rem 0.75rem;border:1px solid #E2E6ED;border-radius:8px;font-family:inherit;" />
         <div class="product-grid" id="pos-products"></div>
-        <p class="hint" id="pos-empty" style="display:none;">Pehle Products tab se items add karein.</p>
+        <p class="hint" id="pos-empty" style="display:none;">Pehle Products tab se items + barcode add karein.</p>
       </div>
       <div class="cart-box">
-        <h3>🛒 Cart</h3>
+        <h3>🛒 Order / Cart</h3>
         <div id="cart-list"></div>
         <div class="cart-total">Total: <span id="cart-total">Rs 0</span></div>
-        <div style="margin-top:0.5rem;font-size:0.75rem;color:#94A3B8;">Est. profit: <span id="cart-profit">Rs 0</span></div>
-        <input type="text" id="sale-note" placeholder="Note / customer (optional)" style="width:100%;margin-top:0.55rem;padding:0.45rem;border-radius:8px;border:none;font-family:inherit;" />
+        <div style="margin-top:0.5rem;font-size:0.75rem;color:#94A3B8;">Profit: <span id="cart-profit">Rs 0</span></div>
+        <input type="text" id="sale-note" placeholder="Customer / order note" style="width:100%;margin-top:0.55rem;padding:0.45rem;border-radius:8px;border:none;font-family:inherit;" />
         <select id="sale-pay" style="width:100%;margin-top:0.4rem;padding:0.45rem;border-radius:8px;border:none;font-family:inherit;">
           <option value="Cash">Cash</option>
           <option value="Online">Online / Transfer</option>
+          <option value="Card">Card</option>
           <option value="Credit">Credit (udhaar)</option>
         </select>
-        <button type="button" class="btn-sale" id="btn-checkout" disabled>Complete Sale</button>
+        <button type="button" class="btn-sale" id="btn-checkout" disabled>Complete Sale + Receipt</button>
         <button type="button" class="btn-outline" id="btn-clear-cart">Clear Cart</button>
       </div>
     </div>
   </div>
+
   <div class="tab-panel" id="tab-products">
     <div class="form-card">
       <h3>Add / Update Product</h3>
@@ -214,7 +219,7 @@
   <div class="tab-panel" id="tab-barcodes">
     <div class="form-card">
       <h3>Product Barcodes — generate &amp; print labels</h3>
-      <p class="hint">Product save + Generate Barcode. Print: har unit (stock) ke barabar labels. POS: barcode scan → Enter = 1 unit cart. Same barcode se baar baar scan = zyada units.</p>
+      <p class="hint">Amazon-style: 1 product = 1 barcode (SKU). Stock 10 → Print 10 labels, har pcs pe same barcode chipkayein. POS scan = 1 unit sale.</p>
       <div class="filter-row">
         <button type="button" class="mini-btn edit" id="btn-gen-all-missing">Generate missing barcodes</button>
         <button type="button" class="mini-btn edit" id="btn-print-barcodes">Print all unit labels</button>

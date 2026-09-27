@@ -35,6 +35,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'reports') runPLReport();
     if (btn.dataset.tab === 'purchase') fillPurchaseProductSelect();
     if (btn.dataset.tab === 'barcodes') renderBarcodeGrid();
+    if (btn.dataset.tab === 'pos') setTimeout(() => document.getElementById('pos-barcode')?.focus(), 100);
   });
 });
 
@@ -187,6 +188,8 @@ async function addToCartByBarcode(code) {
       sku: p.sku || p.barcode || ''
     });
   renderCart();
+  const last = document.getElementById('pos-last-scan');
+  if (last) last.textContent = '✓ Added: ' + p.name + '  ·  ' + money(p.price) + '  ·  barcode ' + code;
   return true;
 }
 
@@ -201,9 +204,19 @@ if (posBarcode) {
       posBarcode.value = '';
       posBarcode.focus();
       if (ok) {
-        // brief flash
         posBarcode.style.borderColor = '#059669';
-        setTimeout(() => { posBarcode.style.borderColor = '#C9A227'; }, 400);
+        setTimeout(() => { posBarcode.style.borderColor = '#C9A227'; }, 350);
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.value = 880; g.gain.value = 0.08;
+          o.start(); o.stop(ctx.currentTime + 0.08);
+        } catch (_) {}
+      } else {
+        posBarcode.style.borderColor = '#B91C1C';
+        setTimeout(() => { posBarcode.style.borderColor = '#C9A227'; }, 500);
       }
     }
   });
@@ -308,6 +321,35 @@ Utni hi barcode labels print hongi (har pcs pe 1 sticker).',
   openLabelPrintWindow(p.name + ' — ' + q + ' labels', labelsForProduct(p, q), q);
 });
 
+
+
+function printSaleReceipt(sale) {
+  const items = (sale.items || []).map(i =>
+    '<tr><td>' + esc(i.name) + (i.sku ? ' <small style="color:#64748B">' + esc(i.sku) + '</small>' : '') +
+    '</td><td style="text-align:center;">' + i.qty + '</td><td style="text-align:right;">' + money(i.price * i.qty) + '</td></tr>'
+  ).join('');
+  const w = window.open('', '_blank', 'width=420,height=640');
+  if (!w) return;
+  w.document.write('<!DOCTYPE html><html><head><title>Receipt</title><style>' +
+    'body{font-family:system-ui,sans-serif;padding:16px;max-width:360px;margin:0 auto;}' +
+    'h2{margin:0 0 4px;font-size:1.1rem;text-align:center;}' +
+    'p{margin:2px 0;font-size:0.8rem;text-align:center;color:#64748B;}' +
+    'table{width:100%;border-collapse:collapse;margin:12px 0;font-size:0.85rem;}' +
+    'td,th{padding:6px 4px;border-bottom:1px solid #E2E8F0;}' +
+    '.total{font-size:1.15rem;font-weight:800;text-align:right;margin-top:8px;}' +
+    '@media print{body{padding:0;}}' +
+    '</style></head><body>' +
+    '<h2>Future Tech School Shop</h2>' +
+    '<p>Qamber · Sale Receipt</p>' +
+    '<p>' + esc(sale.date) + ' ' + esc(sale.time || '') + ' · ' + esc(sale.payment || 'Cash') + '</p>' +
+    (sale.note ? '<p>' + esc(sale.note) + '</p>' : '') +
+    '<table><thead><tr><th align="left">Item</th><th>Qty</th><th align="right">Amount</th></tr></thead><tbody>' +
+    items + '</tbody></table>' +
+    '<div class="total">Total: ' + money(sale.total) + '</div>' +
+    '<p style="margin-top:16px;">Thank you · Scan barcode se becha gaya</p>' +
+    '<script>setTimeout(function(){window.print();},400);</script></body></html>');
+  w.document.close();
+}
 
 const productForm = document.getElementById('product-form');
 const productList = document.getElementById('product-list');
@@ -570,7 +612,17 @@ btnCheckout?.addEventListener('click', async () => {
   const noteEl = document.getElementById('sale-note');
   if (noteEl) noteEl.value = '';
   renderCart(); await refreshAll(); runSync();
-  alert('Sale complete: ' + money(total) + '\nProfit: ' + money(profit));
+  const saleRec = {
+    date: todayStr(),
+    time: new Date().toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' }),
+    items: items,
+    total: total,
+    profit: profit,
+    payment: val('sale-pay') || 'Cash',
+    note: val('sale-note')
+  };
+  printSaleReceipt(saleRec);
+  alert('Sale complete: ' + money(total));
 });
 
 async function renderSales() {
