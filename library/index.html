@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Future Tech Library</title>
+<meta name="theme-color" content="#0A1628" />
+<link rel="manifest" href="../../manifest.json" />
+<link rel="icon" href="../../icons/logo-future-tech.png" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../css/style.css" />
+<style>
+  body.dash-body { font-family: Inter, system-ui, sans-serif; background: #E9F0F8; }
+  .lib-hero {
+    background: linear-gradient(125deg, #042F2E 0%, #0F766E 50%, #14B8A6 100%);
+    border-radius: 20px; padding: 1.35rem 1.5rem; margin-bottom: 1.2rem;
+    display: flex; align-items: center; gap: 1.1rem; color: #fff;
+    border: 1px solid rgba(212,175,55,0.35); box-shadow: 0 12px 36px rgba(4,47,46,0.25);
+  }
+  .lib-hero img {
+    width: 72px; height: 72px; object-fit: contain; background: #fff;
+    border-radius: 16px; padding: 6px; border: 2.5px solid #D4AF37;
+  }
+  .lib-hero h1 { margin: 0; font-size: 1.25rem; font-weight: 800; }
+  .lib-hero p { margin: 0.25rem 0 0; font-size: 0.82rem; opacity: 0.9; }
+  .tabs {
+    display: flex; gap: 0.3rem; margin-bottom: 1.1rem; flex-wrap: wrap;
+    background: #fff; padding: 0.35rem; border-radius: 12px; border: 1px solid #E2E8F0;
+  }
+  .tab-btn {
+    flex: 1; min-width: 100px; padding: 0.55rem 0.7rem; border: none; border-radius: 8px;
+    background: transparent; color: #5A6270; font-family: inherit; font-size: 0.82rem;
+    font-weight: 600; cursor: pointer;
+  }
+  .tab-btn.active { background: #0F766E; color: #fff; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .form-card {
+    background: #fff; border-radius: 16px; padding: 1.2rem 1.3rem;
+    box-shadow: 0 4px 16px rgba(4,47,46,0.08); border: 1px solid #E2E8F0; margin-bottom: 1rem;
+  }
+  .form-card h3 {
+    margin: 0 0 0.9rem; font-size: 0.95rem; color: #042F2E;
+    border-bottom: 2px solid #14B8A6; padding-bottom: 0.35rem;
+  }
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-bottom: 1.1rem; }
+  .kpi-mini {
+    background: #fff; border-radius: 12px; padding: 0.9rem 1rem; border: 1px solid #E2E8F0;
+  }
+  .kpi-mini .label { font-size: 0.65rem; text-transform: uppercase; color: #64748B; font-weight: 700; }
+  .kpi-mini .value { font-size: 1.3rem; font-weight: 800; color: #0F766E; margin-top: 0.2rem; }
+  .inline-form { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.85rem; }
+  .inline-form input, .inline-form select {
+    flex: 1 1 110px; min-width: 100px; padding: 0.5rem 0.65rem;
+    border: 1px solid #E2E6ED; border-radius: 8px; font-family: inherit; font-size: 0.88rem;
+  }
+  .inline-form button {
+    background: #0F766E; color: #fff; border: none; padding: 0.5rem 0.95rem;
+    border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .data-list { list-style: none; margin: 0; padding: 0; }
+  .data-list li {
+    padding: 0.7rem 0.5rem; border-bottom: 1px solid #EEF1F5;
+    display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; font-size: 0.88rem;
+  }
+  .tag { background: #CCFBF1; color: #0F766E; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 6px; }
+  .muted { color: #64748B; font-size: 0.8rem; }
+  .mini-btn { border: 1px solid #E2E8F0; background: #fff; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.72rem; cursor: pointer; font-family: inherit; }
+  .mini-btn.danger { border-color: #FECACA; color: #B91C1C; }
+  .mini-btn.edit { border-color: #0F766E; color: #0F766E; }
+  .actions { margin-left: auto; display: flex; gap: 0.3rem; }
+  .hint { color: #94A3B8; font-size: 0.78rem; }
+</style>
+</head>
+<body class="dash-body" data-root="../../">
+<header class="dash-header">
+  <div class="dash-header__brand">
+    <img src="../../icons/logo-future-tech.png" alt="Library" style="height:40px;width:auto;object-fit:contain;background:#fff;border-radius:8px;padding:2px;" />
+    <span>Future Tech Library</span>
+  </div>
+  <div class="dash-header__right">
+    <span class="sync-pill" id="sync-pill">● checking…</span>
+    <span class="user-chip" id="user-chip">—</span>
+    <button class="ghost-btn" id="logout-btn">Sign out</button>
+  </div>
+</header>
+<main class="module-main">
+  <a class="back-link" href="../../dashboard.html">← Back to Master Dashboard</a>
+
+  <div class="lib-hero">
+    <img src="../../icons/logo-future-tech.png" alt="Library" />
+    <div>
+      <h1>School Library</h1>
+      <p>Books catalog · Issue · Return · Stock — alag module</p>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-mini"><div class="label">Total Books</div><div class="value" id="kpi-books">0</div></div>
+    <div class="kpi-mini"><div class="label">Total Copies</div><div class="value" id="kpi-copies">0</div></div>
+    <div class="kpi-mini"><div class="label">Issued Now</div><div class="value" id="kpi-issued">0</div></div>
+    <div class="kpi-mini"><div class="label">Available</div><div class="value" id="kpi-avail">0</div></div>
+  </div>
+
+  <div class="tabs">
+    <button type="button" class="tab-btn active" data-tab="books">Books</button>
+    <button type="button" class="tab-btn" data-tab="issue">Issue / Return</button>
+    <button type="button" class="tab-btn" data-tab="issued">Currently Issued</button>
+    <button type="button" class="tab-btn" data-tab="history">History</button>
+    <button type="button" class="tab-btn" data-tab="barcodes">Barcodes</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-books">
+    <div class="form-card">
+      <h3>Add / Edit Book</h3>
+      <form id="book-form" class="inline-form">
+        <input type="hidden" id="book-edit-id" value="" />
+        <input type="text" id="book-title" placeholder="Book title *" required />
+        <input type="text" id="book-barcode" placeholder="Barcode" />
+        <button type="button" id="btn-gen-book-bc" style="background:#14B8A6;color:#fff;">Generate Barcode</button>
+        <input type="text" id="book-author" placeholder="Author" />
+        <input type="text" id="book-cat" placeholder="Category (Science, Story…)" list="cat-list" />
+        <datalist id="cat-list">
+          <option value="Story"></option>
+          <option value="Science"></option>
+          <option value="Math"></option>
+          <option value="Islamic"></option>
+          <option value="English"></option>
+          <option value="Urdu"></option>
+          <option value="Reference"></option>
+        </datalist>
+        <input type="text" id="book-isbn" placeholder="ISBN / Code" />
+        <input type="number" id="book-qty" placeholder="Copies" min="1" value="1" />
+        <input type="text" id="book-shelf" placeholder="Shelf / Rack" />
+        <button type="submit">Save Book</button>
+      </form>
+      <input type="search" id="book-search" placeholder="Search title / author…" style="width:100%;margin-bottom:0.75rem;padding:0.5rem 0.75rem;border:1px solid #E2E6ED;border-radius:8px;" />
+      <ul id="book-list" class="data-list"></ul>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-issue">
+    <div class="form-card">
+      <h3>Issue Book</h3>
+      <form id="issue-form" class="inline-form">
+        <input type="text" id="issue-barcode" placeholder="📷 Scan book barcode → Enter" style="flex:1.2;border:2px solid #14B8A6;border-radius:8px;padding:0.5rem;font-weight:600;" />
+        <select id="issue-book" required><option value="">Or select book *</option></select>
+        <input type="text" id="issue-student" placeholder="Student name *" required list="student-names" />
+        <datalist id="student-names"></datalist>
+        <input type="text" id="issue-class" placeholder="Class" />
+        <input type="date" id="issue-date" required />
+        <input type="date" id="issue-due" title="Due date" />
+        <input type="text" id="issue-note" placeholder="Note" />
+        <button type="submit">Issue Book</button>
+      </form>
+      <p class="hint">Issue hone par available copies −1. Return se wapas +1.</p>
+    </div>
+    <div class="form-card">
+      <h3>Return Book</h3>
+      <form id="return-form" class="inline-form">
+        <input type="text" id="return-barcode" placeholder="📷 Scan book barcode to return" style="flex:1.2;border:2px solid #0F766E;border-radius:8px;padding:0.5rem;font-weight:600;" />
+        <select id="return-issue" required><option value="">Or select issued *</option></select>
+        <input type="date" id="return-date" required />
+        <button type="submit">Mark Returned</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-issued">
+    <div class="form-card">
+      <h3>Currently Issued (not returned)</h3>
+      <ul id="issued-list" class="data-list"></ul>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-history">
+    <div class="form-card">
+      <h3>Issue / Return History</h3>
+      <ul id="history-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-barcodes">
+    <div class="form-card">
+      <h3>Book Barcodes</h3>
+      <p class="hint">Har book copy ke liye labels. Issue/Return barcode scan se.</p>
+      <button type="button" class="mini-btn edit" id="btn-lib-gen-missing">Generate missing barcodes</button>
+      <button type="button" class="mini-btn" id="btn-lib-print-labels">Print unit labels</button>
+      <div id="lib-barcode-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:0.75rem;margin-top:0.75rem;"></div>
+    </div>
+  </div>
+</main>
+<script type="module" src="../../js/auth.js"></script>
+<script type="module" src="library.js"></script>
+</body>
+</html>

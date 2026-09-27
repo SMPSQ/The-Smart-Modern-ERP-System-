@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Future Tech School Shop — Full POS & Inventory</title>
+<meta name="theme-color" content="#0A1628" />
+<link rel="manifest" href="../../manifest.json" />
+<link rel="icon" href="../../icons/logo-future-tech.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../css/style.css" />
+<style>
+  body.dash-body { font-family: Inter, system-ui, sans-serif; }
+  .shop-hero {
+    background: linear-gradient(135deg, #0A1628 0%, #0F2A4A 100%);
+    border-radius: 16px; padding: 1.2rem 1.4rem; margin-bottom: 1.15rem;
+    display: flex; align-items: center; gap: 1rem;
+    border: 1px solid rgba(201,162,39,0.3);
+  }
+  .shop-hero img { width: 64px; height: 64px; object-fit: contain; background: #fff; border-radius: 12px; padding: 4px; }
+  .shop-hero h1 { margin: 0; font-size: 1.2rem; color: #fff; font-weight: 800; }
+  .shop-hero p { margin: 0.25rem 0 0; font-size: 0.8rem; color: #E8D48B; }
+  .tabs {
+    display: flex; gap: 0.3rem; margin-bottom: 1.1rem; flex-wrap: wrap;
+    background: #fff; padding: 0.35rem; border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(10,22,40,0.05); border: 1px solid #EEF1F5;
+  }
+  .tab-btn {
+    flex: 1; min-width: 90px; padding: 0.55rem 0.65rem; border: none;
+    border-radius: 8px; background: transparent; color: #5A6270;
+    font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  }
+  .tab-btn:hover { background: #F0F2F5; color: #0A1628; }
+  .tab-btn.active { background: #0A1628; color: #C9A227; }
+  .tab-panel { display: none; } .tab-panel.active { display: block; }
+  .form-card {
+    background: #fff; border-radius: 14px; padding: 1.2rem 1.3rem;
+    box-shadow: 0 4px 16px rgba(10,22,40,0.06); border: 1px solid #EEF1F5; margin-bottom: 1.1rem;
+  }
+  .form-card h3 { margin: 0 0 0.9rem; font-size: 0.95rem; color: #0A1628; border-bottom: 2px solid #C9A227; padding-bottom: 0.35rem; }
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.1rem; }
+  .kpi-mini { background: #fff; border-radius: 12px; padding: 0.9rem 1rem; border: 1px solid #E8ECF1; box-shadow: 0 4px 14px rgba(10,22,40,0.05); }
+  .kpi-mini .label { font-size: 0.65rem; text-transform: uppercase; color: #64748B; font-weight: 700; letter-spacing: 0.04em; }
+  .kpi-mini .value { font-size: 1.25rem; font-weight: 800; color: #0A1628; margin-top: 0.2rem; }
+  .pos-grid { display: grid; grid-template-columns: 1fr 300px; gap: 1rem; }
+  @media (max-width: 800px) { .pos-grid { grid-template-columns: 1fr; } }
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.65rem; }
+  .product-chip { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 0.75rem; cursor: pointer; transition: 0.15s; text-align: center; }
+  .product-chip:hover { border-color: #C9A227; background: #FFFBEB; transform: translateY(-2px); }
+  .product-chip .name { font-weight: 700; font-size: 0.85rem; color: #0A1628; }
+  .product-chip .price { color: #C9A227; font-weight: 800; margin-top: 0.2rem; font-size: 0.9rem; }
+  .product-chip .stock { font-size: 0.68rem; color: #64748B; margin-top: 0.15rem; }
+  .cart-box { background: #0A1628; color: #fff; border-radius: 14px; padding: 1.05rem; border: 2px solid #C9A227; position: sticky; top: 76px; }
+  .cart-box h3 { color: #E8D48B; margin: 0 0 0.65rem; font-size: 0.9rem; }
+  .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.82rem; }
+  .cart-total { margin-top: 0.75rem; padding-top: 0.65rem; border-top: 2px solid #C9A227; font-size: 1.15rem; font-weight: 800; color: #E8D48B; text-align: right; }
+  .btn-sale { width: 100%; margin-top: 0.75rem; background: #C9A227; color: #0A1628; border: none; padding: 0.7rem; border-radius: 10px; font-weight: 800; font-size: 0.9rem; cursor: pointer; font-family: inherit; }
+  .btn-sale:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-outline { width: 100%; margin-top: 0.4rem; background: transparent; color: #E8D48B; border: 1px solid #C9A227; padding: 0.55rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.82rem; }
+  .inline-form { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.85rem; }
+  .inline-form input, .inline-form select { flex: 1 1 110px; min-width: 95px; padding: 0.5rem 0.65rem; border: 1px solid #E2E6ED; border-radius: 8px; font-family: inherit; font-size: 0.88rem; }
+  .inline-form button { background: #0A1628; color: #fff; border: none; padding: 0.5rem 0.95rem; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+  .report-box { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 1rem; text-align: center; }
+  .report-box .lbl { font-size: 0.7rem; text-transform: uppercase; color: #64748B; font-weight: 700; }
+  .report-box .val { font-size: 1.35rem; font-weight: 800; color: #0A1628; margin-top: 0.25rem; }
+  .report-box.green .val { color: #059669; }
+  .report-box.gold .val { color: #B45309; }
+  table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.stock-table th { text-align: left; padding: 0.55rem 0.4rem; border-bottom: 2px solid #C9A227; font-size: 0.7rem; text-transform: uppercase; color: #0A1628; }
+  table.stock-table td { padding: 0.5rem 0.4rem; border-bottom: 1px solid #EEF1F5; }
+  table.stock-table tr.low { background: #FEF2F2; }
+  .filter-row { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.75rem; align-items: center; }
+</style>
+</head>
+<body class="dash-body" data-root="../../">
+<header class="dash-header">
+  <div class="dash-header__brand">
+    <img src="../../icons/logo-future-tech.png" alt="Future Tech" style="height:40px;width:auto;object-fit:contain;background:#fff;border-radius:8px;padding:2px;" />
+    <span>Future Tech School Shop</span>
+  </div>
+  <div class="dash-header__right">
+    <span class="sync-pill" id="sync-pill">● checking…</span>
+    <span class="user-chip" id="user-chip">—</span>
+    <button class="ghost-btn" id="logout-btn">Sign out</button>
+  </div>
+</header>
+<main class="module-main">
+  <a class="back-link" href="../../dashboard.html" id="back-dash">← Back to Master Dashboard</a>
+  <div class="shop-hero">
+    <img src="../../icons/logo-future-tech.png" alt="Shop" />
+    <div>
+      <h1>School Shop · Full System</h1>
+      <p>Inventory · Purchase · Sale · Profit &amp; Loss · Stock value</p>
+    </div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi-mini"><div class="label">Today Sales</div><div class="value" id="kpi-today">Rs 0</div></div>
+    <div class="kpi-mini"><div class="label">Month Sales</div><div class="value" id="kpi-month">Rs 0</div></div>
+    <div class="kpi-mini"><div class="label">Month Profit</div><div class="value" id="kpi-profit">Rs 0</div></div>
+    <div class="kpi-mini"><div class="label">Stock Value (cost)</div><div class="value" id="kpi-stock-val">Rs 0</div></div>
+    <div class="kpi-mini"><div class="label">Products</div><div class="value" id="kpi-products">0</div></div>
+    <div class="kpi-mini"><div class="label">Low Stock</div><div class="value" id="kpi-low" style="color:#B91C1C;">0</div></div>
+  </div>
+  <div class="tabs">
+    <button type="button" class="tab-btn active" data-tab="pos">Sell (POS)</button>
+    <button type="button" class="tab-btn" data-tab="products">Products</button>
+    <button type="button" class="tab-btn" data-tab="purchase">Purchase</button>
+    <button type="button" class="tab-btn" data-tab="sales">Sales</button>
+    <button type="button" class="tab-btn" data-tab="inventory">Inventory</button>
+    <button type="button" class="tab-btn" data-tab="barcodes">Barcodes</button>
+    <button type="button" class="tab-btn" data-tab="reports">P&amp;L Report</button>
+  </div>
+  <div class="tab-panel active" id="tab-pos">
+    <div class="pos-grid">
+      <div class="form-card">
+        <h3>Products — tap to add to cart</h3>
+        <input type="text" id="pos-barcode" placeholder="📷 Scan / type barcode → Enter" autocomplete="off" style="width:100%;margin-bottom:0.45rem;padding:0.7rem 0.85rem;border:2px solid #C9A227;border-radius:10px;font-family:inherit;font-size:1rem;font-weight:600;" />
+        <input type="search" id="pos-search" placeholder="Search by name…" style="width:100%;margin-bottom:0.75rem;padding:0.55rem 0.75rem;border:1px solid #E2E6ED;border-radius:8px;font-family:inherit;" />
+        <div class="product-grid" id="pos-products"></div>
+        <p class="hint" id="pos-empty" style="display:none;">Pehle Products tab se items add karein.</p>
+      </div>
+      <div class="cart-box">
+        <h3>🛒 Cart</h3>
+        <div id="cart-list"></div>
+        <div class="cart-total">Total: <span id="cart-total">Rs 0</span></div>
+        <div style="margin-top:0.5rem;font-size:0.75rem;color:#94A3B8;">Est. profit: <span id="cart-profit">Rs 0</span></div>
+        <input type="text" id="sale-note" placeholder="Note / customer (optional)" style="width:100%;margin-top:0.55rem;padding:0.45rem;border-radius:8px;border:none;font-family:inherit;" />
+        <select id="sale-pay" style="width:100%;margin-top:0.4rem;padding:0.45rem;border-radius:8px;border:none;font-family:inherit;">
+          <option value="Cash">Cash</option>
+          <option value="Online">Online / Transfer</option>
+          <option value="Credit">Credit (udhaar)</option>
+        </select>
+        <button type="button" class="btn-sale" id="btn-checkout" disabled>Complete Sale</button>
+        <button type="button" class="btn-outline" id="btn-clear-cart">Clear Cart</button>
+      </div>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-products">
+    <div class="form-card">
+      <h3>Add / Update Product</h3>
+      <form id="product-form" class="inline-form">
+        <input type="text" id="prod-name" placeholder="Product name *" required />
+        <input type="text" id="prod-sku" placeholder="Barcode / SKU" style="flex:1.2" />
+        <button type="button" id="btn-gen-barcode" style="background:#C9A227;color:#0A1628;">Generate Barcode</button>
+        <select id="prod-category">
+          <option value="Stationery">Stationery</option>
+          <option value="Books">Books</option>
+          <option value="Uniform">Uniform</option>
+          <option value="Canteen">Canteen</option>
+          <option value="Sports">Sports</option>
+          <option value="Other">Other</option>
+        </select>
+        <input type="number" id="prod-cost" placeholder="Cost / purchase price (Rs)" min="0" step="1" />
+        <input type="number" id="prod-price" placeholder="Sale price (Rs) *" min="0" step="1" required />
+        <input type="number" id="prod-stock" placeholder="Opening stock" min="0" step="1" value="0" />
+        <input type="number" id="prod-low" placeholder="Low stock alert" min="0" value="5" />
+        <input type="text" id="prod-unit" placeholder="Unit (pcs, box…)" value="pcs" />
+        <button type="submit">Save Product</button>
+        <button type="button" id="prod-cancel" style="display:none;background:#64748B;">Cancel edit</button>
+      </form>
+      <p class="hint">Cost = purchase price. Sale − cost = profit per unit. Purchase tab se stock bhi badhega.</p>
+      <ul id="product-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-purchase">
+    <div class="form-card">
+      <h3>Purchase / Stock In</h3>
+      <form id="purchase-form" class="inline-form">
+        <select id="pur-product" required><option value="">Select product *</option></select>
+        <input type="number" id="pur-qty" placeholder="Qty *" min="1" step="1" required />
+        <input type="number" id="pur-cost" placeholder="Unit cost (Rs) *" min="0" step="1" required />
+        <input type="text" id="pur-supplier" placeholder="Supplier name" />
+        <input type="text" id="pur-invoice" placeholder="Invoice / bill no" />
+        <input type="date" id="pur-date" required />
+        <input type="text" id="pur-note" placeholder="Note" />
+        <button type="submit">Add Purchase</button>
+      </form>
+      <p class="hint">Stock + hota hai, average cost update, school expense (Supplies) auto entry.</p>
+      <ul id="purchase-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-sales">
+    <div class="form-card">
+      <h3>Sales History</h3>
+      <div class="filter-row">
+        <input type="date" id="sales-from" />
+        <input type="date" id="sales-to" />
+        <button type="button" class="mini-btn edit" id="sales-filter-btn">Filter</button>
+      </div>
+      <ul id="sales-list" class="data-list"></ul>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-inventory">
+    <div class="form-card">
+      <h3>Inventory / Stock Sheet</h3>
+      <div class="filter-row">
+        <input type="search" id="inv-search" placeholder="Search…" style="flex:1;min-width:140px;padding:0.45rem 0.65rem;border:1px solid #E2E6ED;border-radius:8px;" />
+        <button type="button" class="mini-btn" id="inv-refresh">Refresh</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="stock-table">
+          <thead>
+            <tr><th>Product</th><th>SKU</th><th>Category</th><th>Stock</th><th>Cost</th><th>Sale</th><th>Stock value</th><th>Margin</th></tr>
+          </thead>
+          <tbody id="inv-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <div class="tab-panel" id="tab-barcodes">
+    <div class="form-card">
+      <h3>Product Barcodes — generate &amp; print labels</h3>
+      <p class="hint">Product save + Generate Barcode. Print: har unit (stock) ke barabar labels. POS: barcode scan → Enter = 1 unit cart. Same barcode se baar baar scan = zyada units.</p>
+      <div class="filter-row">
+        <button type="button" class="mini-btn edit" id="btn-gen-all-missing">Generate missing barcodes</button>
+        <button type="button" class="mini-btn edit" id="btn-print-barcodes">Print all unit labels</button>
+      </div>
+      <div id="barcode-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.85rem;margin-top:0.75rem;"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-reports">
+    <div class="form-card">
+      <h3>Profit &amp; Loss Report</h3>
+      <div class="filter-row">
+        <label style="font-size:0.75rem;font-weight:700;color:#64748B;">From</label>
+        <input type="date" id="pl-from" />
+        <label style="font-size:0.75rem;font-weight:700;color:#64748B;">To</label>
+        <input type="date" id="pl-to" />
+        <button type="button" class="mini-btn edit" id="pl-run">Run Report</button>
+      </div>
+      <div class="report-grid">
+        <div class="report-box gold"><div class="lbl">Total Sales</div><div class="val" id="pl-sales">Rs 0</div></div>
+        <div class="report-box"><div class="lbl">Cost of Goods (COGS)</div><div class="val" id="pl-cogs">Rs 0</div></div>
+        <div class="report-box green"><div class="lbl">Gross Profit</div><div class="val" id="pl-gross">Rs 0</div></div>
+        <div class="report-box"><div class="lbl">Purchases (period)</div><div class="val" id="pl-purchases">Rs 0</div></div>
+        <div class="report-box"><div class="lbl">Units sold</div><div class="val" id="pl-units">0</div></div>
+        <div class="report-box"><div class="lbl">Transactions</div><div class="val" id="pl-tx">0</div></div>
+      </div>
+      <h4 style="margin:0.75rem 0 0.5rem;font-size:0.9rem;color:#0A1628;">Top products by profit</h4>
+      <ul id="pl-top" class="data-list"></ul>
+    </div>
+  </div>
+</main>
+<script type="module" src="../../js/auth.js"></script>
+<script type="module" src="shop.js"></script>
+</body>
+</html>
