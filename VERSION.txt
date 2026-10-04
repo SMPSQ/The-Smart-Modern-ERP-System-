@@ -1,3 +1,1 @@
-Future Tech ERP — v6.5.0
-Amazon-style barcode labels (N units = N stickers)
-Shop POS scan · Library auto ADD/ISSUE/RETURN · Student QR attendance
+Future Tech ERP v6.5.1 — DB fix (IndexedDB stores + save)

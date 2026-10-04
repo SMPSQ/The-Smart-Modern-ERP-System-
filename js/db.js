@@ -2,10 +2,9 @@
 // IndexedDB + Sync Queue + Automatic Activity Logging
 
 const DB_NAME = 'fkc-erp-v4';
-const DB_VERSION = 12;
+const DB_VERSION = 13;
 
 const STORES = [
-  // Core
   'students',
   'admissions',
   'feeStructure',
@@ -30,54 +29,108 @@ const STORES = [
   'settings',
   'courses',
   'batches',
-
-  // Trading Academy
-  'batches',
   'tradingEnrollments',
   'tradingJournal',
-
-  // Educational Academy
   'tutors',
   'classes',
   'academyEnrollments',
-
-  // Shop
   'shopProducts',
   'shopSales',
   'shopPurchases',
-
-  // System
   'visitors',
   'activity_logs',
   'sync_queue'
 ];
 
-function openDatabase() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = (e) => {
-      const dbx = req.result;
-      STORES.forEach((store) => {
-        if (!dbx.objectStoreNames.contains(store)) {
-          dbx.createObjectStore(store, { keyPath: 'id' });
-        }
-      });
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+function ensureStores(dbx) {
+  STORES.forEach((store) => {
+    if (!dbx.objectStoreNames.contains(store)) {
+      dbx.createObjectStore(store, { keyPath: 'id' });
+    }
   });
 }
 
-const dbPromise = openDatabase();
+function missingStores(dbx) {
+  return STORES.filter((s) => !dbx.objectStoreNames.contains(s));
+}
+
+function openAtVersion(version) {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, version);
+    req.onupgradeneeded = () => {
+      ensureStores(req.result);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
+    req.onblocked = () => {
+      console.warn('[DB] open blocked — close other tabs of this app');
+    };
+  });
+}
+
+let _db = null;
+let _dbPromise = null;
+
+async function openDatabase() {
+  if (_db) return _db;
+  if (_dbPromise) return _dbPromise;
+  _dbPromise = (async () => {
+    let dbx = await openAtVersion(DB_VERSION);
+    let missing = missingStores(dbx);
+    if (missing.length) {
+      const next = (dbx.version || DB_VERSION) + 1;
+      console.warn('[DB] Missing stores', missing, '→ upgrade to', next);
+      dbx.close();
+      dbx = await openAtVersion(next);
+      missing = missingStores(dbx);
+      if (missing.length) {
+        console.error('[DB] Still missing stores after upgrade:', missing);
+      }
+    }
+    _db = dbx;
+    dbx.onversionchange = () => {
+      try { dbx.close(); } catch (_) {}
+      _db = null;
+      _dbPromise = null;
+    };
+    return dbx;
+  })();
+  try {
+    return await _dbPromise;
+  } catch (err) {
+    _dbPromise = null;
+    throw err;
+  }
+}
 
 export function uid() {
   return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
 }
 
 async function storeOf(storeName, mode = 'readonly') {
-  const dbx = await dbPromise;
+  let dbx = await openDatabase();
+  if (!dbx.objectStoreNames.contains(storeName)) {
+    // force upgrade path once
+    const next = (dbx.version || DB_VERSION) + 1;
+    try { dbx.close(); } catch (_) {}
+    _db = null;
+    _dbPromise = null;
+    dbx = await openAtVersion(next);
+    _db = dbx;
+    if (!dbx.objectStoreNames.contains(storeName)) {
+      throw new Error(
+        'Database store missing: "' + storeName + '". Hard refresh (Ctrl+Shift+R) karein ya browser data clear karke dubara login.'
+      );
+    }
+  }
   return dbx.transaction(storeName, mode).objectStore(storeName);
 }
+
+/** Warm up DB on load so first save is fast */
+openDatabase().catch((err) => {
+  console.error('[DB] init failed', err);
+});
+
 
 function currentUser() {
   try {
@@ -164,29 +217,49 @@ export async function saveLocal(storeName, record) {
   await new Promise((res, rej) => {
     const r = store.put(full);
     r.onsuccess = res;
-    r.onerror = () => rej(r.error);
+    r.onerror = () => rej(r.error || new Error('IndexedDB put failed'));
   });
 
-  await queueSync(storeName, id, 'upsert', full);
-  await logActivity(
-    isUpdate && before ? 'update' : 'create',
-    storeName,
-    id,
-    summarize(full),
-    before,
-    full
-  );
+  try {
+    await queueSync(storeName, id, 'upsert', full);
+  } catch (qErr) {
+    console.warn('[DB] queueSync failed (data still saved locally)', qErr);
+  }
+  try {
+    await logActivity(
+      isUpdate && before ? 'update' : 'create',
+      storeName,
+      id,
+      summarize(full),
+      before,
+      full
+    );
+  } catch (_) {}
 
   return full;
 }
 
+export async function saveLocalSafe(storeName, record) {
+  try {
+    return await saveLocal(storeName, record);
+  } catch (err) {
+    console.error('[DB] saveLocal failed', storeName, err);
+    throw err;
+  }
+}
+
 export async function getAllLocal(storeName) {
-  const store = await storeOf(storeName, 'readonly');
-  return new Promise((resolve, reject) => {
-    const r = store.getAll();
-    r.onsuccess = () => resolve(r.result || []);
-    r.onerror = () => reject(r.error);
-  });
+  try {
+    const store = await storeOf(storeName, 'readonly');
+    return await new Promise((resolve, reject) => {
+      const r = store.getAll();
+      r.onsuccess = () => resolve(r.result || []);
+      r.onerror = () => reject(r.error);
+    });
+  } catch (err) {
+    console.warn('[DB] getAllLocal', storeName, err);
+    return [];
+  }
 }
 
 export async function getLocal(storeName, id) {
