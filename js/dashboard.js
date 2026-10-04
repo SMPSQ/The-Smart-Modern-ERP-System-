@@ -19,13 +19,14 @@ import {
   ensureStaffCredentials,
   suggestUsername
 } from './staff-auth.js';
-import { drainQueue } from './sync.js';
+import { drainQueue, fullSync, pullFromCloud } from './sync.js';
 
 function formatMoney(n) {
   return 'Rs ' + Number(n || 0).toLocaleString('en-PK');
 }
 
 async function loadKPIs() {
+  // exposed for sync pull refresh
   const setTxt = (id, v) => {
     const el = document.getElementById(id);
     if (el) el.textContent = v;
@@ -454,3 +455,29 @@ initUserManagement();
 setTimeout(() => initUserManagement(), 500);
 setTimeout(() => initUserManagement(), 1500);
 
+
+window.__ft_reloadKPIs = loadKPIs;
+
+document.getElementById('sync-now-btn')?.addEventListener('click', async () => {
+  try {
+    await fullSync();
+    await loadKPIs();
+  } catch (e) {
+    console.warn(e);
+  }
+});
+// Also any button with text Sync now
+document.querySelectorAll('button').forEach((btn) => {
+  if ((btn.textContent || '').trim().toLowerCase().includes('sync now') && !btn.dataset.ftSync) {
+    btn.dataset.ftSync = '1';
+    btn.addEventListener('click', async () => {
+      try {
+        await fullSync();
+        await loadKPIs();
+        alert('Cloud se data sync ho gaya');
+      } catch (e) {
+        alert('Sync: ' + (e.message || e));
+      }
+    });
+  }
+});

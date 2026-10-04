@@ -1,7 +1,24 @@
-// js/sync.js — Offline → Firestore (robust student sync)
+// js/sync.js — Offline ↔ Firestore (push queue + PULL from cloud)
 import { auth, db } from './firebase-config.js';
-import { doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
-import { getQueue, removeFromQueue, markSynced, requeueUnsynced, purgeQueueNoise } from './db.js';
+import {
+  doc,
+  setDoc,
+  deleteDoc,
+  collection,
+  getDocs,
+  query,
+  limit
+} from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
+import {
+  getQueue,
+  removeFromQueue,
+  markSynced,
+  requeueUnsynced,
+  purgeQueueNoise,
+  saveLocal,
+  getLocal,
+  getAllLocal
+} from './db.js';
 
 function setPill(state, detail) {
   const pill = document.getElementById('sync-pill');
@@ -45,12 +62,105 @@ function sanitize(value) {
   return value;
 }
 
-/** Firestore doc id cannot contain / */
 function safeDocId(id) {
   return String(id || '').replace(/\//g, '_').slice(0, 700) || 'unknown';
 }
 
+/** Collections to pull from Firebase → local IndexedDB */
+const PULL_STORES = [
+  'admissions',
+  'students',
+  'feeChallans',
+  'feeStructure',
+  'attendance',
+  'teachers',
+  'staff',
+  'shopProducts',
+  'shopSales',
+  'shopPurchases',
+  'library',
+  'libraryIssues',
+  'courses',
+  'batches',
+  'classes',
+  'expenses',
+  'income'
+];
+
 let draining = false;
+let pulling = false;
+
+/**
+ * PULL: Firestore → local DB (merge by updatedAt)
+ * Is se dusre device / Firebase Console ka data app mein dikhega
+ */
+export async function pullFromCloud() {
+  if (pulling) return { ok: false, reason: 'busy' };
+  if (!navigator.onLine) {
+    setPill('offline');
+    return { ok: false, reason: 'offline' };
+  }
+
+  if (!auth.currentUser) {
+    try {
+      const { ensureFirebaseAuthForSync } = await import('./staff-auth.js');
+      await ensureFirebaseAuthForSync();
+    } catch (_) {}
+  }
+  if (!auth.currentUser) {
+    setPill('error', 'Login required for cloud pull');
+    return { ok: false, reason: 'no-auth' };
+  }
+
+  pulling = true;
+  setPill('syncing', 'Downloading from cloud…');
+  let imported = 0;
+  let errors = 0;
+
+  try {
+    for (const storeName of PULL_STORES) {
+      try {
+        const snap = await getDocs(query(collection(db, storeName), limit(2000)));
+        for (const d of snap.docs) {
+          try {
+            let data = d.data() || {};
+            data = sanitize(data) || {};
+            if (!data.id) data.id = d.id;
+            // Prefer newer updatedAt
+            let local = null;
+            try {
+              local = await getLocal(storeName, data.id);
+            } catch (_) {}
+            const remoteTs = Number(data.updatedAt || data.createdAt || 0);
+            const localTs = Number(local?.updatedAt || local?.createdAt || 0);
+            if (local && localTs > remoteTs) continue; // local newer — keep local
+            // saveLocal will re-queue for push — mark synced after to avoid loop
+            data.synced = true;
+            await saveLocal(storeName, data);
+            try {
+              await markSynced(storeName, data.id);
+            } catch (_) {}
+            imported++;
+          } catch (docErr) {
+            errors++;
+            console.warn('[Pull] doc', storeName, d.id, docErr);
+          }
+        }
+      } catch (colErr) {
+        // Collection may not exist yet
+        console.warn('[Pull] collection', storeName, colErr?.code || colErr?.message || colErr);
+      }
+    }
+    setPill('synced', imported ? imported + ' from cloud' : 'synced');
+    return { ok: true, imported, errors };
+  } catch (err) {
+    console.error('[Pull] failed', err);
+    setPill('error', err?.message || 'pull failed');
+    return { ok: false, reason: err?.message || String(err) };
+  } finally {
+    pulling = false;
+  }
+}
 
 export async function drainQueue() {
   if (draining) return { ok: true, remaining: 0 };
@@ -61,8 +171,9 @@ export async function drainQueue() {
       return { ok: false, remaining: -1, reason: 'offline' };
     }
 
-    // Drop activity_logs etc. that block the queue
-    try { await purgeQueueNoise(); } catch (_) {}
+    try {
+      await purgeQueueNoise();
+    } catch (_) {}
 
     let queue = await getQueue();
     if (queue.length === 0) {
@@ -71,14 +182,13 @@ export async function drainQueue() {
     }
 
     if (!auth.currentUser) {
-      // Staff local login → try anonymous Firebase auth so rules allow write
       try {
         const { ensureFirebaseAuthForSync } = await import('./staff-auth.js');
         await ensureFirebaseAuthForSync();
       } catch (_) {}
     }
     if (!auth.currentUser) {
-      setPill('error', 'Cloud sync needs login. Enable Anonymous Auth in Firebase Console.');
+      setPill('error', 'Cloud sync needs login');
       return { ok: false, remaining: queue.length, reason: 'no-auth' };
     }
 
@@ -88,7 +198,6 @@ export async function drainQueue() {
     let failed = 0;
     let lastError = '';
 
-    // Prefer students / admissions first
     const priority = ['students', 'admissions', 'feeChallans', 'attendance'];
     queue = [...queue].sort((a, b) => {
       const pa = priority.indexOf(a.storeName);
@@ -114,10 +223,11 @@ export async function drainQueue() {
           let payload = sanitize(item.data || {});
           if (!payload || typeof payload !== 'object') payload = { id: recordId };
           payload.id = recordId;
-          // Flatten any residual undefined
           payload = JSON.parse(JSON.stringify(payload));
           await setDoc(ref, payload, { merge: true });
-          try { await markSynced(item.storeName, item.recordId); } catch (_) {}
+          try {
+            await markSynced(item.storeName, item.recordId);
+          } catch (_) {}
         }
         await removeFromQueue(item.id);
         synced++;
@@ -125,8 +235,6 @@ export async function drainQueue() {
         failed++;
         lastError = err?.code || err?.message || String(err);
         console.warn('Sync fail', item.storeName, item.recordId, err);
-        // Continue other items — do NOT break entire queue
-        // Remove permanently bad items after many failures
         if (String(lastError).includes('invalid') || String(lastError).includes('Invalid')) {
           await removeFromQueue(item.id);
         }
@@ -138,14 +246,29 @@ export async function drainQueue() {
       setPill('synced', synced + ' uploaded');
       return { ok: true, remaining: 0, synced };
     }
-    setPill('error', lastError || (remaining.length + ' pending'));
+    setPill('error', lastError || remaining.length + ' pending');
     return { ok: false, remaining: remaining.length, reason: lastError, synced, failed };
   } finally {
     draining = false;
   }
 }
 
-/** Force push ALL local students (and core stores) to Firestore */
+/** Full sync: pull cloud → local, then push local queue → cloud */
+export async function fullSync() {
+  setPill('syncing', 'Full sync…');
+  const pull = await pullFromCloud();
+  const push = await drainQueue();
+  setPill(
+    pull.ok || push.ok ? 'synced' : 'error',
+    '↓' + (pull.imported || 0) + ' ↑' + (push.synced || 0)
+  );
+  // Refresh KPIs if dashboard
+  try {
+    if (typeof window.__ft_reloadKPIs === 'function') window.__ft_reloadKPIs();
+  } catch (_) {}
+  return { pull, push };
+}
+
 export async function forceSyncStudents() {
   if (!auth.currentUser) {
     try {
@@ -154,21 +277,65 @@ export async function forceSyncStudents() {
     } catch (_) {}
   }
   if (!auth.currentUser) {
-    return { ok: false, reason: 'Enable Anonymous Auth in Firebase (Authentication → Sign-in method)' };
+    return { ok: false, reason: 'Enable Anonymous Auth or login with admin email' };
   }
-  try { await purgeQueueNoise(); } catch (_) {}
+  try {
+    await purgeQueueNoise();
+  } catch (_) {}
   const n = await requeueUnsynced(
     ['students', 'admissions', 'feeChallans', 'attendance', 'teachers', 'staff', 'feeStructure'],
     true
   );
+  const pull = await pullFromCloud();
   const result = await drainQueue();
-  return { ...result, requeued: n };
+  return { ...result, requeued: n, pull };
 }
 
 export const runSync = drainQueue;
 
-window.addEventListener('online', () => { drainQueue(); });
+// Wire Sync now button if present
+function bindSyncButton() {
+  const btn = document.getElementById('sync-now-btn') || document.querySelector('[data-sync-now]');
+  if (btn && !btn.dataset.bound) {
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        await fullSync();
+        alert('Sync complete — cloud data local mein aa gaya');
+        window.location.reload();
+      } catch (e) {
+        alert('Sync error: ' + (e.message || e));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+}
+
+window.addEventListener('online', () => {
+  fullSync();
+});
 window.addEventListener('offline', () => setPill('offline'));
-drainQueue();
-window.addEventListener('load', () => drainQueue());
-setInterval(() => drainQueue(), 20000);
+window.addEventListener('load', () => {
+  bindSyncButton();
+  // Push first, then pull
+  drainQueue().then(() => pullFromCloud()).then(() => {
+    try {
+      if (typeof window.__ft_reloadKPIs === 'function') window.__ft_reloadKPIs();
+    } catch (_) {}
+  });
+});
+setInterval(() => {
+  drainQueue();
+}, 20000);
+// Pull every 2 min
+setInterval(() => {
+  pullFromCloud().then(() => {
+    try {
+      if (typeof window.__ft_reloadKPIs === 'function') window.__ft_reloadKPIs();
+    } catch (_) {}
+  });
+}, 120000);
+
+bindSyncButton();

@@ -1,6 +1,6 @@
 /* Future Tech ERP — Service Worker
    Bump CACHE_VERSION on every deploy → clients auto-detect + update banner */
-const CACHE_VERSION = 'v6.5.4';
+const CACHE_VERSION = 'v6.5.5';
 const CACHE = 'future-tech-erp-' + CACHE_VERSION;
 
 const PRECACHE = [
