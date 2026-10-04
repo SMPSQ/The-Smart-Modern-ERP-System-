@@ -230,7 +230,7 @@ if (issueForm) {
       studentPhone: (getSelectedStudentFull('issue-student-select') || {}).phone || '',
       guardian: (getSelectedStudentFull('issue-student-select') || {}).fatherName || (getSelectedStudentFull('issue-student-select') || {}).guardianName || '',
       issueDate: val('issue-date') || todayStr(),
-      dueDate: val('issue-due'),
+      dueDate: val('issue-due') || addDays(todayStr(), 7),
       note: val('issue-note'),
       status: 'Issued',
       module: MODULE,
@@ -340,15 +340,20 @@ function genBookBarcode() {
 function bookBcImg(code) {
   const t = encodeURIComponent(String(code || '0')); return 'https://barcode.tec-it.com/barcode.ashx?data=' + t + '&code=Code128&translate-esc=on&dpi=96&imagetype=Png';
 }
-function bookLabelHtml(b, i) {
+function bookLabelHtml(b, i, total) {
   const code = b.barcode || b.isbn || '';
   if (!code) return '';
-  const n = i != null ? ' · #' + (i+1) : '';
-  return `<div style="border:1px dashed #94A3B8;border-radius:10px;padding:0.6rem;text-align:center;background:#fff;page-break-inside:avoid;">
-    <div style="font-weight:800;font-size:0.8rem;">${esc(b.title||b.name)}${n}</div>
-    <img src="${bookBcImg(code)}" alt="" style="max-width:100%;height:48px;object-fit:contain;" />
-    <div style="font-family:monospace;font-size:0.72rem;font-weight:700;">${esc(code)}</div>
-  </div>`;
+  const unit = total > 1 && i != null ? '<div style="font-size:7px;color:#94A3B8;">' + (i + 1) + '/' + total + '</div>' : '';
+  return (
+    '<div class="bc-label" style="width:120px;border:1px solid #333;border-radius:3px;padding:3px 2px;text-align:center;background:#fff;page-break-inside:avoid;margin:2px;line-height:1.15;">' +
+    '<div style="font-size:7px;font-weight:800;">FT LIBRARY</div>' +
+    '<div style="font-weight:700;font-size:8px;max-height:20px;overflow:hidden;">' + esc(b.title || b.name || '') + '</div>' +
+    '<img src="' + bookBcImg(code) + '" alt="" style="max-width:112px;height:28px;object-fit:contain;" ' +
+    'onerror="this.onerror=null;this.src=\'https://bwipjs-api.metafloor.com/?bcid=code128&text=' + encodeURIComponent(code) + '&scale=2&height=12\';" />' +
+    '<div style="font-family:monospace;font-size:7px;font-weight:700;">' + esc(code) + '</div>' +
+    unit +
+    '</div>'
+  );
 }
 
 document.getElementById('btn-gen-book-bc')?.addEventListener('click', () => {
@@ -384,7 +389,7 @@ async function renderLibBarcodeGrid() {
         <button type="button" class="mini-btn edit" data-gen-book="${b.id}">Generate</button>
       </div>`;
     }
-    return `<div>${bookLabelHtml(b)}
+    return `<div>${bookLabelHtml(b, 0, units)}
       <div style="text-align:center;font-size:0.7rem;color:#64748B;">${units} copies</div>
       <div style="text-align:center;"><button type="button" class="mini-btn edit" data-print-book="${b.id}">Print ${units} labels</button></div>
     </div>`;
@@ -414,7 +419,7 @@ async function renderLibBarcodeGrid() {
       b.copies = units;
       await saveLocal('library', b);
       let body = '';
-      for (let i = 0; i < units; i++) body += bookLabelHtml(b, i);
+      for (let i = 0; i < units; i++) body += bookLabelHtml(b, i, units);
       const w = window.open('', '_blank', 'width=700,height=500');
       if (!w) return;
       w.document.write('<!DOCTYPE html><html><head><title>' + units + ' labels</title><style>.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;}@media print{body{padding:0}}</style></head><body><p>Total: ' + units + ' stickers (har copy pe 1)</p><div class="grid">' + body + '</div><script>setTimeout(function(){print();},600);</script></body></html>');
@@ -448,7 +453,7 @@ document.getElementById('btn-lib-print-labels')?.addEventListener('click', async
     if (!(b.barcode || b.isbn)) continue;
     const units = Math.max(1, Number(b.qty||b.copies||1));
     total += units;
-    for (let i = 0; i < units; i++) body += bookLabelHtml(b, i);
+    for (let i = 0; i < units; i++) body += bookLabelHtml(b, i, units);
   }
   if (!body) { alert('Pehle barcodes generate karein'); return; }
   const w = window.open('', '_blank', 'width=900,height=700');
@@ -461,6 +466,8 @@ document.getElementById('btn-lib-print-labels')?.addEventListener('click', async
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     if (btn.dataset.tab === 'barcodes') renderLibBarcodeGrid();
+    if (btn.dataset.tab === 'reminders') renderReminders();
+    if (btn.dataset.tab === 'issued') { renderIssued(); renderReminders(); }
   });
 });
 
@@ -515,6 +522,35 @@ document.querySelectorAll('.mode-btn').forEach((btn) => {
 
 
 
+
+function addDays(isoDate, days) {
+  const d = isoDate ? new Date(isoDate + 'T12:00:00') : new Date();
+  d.setDate(d.getDate() + Number(days || 0));
+  return d.toISOString().slice(0, 10);
+}
+function computeDueDate() {
+  const daysEl = document.getElementById('auto-due-days');
+  const dateEl = document.getElementById('auto-due-date');
+  const days = daysEl ? Number(daysEl.value) : 7;
+  if (days === 0 && dateEl && dateEl.value) return dateEl.value;
+  if (dateEl && dateEl.value && days === 0) return dateEl.value;
+  const due = addDays(todayStr(), days || 7);
+  if (dateEl) dateEl.value = due;
+  return due;
+}
+document.getElementById('auto-due-days')?.addEventListener('change', () => {
+  const days = Number(document.getElementById('auto-due-days').value);
+  const dateEl = document.getElementById('auto-due-date');
+  if (days > 0 && dateEl) dateEl.value = addDays(todayStr(), days);
+});
+// default due date
+(function initDue() {
+  const dateEl = document.getElementById('auto-due-date');
+  if (dateEl && !dateEl.value) dateEl.value = addDays(todayStr(), 7);
+  const manDue = document.getElementById('issue-due');
+  if (manDue && !manDue.value) manDue.value = addDays(todayStr(), 7);
+})();
+
 async function autoIssueByBarcode(code) {
   const book = await findBookByBarcode(code);
   if (!book) {
@@ -555,13 +591,14 @@ async function autoIssueByBarcode(code) {
     studentPhone: studentRec ? (studentRec.phone || '') : '',
     guardian: studentRec ? (studentRec.fatherName || studentRec.guardianName || '') : '',
     issueDate: todayStr(),
-    dueDate: '',
+    dueDate: computeDueDate(),
     status: 'Issued',
     method: 'barcode',
     module: MODULE,
     createdAt: Date.now()
   });
-  setScanFeedback('✓ ISSUED: ' + title + ' → ' + student, true);
+  const due = computeDueDate();
+  setScanFeedback('✓ ISSUED: ' + title + ' → ' + student + ' · Return by ' + due, true);
   beep(true);
   /* student kept in select */
   await refresh();
@@ -884,3 +921,41 @@ document.getElementById('issue-student-select')?.addEventListener('change', e =>
 });
 
 loadLibStudents();
+
+
+async function renderReminders() {
+  const el = document.getElementById('reminder-list');
+  if (!el) return;
+  const today = todayStr();
+  const open = (await getIssues()).filter(i => (i.status || 'Issued') === 'Issued' && i.dueDate);
+  const overdue = [];
+  const dueToday = [];
+  const dueSoon = [];
+  open.forEach(i => {
+    const due = i.dueDate || '';
+    if (due < today) overdue.push(i);
+    else if (due === today) dueToday.push(i);
+    else {
+      const in3 = addDays(today, 3);
+      if (due <= in3) dueSoon.push(i);
+    }
+  });
+  const set = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
+  set('kpi-overdue', overdue.length);
+  set('kpi-due-today', dueToday.length);
+  set('kpi-due-soon', dueSoon.length);
+
+  function row(i, tag, color) {
+    return '<li style="border-left:3px solid ' + color + ';padding-left:8px;">' +
+      '<strong>' + esc(i.bookTitle) + '</strong> <span class="tag" style="background:' + color + ';color:#fff;">' + tag + '</span>' +
+      '<span class="muted"><b>' + esc(i.studentName) + '</b>' +
+      (i.className ? ' · ' + esc(i.className) : '') +
+      (i.studentPhone ? ' · 📞 ' + esc(i.studentPhone) : '') + '</span>' +
+      '<span class="muted">Issued ' + esc(i.issueDate) + ' · <b>Return by ' + esc(i.dueDate) + '</b></span></li>';
+  }
+  const parts = [];
+  overdue.sort((a,b) => (a.dueDate||'').localeCompare(b.dueDate||'')).forEach(i => parts.push(row(i, 'OVERDUE', '#B91C1C')));
+  dueToday.forEach(i => parts.push(row(i, 'DUE TODAY', '#B45309')));
+  dueSoon.forEach(i => parts.push(row(i, 'DUE SOON', '#0369A1')));
+  el.innerHTML = parts.length ? parts.join('') : '<li class="muted">Koi pending reminder nahi — saari issued books on time / no due date.</li>';
+}

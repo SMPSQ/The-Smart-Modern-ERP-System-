@@ -106,6 +106,7 @@
     <button type="button" class="tab-btn active" data-tab="books">Books</button>
     <button type="button" class="tab-btn" data-tab="issue">Issue / Return</button>
     <button type="button" class="tab-btn" data-tab="issued">Currently Issued</button>
+    <button type="button" class="tab-btn" data-tab="reminders">Reminders</button>
     <button type="button" class="tab-btn" data-tab="history">History</button>
     <button type="button" class="tab-btn" data-tab="barcodes">Barcodes</button>
   </div>
@@ -162,6 +163,17 @@
         </div>
         <input type="search" id="auto-student-search" placeholder="Search student name / class / ID…" style="width:100%;padding:0.45rem 0.65rem;border:1px solid #E2E6ED;border-radius:8px;margin-bottom:0.35rem;" />
       </div>
+      <div id="auto-due-row" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem;align-items:center;">
+        <label style="font-size:0.72rem;font-weight:700;color:#0F766E;">Return by (days)</label>
+        <select id="auto-due-days" style="padding:0.45rem;border-radius:8px;border:1px solid #E2E6ED;">
+          <option value="3">3 days</option>
+          <option value="7" selected>7 days</option>
+          <option value="14">14 days</option>
+          <option value="30">30 days</option>
+          <option value="0">Custom date</option>
+        </select>
+        <input type="date" id="auto-due-date" title="Due date" style="padding:0.45rem;border-radius:8px;border:1px solid #E2E6ED;" />
+      </div>
       <div id="auto-add-extra" style="display:none;margin-top:0.5rem;">
         <input type="text" id="auto-title" placeholder="Book title (nayi book)" style="width:100%;padding:0.55rem;border:1px solid #E2E6ED;border-radius:8px;margin-bottom:0.35rem;" />
         <input type="text" id="auto-author" placeholder="Author" style="width:100%;padding:0.55rem;border:1px solid #E2E6ED;border-radius:8px;" />
@@ -199,6 +211,18 @@
     </div>
   </div>
 
+    <div class="tab-panel" id="tab-reminders">
+    <div class="form-card">
+      <h3>Return reminders</h3>
+      <p class="hint">Due date guzar gayi / aaj due — student + book. Issue ke time return date set hoti hai.</p>
+      <div class="kpi-row" style="margin-bottom:0.75rem;">
+        <div class="kpi-mini"><div class="label">Overdue</div><div class="value" id="kpi-overdue" style="color:#B91C1C;">0</div></div>
+        <div class="kpi-mini"><div class="label">Due today</div><div class="value" id="kpi-due-today">0</div></div>
+        <div class="kpi-mini"><div class="label">Due in 3 days</div><div class="value" id="kpi-due-soon">0</div></div>
+      </div>
+      <ul id="reminder-list" class="data-list"></ul>
+    </div>
+  </div>
   <div class="tab-panel" id="tab-history">
     <div class="form-card">
       <h3>Issue / Return History</h3>
@@ -208,7 +232,7 @@
   <div class="tab-panel" id="tab-barcodes">
     <div class="form-card">
       <h3>Book Barcodes</h3>
-      <p class="hint">Har book copy ke liye labels. Issue/Return barcode scan se.</p>
+      <p class="hint">Copies jitni → utni compact barcode labels (jaise shop). Issue: student select + scan = auto. Return due date + reminders.</p>
       <button type="button" class="mini-btn edit" id="btn-lib-gen-missing">Generate missing barcodes</button>
       <button type="button" class="mini-btn" id="btn-lib-print-labels">Print unit labels</button>
       <div id="lib-barcode-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:0.75rem;margin-top:0.75rem;"></div>
