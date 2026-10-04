@@ -198,7 +198,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
           <div class="field"><label>Full Name <span class="req">*</span></label><input type="text" id="adm-name" required /></div>
           <div class="field"><label>Phone <span class="req">*</span></label><input type="tel" id="adm-phone" required /></div>
           <div class="field"><label>Guardian</label><input type="text" id="adm-guardian" /></div>
-          <div class="field"><label>Course <span class="req">*</span></label><input type="text" id="adm-course" required placeholder="e.g. Mathematics" / list="subject-pick-list" autocomplete="off"></div>
+          <div class="field"><label>Course <span class="req">*</span></label><input type="text" id="adm-course" required placeholder="Type or select course" list="course-pick-list" autocomplete="off" /></div>
         </div>
         <div class="form-row">
           <div class="field"><label>Timing</label><input type="text" id="adm-timing" placeholder="4-6 PM" /></div>
@@ -378,6 +378,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
   <div class="tab-panel" id="tab-courses">
     <div class="form-card">
       <h3>Courses</h3>
+      <p class="hint">Course yahan add karein YA admission/batch pe type karein — auto save ho jayega. Select list se bhi choose karein.</p>
       <form id="course-form" class="inline-form">
         <input type="text" id="course-name" placeholder="Course name" required />
         <input type="text" id="course-duration" placeholder="Duration (e.g. 3 months)" />
@@ -409,7 +410,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
       <h3>Batches</h3>
       <form id="batch-form" class="inline-form">
         <input type="text" id="batch-name" placeholder="Batch name" required />
-        <input type="text" id="batch-course" placeholder="Course" required />
+        <input type="text" id="batch-course" placeholder="Type or select course" required list="course-pick-list" autocomplete="off" />
         <input type="text" id="batch-teacher" placeholder="Teacher" />
         <input type="text" id="batch-timing" placeholder="Timing (e.g. 4-6 PM)" />
         <input type="text" id="batch-days" placeholder="Days (Mon-Wed-Fri)" />
@@ -511,6 +512,7 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
   </div>
 
 <datalist id="subject-pick-list"></datalist>
+<datalist id="course-pick-list"></datalist>
 </main>
 
 <script>

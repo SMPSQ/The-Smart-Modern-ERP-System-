@@ -124,13 +124,15 @@ if (admissionForm) {
     try {
     const _admName = document.getElementById('adm-name')?.value?.trim();
     if (!_admName) { alert('Name required'); return; }
+    const _course = (document.getElementById('adm-course')?.value || '').trim();
+    if (typeof ensureCourseSaved === 'function') await ensureCourseSaved(_course);
     await saveLocal('admissions', {
       name: document.getElementById('adm-name').value.trim(),
       phone: document.getElementById('adm-phone').value.trim(),
       bform: document.getElementById('adm-cnic').value.trim(),
       gender: document.getElementById('adm-gender').value,
-      course: document.getElementById('adm-course').value.trim(),
-      className: document.getElementById('adm-course').value.trim(),
+      course: _course || (document.getElementById('adm-course')?.value || '').trim(),
+      className: _course || (document.getElementById('adm-course')?.value || '').trim(),
       timing: document.getElementById('adm-timing').value.trim(),
       guardianName: document.getElementById('adm-guardian').value.trim(),
       admissionDate: document.getElementById('adm-date').value,
@@ -741,25 +743,37 @@ if (expenseForm) {
 
 async function fillCourseDatalist() {
   const courses = await getModuleRecords('courses');
-  const names = [...new Set(courses.map(c => c.name).filter(Boolean))].sort();
+  const names = [...new Set(courses.map(c => c.name).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const dl = document.getElementById('course-pick-list');
   if (dl) dl.innerHTML = names.map(n => `<option value="${esc(n)}"></option>`).join('');
-  // auto-save when new course typed on admission
-  const adm = document.getElementById('adm-course');
-  if (adm && !adm.dataset.autoSaveBound) {
-    adm.dataset.autoSaveBound = '1';
-    adm.addEventListener('change', async () => {
-      const name = adm.value.trim();
-      if (!name || name.length < 2) return;
-      const all = await getModuleRecords('courses');
-      if (all.some(c => (c.name||'').toLowerCase() === name.toLowerCase())) return;
-      await saveLocal('courses', { name, module: MODULE, fee: 0 });
-      await fillCourseDatalist();
-      if (typeof renderCourses === 'function') renderCourses();
-      runSync();
-    });
-  }
 }
+async function ensureCourseSaved(name) {
+  name = (name || '').trim();
+  if (!name || name.length < 2) return;
+  const all = await getModuleRecords('courses');
+  if (all.some(c => (c.name || '').toLowerCase() === name.toLowerCase())) return;
+  await saveLocal('courses', { name, module: MODULE, fee: 0 });
+  await fillCourseDatalist();
+  if (typeof renderCourses === 'function') await renderCourses();
+  try { runSync(); } catch (_) {}
+}
+function bindCourseAutoSave(id) {
+  const el = document.getElementById(id);
+  if (!el || el.dataset.courseBound === '1') return;
+  el.dataset.courseBound = '1';
+  el.addEventListener('change', async () => ensureCourseSaved(el.value));
+  el.addEventListener('blur', async () => ensureCourseSaved(el.value));
+}
+async function seedDefaultTradingCourses() {
+  const all = await getModuleRecords('courses');
+  if (all.length > 0) return;
+  for (const name of ['Forex Basics', 'Advanced Forex', 'Crypto Trading', 'Stock Market', 'Technical Analysis', 'Risk Management']) {
+    await saveLocal('courses', { name, module: MODULE, fee: 0 });
+  }
+  await fillCourseDatalist();
+  if (typeof renderCourses === 'function') await renderCourses();
+}
+
 
 
 
@@ -897,3 +911,10 @@ renderHw();
 renderInvAssets();
 if (typeof renderCourses === 'function') renderCourses();
 else if (typeof fillCourseDatalist === 'function') fillCourseDatalist();
+
+seedDefaultTradingCourses().then(() => {
+  fillCourseDatalist();
+  bindCourseAutoSave('adm-course');
+  bindCourseAutoSave('batch-course');
+  bindCourseAutoSave('course-name');
+});

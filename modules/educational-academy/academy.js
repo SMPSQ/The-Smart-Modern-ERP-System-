@@ -127,6 +127,7 @@ if (admissionForm) {
       phone: document.getElementById('adm-phone').value.trim(),
       guardianName: document.getElementById('adm-guardian').value.trim(),
       course: document.getElementById('adm-course').value.trim(),
+      // course auto-saved via ensureCourseSaved on change
       className: document.getElementById('adm-course').value.trim(),
       timing: document.getElementById('adm-timing').value.trim(),
       admissionDate: document.getElementById('adm-date').value,
@@ -1049,10 +1050,20 @@ async function renderSubjects() {
     btn.addEventListener('click', async () => {
       if (!confirm('Delete subject?')) return;
       await deleteLocal('subjects', btn.dataset.delSubj);
-      await renderSubjects(); await fillSubjectDatalists(); runSync();
+      await renderSubjects(); await fillSubjectDatalists();
+  await seedDefaultCourses(['Mathematics', 'English', 'Science', 'Computer', 'Islamic Studies', 'Urdu']);
+  await fillCourseDatalist();
+  bindCourseAutoSave('adm-course');
+  bindCourseAutoSave('batch-course');
+  bindCourseAutoSave('course-name'); runSync();
     });
   });
   await fillSubjectDatalists();
+  await seedDefaultCourses(['Mathematics', 'English', 'Science', 'Computer', 'Islamic Studies', 'Urdu']);
+  await fillCourseDatalist();
+  bindCourseAutoSave('adm-course');
+  bindCourseAutoSave('batch-course');
+  bindCourseAutoSave('course-name');
 }
 
 const subjectForm = document.getElementById('subject-form');
@@ -1078,7 +1089,7 @@ if (subjectForm) {
 }
 
 // Auto-save subject when typing in tutor-subject etc and blurring with new value
-['tutor-subject', 'exam-subject', 'hw-subject', 'adm-course'].forEach(id => {
+['tutor-subject', 'exam-subject', 'hw-subject', '].forEach(id => {
   const el = document.getElementById(id);
   if (!el) return;
   el.addEventListener('change', async () => {
@@ -1088,7 +1099,57 @@ if (subjectForm) {
     if (all.some(s => (s.name||'').toLowerCase() === name.toLowerCase())) return;
     await saveLocal('subjects', { name, module: MODULE });
     await fillSubjectDatalists();
+  await seedDefaultCourses(['Mathematics', 'English', 'Science', 'Computer', 'Islamic Studies', 'Urdu']);
+  await fillCourseDatalist();
+  bindCourseAutoSave('adm-course');
+  bindCourseAutoSave('batch-course');
+  bindCourseAutoSave('course-name');
     runSync();
   });
 });
+
+
+
+// ========== COURSE DATALIST + AUTO-SAVE ==========
+async function fillCourseDatalist() {
+  const all = await getAllLocal('courses');
+  const list = all.filter(r => !r.module || r.module === MODULE);
+  const names = [...new Set(list.map(c => c.name).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const dl = document.getElementById('course-pick-list');
+  if (dl) dl.innerHTML = names.map(n => `<option value="${esc(n)}"></option>`).join('');
+}
+
+async function ensureCourseSaved(name) {
+  name = (name || '').trim();
+  if (!name || name.length < 2) return;
+  const all = (await getAllLocal('courses')).filter(r => !r.module || r.module === MODULE);
+  if (all.some(c => (c.name || '').toLowerCase() === name.toLowerCase())) return;
+  await saveLocal('courses', { name, module: MODULE, fee: 0, duration: '' });
+  await fillCourseDatalist();
+  if (typeof renderCourses === 'function') await renderCourses();
+  try { runSync(); } catch (_) {}
+}
+
+function bindCourseAutoSave(id) {
+  const el = document.getElementById(id);
+  if (!el || el.dataset.courseBound === '1') return;
+  el.dataset.courseBound = '1';
+  el.addEventListener('change', async () => {
+    await ensureCourseSaved(el.value);
+  });
+  el.addEventListener('blur', async () => {
+    await ensureCourseSaved(el.value);
+  });
+}
+
+// Seed default academy courses once
+async function seedDefaultCourses(defaults) {
+  const all = (await getAllLocal('courses')).filter(r => !r.module || r.module === MODULE);
+  if (all.length > 0) return;
+  for (const name of defaults) {
+    await saveLocal('courses', { name, module: MODULE, fee: 0 });
+  }
+  await fillCourseDatalist();
+  if (typeof renderCourses === 'function') await renderCourses();
+}
 
