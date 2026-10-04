@@ -361,15 +361,6 @@ document.getElementById('btn-gen-book-bc')?.addEventListener('click', () => {
   if (el) el.value = genBookBarcode();
 });
 
-async function findBookByBarcode(code) {
-  code = String(code||'').trim().toLowerCase();
-  if (!code) return null;
-  const books = await getBooks();
-  return books.find(b =>
-    String(b.barcode||'').toLowerCase() === code ||
-    String(b.isbn||'').toLowerCase() === code
-  );
-}
 
 
 
@@ -551,10 +542,39 @@ document.getElementById('auto-due-days')?.addEventListener('change', () => {
   if (manDue && !manDue.value) manDue.value = addDays(todayStr(), 7);
 })();
 
+
+async function findBookByBarcode(code) {
+  code = String(code || '').trim().replace(/[\u0000-\u001F\u007F]/g, '');
+  if (!code) return null;
+  const books = await getBooks();
+  const c = code.toLowerCase();
+  const c2 = c.replace(/\s+/g, '');
+  let hit = books.find(b => {
+    const bc = String(b.barcode || '').trim().toLowerCase();
+    const isbn = String(b.isbn || '').trim().toLowerCase();
+    const id = String(b.id || '').trim().toLowerCase();
+    return bc === c || isbn === c || id === c || bc === c2 || isbn === c2;
+  });
+  if (hit) return hit;
+  if (c.length >= 4) {
+    hit = books.find(b => {
+      const bc = String(b.barcode || b.isbn || '').trim().toLowerCase();
+      return bc && (bc.endsWith(c) || c.endsWith(bc) || bc.includes(c));
+    });
+  }
+  return hit || null;
+}
+
 async function autoIssueByBarcode(code) {
   const book = await findBookByBarcode(code);
   if (!book) {
-    setScanFeedback('Book not found: ' + code + ' — pehle ADD mode se book save karein', false);
+    const allB = await getBooks();
+    const samples = allB.map(b => (b.barcode || b.isbn || '').trim()).filter(Boolean).slice(0, 5);
+    setScanFeedback(
+      'Book not found: "' + code + '". ' +
+      (samples.length ? ('Saved barcodes: ' + samples.join(', ')) : 'Koi barcode save nahi — ADD/Books se barcode lagao.'),
+      false
+    );
     beep(false);
     return;
   }
@@ -679,8 +699,13 @@ async function autoAddBookByBarcode(code) {
 }
 
 async function handleAutoScan(code) {
-  code = String(code || '').trim();
+  code = String(code || '').replace(/[\u0000-\u001F\u007F]/g, '').trim();
   if (!code) return;
+  if (code.length < 3 && scanMode !== 'add') {
+    setScanFeedback('Scan incomplete ("' + code + '") — full barcode dubara scan karein', false);
+    beep(false);
+    return;
+  }
   if (scanMode === 'issue') await autoIssueByBarcode(code);
   else if (scanMode === 'return') await autoReturnByBarcode(code);
   else if (scanMode === 'add') await autoAddBookByBarcode(code);
@@ -691,27 +716,39 @@ function bindAutoScanInput() {
   if (!scan || scan.dataset.bound === '1') return;
   scan.dataset.bound = '1';
 
-  // Scanners send characters then Enter
-  scan.addEventListener('keydown', async (e) => {
+  let buffer = '';
+  let bufTimer = null;
+
+  function flushBuffer() {
+    const code = (buffer || scan.value || '').trim();
+    buffer = '';
+    scan.value = '';
+    if (code) handleAutoScan(code);
+    scan.focus();
+  }
+
+  scan.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      const code = scan.value.trim();
-      scan.value = '';
-      await handleAutoScan(code);
-      scan.focus();
+      if (bufTimer) clearTimeout(bufTimer);
+      buffer = (buffer + scan.value).trim() || scan.value.trim();
+      flushBuffer();
     }
   });
 
-  // Some scanners fire change without Enter handling
-  scan.addEventListener('change', async () => {
-    const code = scan.value.trim();
-    if (!code) return;
-    scan.value = '';
-    await handleAutoScan(code);
-    scan.focus();
+  scan.addEventListener('input', () => {
+    if (bufTimer) clearTimeout(bufTimer);
+    bufTimer = setTimeout(() => {
+      const v = scan.value.trim();
+      if (v.length >= 4) {
+        buffer = v;
+        flushBuffer();
+      }
+    }, 350);
   });
 }
+
 
 bindAutoScanInput();
 

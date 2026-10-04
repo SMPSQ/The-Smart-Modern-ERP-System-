@@ -6,7 +6,7 @@
   if (!('serviceWorker' in navigator)) return;
 
   // === MUST match sw.js CACHE_VERSION without leading "v" ===
-  const APP_VERSION = '6.5.5';
+  const APP_VERSION = '6.6.1';
   const CHECK_MS = 20000; // 20 seconds
   let _reloading = false;
   let _bannerShown = false;

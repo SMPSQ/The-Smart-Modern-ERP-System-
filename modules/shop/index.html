@@ -103,6 +103,9 @@
     <div class="kpi-mini"><div class="label">Products</div><div class="value" id="kpi-products">0</div></div>
     <div class="kpi-mini"><div class="label">Low Stock</div><div class="value" id="kpi-low" style="color:#B91C1C;">0</div></div>
   </div>
+  <div id="stock-live-banner" style="display:flex;flex-wrap:wrap;gap:0.75rem 1.25rem;align-items:center;background:#ECFDF5;border:1px solid #6EE7B7;border-radius:12px;padding:0.65rem 1rem;margin-bottom:0.85rem;font-size:0.85rem;color:#065F46;">
+      <span><b>Stock:</b> loading…</span>
+    </div>
   <div class="tabs">
     <button type="button" class="tab-btn active" data-tab="pos">Sell (POS)</button>
     <button type="button" class="tab-btn" data-tab="products">Products</button>
@@ -116,7 +119,7 @@
     <div class="pos-grid">
       <div class="form-card">
         <h3>Scan to sell (Amazon-style)</h3>
-        <p class="hint" style="margin-top:-0.4rem;">Barcode scan / type → Enter = 1 unit cart. Same code dobara = +1. Phir Complete Sale.</p>
+        <p class="hint" style="margin-top:-0.4rem;">Scan = 1 unit. Product pe buttons: 1 · 2 · 3 · 5 · 10 · Qty… Cart mein +/− se bhi units badlo.</p>
         <input type="text" id="pos-barcode" placeholder="📷 Scan product barcode here…" autocomplete="off" autofocus
           style="width:100%;margin-bottom:0.5rem;padding:0.85rem 1rem;border:3px solid #C9A227;border-radius:12px;font-family:inherit;font-size:1.15rem;font-weight:700;letter-spacing:0.04em;background:#FFFBEB;" />
         <div id="pos-last-scan" style="min-height:1.4rem;font-size:0.85rem;color:#059669;font-weight:600;margin-bottom:0.5rem;"></div>
@@ -160,6 +163,7 @@
         <input type="number" id="prod-cost" placeholder="Cost / purchase price (Rs)" min="0" step="1" />
         <input type="number" id="prod-price" placeholder="Sale price (Rs) *" min="0" step="1" required />
         <input type="number" id="prod-stock" placeholder="Opening stock / units" min="0" step="1" value="1" />
+        <span id="prod-stock-hint" style="flex:1 1 100%;font-size:0.78rem;font-weight:700;color:#059669;">Stock set karein — utni labels print hongi</span>
         <input type="number" id="prod-label-qty" placeholder="Barcode labels count" min="1" step="1" title="Kitni stickers print karni hain (default = stock)" />
         <input type="number" id="prod-low" placeholder="Low stock alert" min="0" value="5" />
         <input type="text" id="prod-unit" placeholder="Unit (pcs, box…)" value="pcs" />
@@ -219,7 +223,7 @@
   <div class="tab-panel" id="tab-barcodes">
     <div class="form-card">
       <h3>Product Barcodes — generate &amp; print labels</h3>
-      <p class="hint">Amazon-style: 1 product = 1 barcode (SKU). Stock 10 → Print 10 labels, har pcs pe same barcode chipkayein. POS scan = 1 unit sale.</p>
+      <p class="hint">Compact labels (chhote stickers). 1 product = 1 SKU. Stock 10 → Print 10 labels. Upar stock banner se current stock dekho.</p>
       <div class="filter-row">
         <button type="button" class="mini-btn edit" id="btn-gen-all-missing">Generate missing barcodes</button>
         <button type="button" class="mini-btn edit" id="btn-print-barcodes">Print all unit labels</button>

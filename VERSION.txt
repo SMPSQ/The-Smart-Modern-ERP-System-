@@ -1,2 +1,3 @@
-v6.5.5
-Cloud PULL sync Firebase → app
+v6.6.1
+Future Tech ERP — Full production package
+Live audit fixes: cloud pull+push, KPI, admission, skipQueue, auto-cache

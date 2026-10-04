@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Future Tech Public School — ERP</title>
+<title>Future Tech Public School ERP</title>
 <meta name="theme-color" content="#0A1628" />
 <link rel="manifest" href="../../manifest.json" />
 <link rel="icon" href="../../icons/logo-future-tech.png" />
@@ -992,5 +992,16 @@ ul.data-list li .mini-btn:not(.edit):not(.ghost):not(.danger) {
 <script type="module" src="../../js/auth.js"></script>
 <script type="module" src="school.js"></script>
 <script src="../../js/sw-register.js"></script>
+<script>
+(function(){
+  document.title = 'Future Tech Public School ERP';
+  // Prevent showing long path in some embeds
+  try {
+    if (window.history && window.history.replaceState) {
+      /* keep path for routing; only title cleaned */
+    }
+  } catch(e) {}
+})();
+</script>
 </body>
 </html>

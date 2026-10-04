@@ -136,7 +136,7 @@ export async function pullFromCloud() {
             if (local && localTs > remoteTs) continue; // local newer — keep local
             // saveLocal will re-queue for push — mark synced after to avoid loop
             data.synced = true;
-            await saveLocal(storeName, data);
+            await saveLocal(storeName, data, { skipQueue: true });
             try {
               await markSynced(storeName, data.id);
             } catch (_) {}
@@ -319,16 +319,18 @@ window.addEventListener('online', () => {
 window.addEventListener('offline', () => setPill('offline'));
 window.addEventListener('load', () => {
   bindSyncButton();
-  // Push first, then pull
-  drainQueue().then(() => pullFromCloud()).then(() => {
-    try {
-      if (typeof window.__ft_reloadKPIs === 'function') window.__ft_reloadKPIs();
-    } catch (_) {}
-  });
+  // Pull first (show cloud data fast), then push local queue
+  pullFromCloud()
+    .then(() => {
+      try { if (typeof window.__ft_reloadKPIs === 'function') window.__ft_reloadKPIs(); } catch (_) {}
+      return drainQueue();
+    })
+    .then(() => {
+      try { if (typeof window.__ft_reloadKPIs === 'function') window.__ft_reloadKPIs(); } catch (_) {}
+    })
+    .catch((e) => console.warn('[Sync] startup', e));
 });
-setInterval(() => {
-  drainQueue();
-}, 20000);
+setInterval(() => { drainQueue(); }, 12000);
 // Pull every 2 min
 setInterval(() => {
   pullFromCloud().then(() => {
@@ -336,6 +338,6 @@ setInterval(() => {
       if (typeof window.__ft_reloadKPIs === 'function') window.__ft_reloadKPIs();
     } catch (_) {}
   });
-}, 120000);
+}, 45000);
 
 bindSyncButton();

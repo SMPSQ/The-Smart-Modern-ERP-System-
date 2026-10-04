@@ -113,30 +113,31 @@ function barcodeLabelHtml(p, copyIndex, totalUnits) {
   if (!code) return '';
   const unitLine =
     totalUnits > 1 && copyIndex != null
-      ? '<div style="font-size:9px;color:#64748B;">Unit ' +
+      ? '<div style="font-size:7px;color:#94A3B8;line-height:1;">' +
         (copyIndex + 1) +
-        ' of ' +
+        '/' +
         totalUnits +
         '</div>'
       : '';
+  // Compact label ~120px wide for sticker sheets
   return (
-    '<div class="bc-label" style="width:200px;border:1px solid #333;border-radius:6px;padding:8px 6px;text-align:center;background:#fff;page-break-inside:avoid;margin:4px;">' +
-    '<div style="font-size:9px;font-weight:800;letter-spacing:1px;color:#0A1628;">FUTURE TECH SHOP</div>' +
-    '<div style="font-weight:800;font-size:11px;color:#0A1628;margin:4px 0;line-height:1.2;">' +
+    '<div class="bc-label" style="width:120px;border:1px solid #333;border-radius:3px;padding:3px 2px;text-align:center;background:#fff;page-break-inside:avoid;margin:2px;line-height:1.15;">' +
+    '<div style="font-size:7px;font-weight:800;letter-spacing:0.3px;color:#0A1628;">FT SHOP</div>' +
+    '<div style="font-weight:700;font-size:8px;color:#0A1628;margin:1px 0;max-height:20px;overflow:hidden;">' +
     esc(p.name || '') +
     '</div>' +
     '<img src="' +
     barcodeImgUrl(code) +
     '" alt="' +
     esc(code) +
-    '" style="max-width:180px;height:48px;object-fit:contain;" ' +
+    '" style="max-width:112px;height:28px;object-fit:contain;" ' +
     'onerror="this.onerror=null;this.src=\'' +
     barcodeImgUrlFallback(code) +
     '\'" />' +
-    '<div style="font-family:monospace;font-size:11px;font-weight:800;letter-spacing:1px;margin-top:2px;">' +
+    '<div style="font-family:monospace;font-size:7px;font-weight:700;letter-spacing:0.2px;">' +
     esc(code) +
     '</div>' +
-    '<div style="font-size:12px;font-weight:800;color:#B45309;">' +
+    '<div style="font-size:8px;font-weight:800;color:#B45309;">' +
     money(p.price) +
     '</div>' +
     unitLine +
@@ -144,7 +145,6 @@ function barcodeLabelHtml(p, copyIndex, totalUnits) {
   );
 }
 
-/** Units for labels = stock (Amazon: 10 pens → 10 stickers). labelQty override allowed. */
 function unitCount(p) {
   const n = Number(
     p.labelQty != null && p.labelQty !== ''
@@ -175,8 +175,8 @@ function openLabelPrintWindow(title, body, total) {
       esc(title) +
       '</title><style>' +
       'body{font-family:system-ui,sans-serif;padding:12px;margin:0;background:#f8fafc;}' +
-      '.grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;}' +
-      '.bc-label{box-shadow:0 1px 3px rgba(0,0,0,.08);}' +
+      '.grid{display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-start;}' +
+      '.bc-label{box-shadow:none;}' +
       '@media print{body{padding:0;background:#fff;}.no-print{display:none!important;}.grid{gap:4px;}}' +
       '</style></head><body>' +
       '<div class="no-print" style="margin-bottom:12px;padding:10px;background:#0A1628;color:#E8D48B;border-radius:8px;">' +
@@ -205,6 +205,23 @@ async function ensureProductBarcode(p) {
   await saveLocal('shopProducts', p);
   return p;
 }
+
+document.getElementById('prod-stock')?.addEventListener('input', () => {
+  const n = Number(document.getElementById('prod-stock')?.value || 0);
+  const hint = document.getElementById('prod-stock-hint');
+  if (hint) {
+    hint.textContent = n > 0
+      ? 'Is product ka stock: ' + n + ' units (print ' + n + ' barcode labels)'
+      : 'Stock 0 — pehle units add karein';
+    hint.style.color = n > 0 ? '#059669' : '#B45309';
+  }
+  const lq = document.getElementById('prod-label-qty');
+  if (lq && !lq.dataset.userEdit) lq.value = n > 0 ? n : 1;
+});
+document.getElementById('prod-label-qty')?.addEventListener('input', () => {
+  const lq = document.getElementById('prod-label-qty');
+  if (lq) lq.dataset.userEdit = '1';
+});
 
 document.getElementById('btn-gen-barcode')?.addEventListener('click', () => {
   const el = document.getElementById('prod-sku');
@@ -419,6 +436,29 @@ function printSaleReceipt(sale) {
   w.document.close();
 }
 
+
+async function updateStockBanner() {
+  const el = document.getElementById('stock-live-banner');
+  if (!el) return;
+  const products = await getProducts();
+  const totalUnits = products.reduce((s, p) => s + Number(p.stock || 0), 0);
+  const totalVal = products.reduce((s, p) => s + Number(p.stock || 0) * Number(p.cost || 0), 0);
+  const low = products.filter(p => Number(p.stock || 0) <= Number(p.lowStock ?? 5)).length;
+  el.innerHTML =
+    '<span><b>Stock abhi:</b> ' +
+    products.length +
+    ' products · <b>' +
+    totalUnits +
+    ' units</b></span>' +
+    '<span>Value (cost): <b>' +
+    money(totalVal) +
+    '</b></span>' +
+    (low
+      ? '<span style="color:#B91C1C;font-weight:800;">Low stock: ' + low + '</span>'
+      : '<span style="color:#059669;font-weight:700;">Stock OK</span>');
+}
+
+
 const productForm = document.getElementById('product-form');
 const productList = document.getElementById('product-list');
 
@@ -594,31 +634,108 @@ const cartTotalEl = document.getElementById('cart-total');
 const cartProfitEl = document.getElementById('cart-profit');
 const btnCheckout = document.getElementById('btn-checkout');
 
+
+async function addProductToCart(p, qty) {
+  qty = Math.max(1, Math.floor(Number(qty) || 1));
+  if (!p || Number(p.stock || 0) <= 0) {
+    alert('Out of stock');
+    return false;
+  }
+  const existing = cart.find((c) => c.productId === p.id);
+  const inCart = existing ? existing.qty : 0;
+  if (inCart + qty > Number(p.stock || 0)) {
+    alert('Stock limit: only ' + p.stock + ' available (cart mein pehle se ' + inCart + ')');
+    return false;
+  }
+  if (existing) existing.qty += qty;
+  else
+    cart.push({
+      productId: p.id,
+      name: p.name,
+      price: Number(p.price || 0),
+      cost: Number(p.cost || 0),
+      qty: qty,
+      sku: p.sku || p.barcode || ''
+    });
+  renderCart();
+  return true;
+}
+
 async function renderPosProducts() {
   if (!posProducts) return;
   const q = (document.getElementById('pos-search')?.value || '').toLowerCase();
   let list = await getProducts();
-  if (q) list = list.filter(p => (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q));
+  if (q)
+    list = list.filter(
+      (p) =>
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.sku || '').toLowerCase().includes(q) ||
+        (p.barcode || '').toLowerCase().includes(q)
+    );
   const empty = document.getElementById('pos-empty');
-  if (!list.length) { posProducts.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (!list.length) {
+    posProducts.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
   if (empty) empty.style.display = 'none';
-  posProducts.innerHTML = list.map(p => {
-    const out = Number(p.stock || 0) <= 0;
-    return '<div class="product-chip" data-add="' + p.id + '" style="' + (out ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
-      '<div class="name">' + esc(p.name) + '</div>' +
-      '<div class="price">' + money(p.price) + '</div>' +
-      '<div class="stock">' + (out ? 'Out of stock' : 'Stock: ' + p.stock) + '</div></div>';
-  }).join('');
-  posProducts.querySelectorAll('[data-add]').forEach(el => {
-    el.addEventListener('click', async () => {
-      const p = await getLocal('shopProducts', el.dataset.add);
-      if (!p || Number(p.stock || 0) <= 0) return;
-      const existing = cart.find(c => c.productId === p.id);
-      const inCart = existing ? existing.qty : 0;
-      if (inCart + 1 > Number(p.stock || 0)) { alert('Stock limit: only ' + p.stock + ' available'); return; }
-      if (existing) existing.qty += 1;
-      else cart.push({ productId: p.id, name: p.name, price: Number(p.price || 0), cost: Number(p.cost || 0), qty: 1 });
-      renderCart();
+  posProducts.innerHTML = list
+    .map((p) => {
+      const out = Number(p.stock || 0) <= 0;
+      const stock = Number(p.stock || 0);
+      return (
+        '<div class="product-chip" style="cursor:default;' +
+        (out ? 'opacity:0.45;' : '') +
+        '">' +
+        '<div class="name">' +
+        esc(p.name) +
+        '</div>' +
+        '<div class="price">' +
+        money(p.price) +
+        '</div>' +
+        '<div class="stock">' +
+        (out ? 'Out of stock' : 'Stock: ' + stock) +
+        '</div>' +
+        (out
+          ? ''
+          : '<div class="qty-row" style="display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:6px;">' +
+            [1, 2, 3, 5, 10]
+              .map(
+                (n) =>
+                  '<button type="button" class="qty-btn" data-add="' +
+                  p.id +
+                  '" data-qty="' +
+                  n +
+                  '" style="min-width:28px;padding:3px 6px;border:1px solid #C9A227;background:#FFFBEB;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;color:#0A1628;">' +
+                  n +
+                  '</button>'
+              )
+              .join('') +
+            '<button type="button" class="qty-btn" data-add="' +
+            p.id +
+            '" data-qty="custom" style="padding:3px 6px;border:1px solid #0A1628;background:#0A1628;color:#E8D48B;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;">Qty…</button>' +
+            '</div>') +
+        '</div>'
+      );
+    })
+    .join('');
+
+  posProducts.querySelectorAll('.qty-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const p = await getLocal('shopProducts', btn.dataset.add);
+      if (!p) return;
+      let qty = btn.dataset.qty;
+      if (qty === 'custom') {
+        const max = Number(p.stock || 0);
+        const raw = prompt(p.name + '\n\nKitni units sale? (max ' + max + ')', '1');
+        if (raw === null) return;
+        qty = parseInt(raw, 10);
+        if (!qty || qty < 1) return;
+      } else {
+        qty = Number(qty);
+      }
+      await addProductToCart(p, qty);
     });
   });
 }
@@ -628,25 +745,97 @@ document.getElementById('pos-search')?.addEventListener('input', () => renderPos
 function renderCart() {
   if (!cartList) return;
   if (!cart.length) {
-    cartList.innerHTML = '<div style="opacity:0.6;font-size:0.85rem;">Cart empty</div>';
+    cartList.innerHTML = '<div style="opacity:0.6;font-size:0.85rem;">Cart empty — qty 1/2/3/5/10 dabao</div>';
     if (cartTotalEl) cartTotalEl.textContent = money(0);
     if (cartProfitEl) cartProfitEl.textContent = money(0);
     if (btnCheckout) btnCheckout.disabled = true;
     return;
   }
-  cartList.innerHTML = cart.map((c, i) =>
-    '<div class="cart-item"><span>' + esc(c.name) + ' x ' + c.qty + '</span><span>' + money(c.price * c.qty) +
-    ' <button type="button" data-rm="' + i + '" style="margin-left:6px;background:#B91C1C;color:#fff;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:11px;">X</button></span></div>'
-  ).join('');
+  cartList.innerHTML = cart
+    .map((c, i) => {
+      return (
+        '<div class="cart-item" style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.1);">' +
+        '<span style="flex:1;min-width:80px;">' +
+        esc(c.name) +
+        '</span>' +
+        '<span style="display:flex;align-items:center;gap:4px;">' +
+        '<button type="button" data-dec="' +
+        i +
+        '" style="width:26px;height:26px;border:none;border-radius:6px;background:#334155;color:#fff;font-weight:800;cursor:pointer;">−</button>' +
+        '<input type="number" min="1" data-setqty="' +
+        i +
+        '" value="' +
+        c.qty +
+        '" style="width:44px;text-align:center;border-radius:6px;border:none;padding:4px;font-weight:800;" />' +
+        '<button type="button" data-inc="' +
+        i +
+        '" style="width:26px;height:26px;border:none;border-radius:6px;background:#C9A227;color:#0A1628;font-weight:800;cursor:pointer;">+</button>' +
+        '</span>' +
+        '<span style="font-weight:700;min-width:60px;text-align:right;">' +
+        money(c.price * c.qty) +
+        '</span>' +
+        '<button type="button" data-rm="' +
+        i +
+        '" style="background:#B91C1C;color:#fff;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:11px;">X</button>' +
+        '</div>'
+      );
+    })
+    .join('');
   const total = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const profit = cart.reduce((s, c) => s + (c.price - c.cost) * c.qty, 0);
   if (cartTotalEl) cartTotalEl.textContent = money(total);
   if (cartProfitEl) cartProfitEl.textContent = money(profit);
   if (btnCheckout) btnCheckout.disabled = false;
-  cartList.querySelectorAll('[data-rm]').forEach(btn => {
-    btn.addEventListener('click', () => { cart.splice(Number(btn.dataset.rm), 1); renderCart(); });
+
+  cartList.querySelectorAll('[data-rm]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      cart.splice(Number(btn.dataset.rm), 1);
+      renderCart();
+    });
+  });
+  cartList.querySelectorAll('[data-inc]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const i = Number(btn.dataset.inc);
+      const line = cart[i];
+      if (!line) return;
+      const p = await getLocal('shopProducts', line.productId);
+      const max = Number(p?.stock || line.qty);
+      if (line.qty + 1 > max) {
+        alert('Stock limit: ' + max);
+        return;
+      }
+      line.qty += 1;
+      renderCart();
+    });
+  });
+  cartList.querySelectorAll('[data-dec]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const i = Number(btn.dataset.dec);
+      if (!cart[i]) return;
+      cart[i].qty -= 1;
+      if (cart[i].qty <= 0) cart.splice(i, 1);
+      renderCart();
+    });
+  });
+  cartList.querySelectorAll('[data-setqty]').forEach((inp) => {
+    inp.addEventListener('change', async () => {
+      const i = Number(inp.dataset.setqty);
+      const line = cart[i];
+      if (!line) return;
+      let q = Math.floor(Number(inp.value) || 1);
+      if (q < 1) q = 1;
+      const p = await getLocal('shopProducts', line.productId);
+      const max = Number(p?.stock || q);
+      if (q > max) {
+        alert('Stock limit: ' + max);
+        q = max;
+      }
+      line.qty = q;
+      renderCart();
+    });
   });
 }
+
 
 document.getElementById('btn-clear-cart')?.addEventListener('click', () => { cart = []; renderCart(); });
 
@@ -784,7 +973,7 @@ async function runPLReport() {
 document.getElementById('pl-run')?.addEventListener('click', () => runPLReport());
 
 async function refreshAll() {
-  await Promise.all([renderKpis(), renderProducts(), renderPosProducts(), renderSales(), fillPurchaseProductSelect()]);
+  await Promise.all([renderKpis(), renderProducts(), renderPosProducts(), renderSales(), fillPurchaseProductSelect(), updateStockBanner()]);
 }
 
 renderCart();

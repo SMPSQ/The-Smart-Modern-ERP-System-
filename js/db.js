@@ -221,7 +221,8 @@ function summarize(record) {
 
 // ========== PUBLIC API ==========
 
-export async function saveLocal(storeName, record) {
+export async function saveLocal(storeName, record, options = {}) {
+  const skipQueue = options.skipQueue === true || record._skipQueue === true || record.synced === true;
   const store = await storeOf(storeName, 'readwrite');
   const id = record.id || uid();
   const isUpdate = !!record.id;
@@ -235,11 +236,12 @@ export async function saveLocal(storeName, record) {
     });
   }
 
+  const { _skipQueue, ...rest } = record;
   const full = {
-    ...record,
+    ...rest,
     id,
-    updatedAt: Date.now(),
-    synced: false
+    updatedAt: record.updatedAt || Date.now(),
+    synced: skipQueue ? true : false
   };
 
   await new Promise((res, rej) => {
@@ -250,10 +252,12 @@ export async function saveLocal(storeName, record) {
 
   mirrorToLocalStorage(storeName, full);
 
-  try {
-    await queueSync(storeName, id, 'upsert', full);
-  } catch (qErr) {
-    console.warn('[DB] queueSync failed (data still saved locally)', qErr);
+  if (!skipQueue) {
+    try {
+      await queueSync(storeName, id, 'upsert', full);
+    } catch (qErr) {
+      console.warn('[DB] queueSync failed (data still saved locally)', qErr);
+    }
   }
   try {
     await logActivity(
