@@ -318,7 +318,7 @@ function genBookBarcode() {
   return 'BK' + stamp + String(Math.floor(Math.random()*1e6)).padStart(6,'0');
 }
 function bookBcImg(code) {
-  return 'https://bwipjs-api.metafloor.com/?bcid=code128&text=' + encodeURIComponent(code) + '&scale=2&height=12&includetext&guardwhitespace';
+  const t = encodeURIComponent(String(code || '0')); return 'https://barcode.tec-it.com/barcode.ashx?data=' + t + '&code=Code128&translate-esc=on&dpi=96&imagetype=Png';
 }
 function bookLabelHtml(b, i) {
   const code = b.barcode || b.isbn || '';
@@ -493,20 +493,7 @@ document.querySelectorAll('.mode-btn').forEach((btn) => {
   });
 });
 
-async function findBookByBarcode(code) {
-  code = String(code || '').trim();
-  if (!code) return null;
-  const books = await getBooks();
-  const c = code.toLowerCase();
-  return (
-    books.find(
-      (b) =>
-        String(b.barcode || '').toLowerCase() === c ||
-        String(b.isbn || '').toLowerCase() === c ||
-        String(b.id || '').toLowerCase() === c
-    ) || null
-  );
-}
+
 
 async function autoIssueByBarcode(code) {
   const book = await findBookByBarcode(code);

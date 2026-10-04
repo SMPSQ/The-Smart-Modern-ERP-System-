@@ -73,74 +73,132 @@ async function renderKpis() {
 }
 
 
-// ========== BARCODE HELPERS ==========
+
+// ========== BARCODE HELPERS (Amazon ASIN-style) ==========
+// 1 product = 1 SKU/barcode (like ASIN). Stock 10 → print 10 identical labels (1 per pcs).
+
 function generateBarcodeCode() {
-  // CODE128-friendly: FT + yymmdd + 6 digits
   const d = new Date();
-  const stamp = String(d.getFullYear()).slice(2) +
+  const stamp =
+    String(d.getFullYear()).slice(2) +
     String(d.getMonth() + 1).padStart(2, '0') +
     String(d.getDate()).padStart(2, '0');
   const rnd = String(Math.floor(Math.random() * 1e6)).padStart(6, '0');
   return 'FT' + stamp + rnd;
 }
 
-function barcodeImgUrl(code, h = 60) {
-  const text = encodeURIComponent(String(code || ''));
-  // Free public barcode API (Code 128)
-  return 'https://bwipjs-api.metafloor.com/?bcid=code128&text=' + text + '&scale=2&height=12&includetext&guardwhitespace';
+/** Reliable barcode image URLs (multi-fallback) */
+function barcodeImgUrl(code) {
+  const text = encodeURIComponent(String(code || '0'));
+  // Primary: barcode API
+  return (
+    'https://barcode.tec-it.com/barcode.ashx?data=' +
+    text +
+    '&code=Code128&translate-esc=on&dpi=96&imagetype=Png'
+  );
 }
 
-function barcodeLabelHtml(p, copyIndex) {
-  const code = p.sku || p.barcode || '';
+function barcodeImgUrlFallback(code) {
+  const text = encodeURIComponent(String(code || '0'));
+  return (
+    'https://bwipjs-api.metafloor.com/?bcid=code128&text=' +
+    text +
+    '&scale=2&height=14&includetext'
+  );
+}
+
+/** Amazon-style label: name + barcode + SKU + price + unit # */
+function barcodeLabelHtml(p, copyIndex, totalUnits) {
+  const code = String(p.sku || p.barcode || '').trim();
   if (!code) return '';
-  const copyTxt = copyIndex != null ? (' · #' + (copyIndex + 1)) : '';
-  return `<div class="bc-label" style="border:1px dashed #94A3B8;border-radius:10px;padding:0.65rem;text-align:center;background:#fff;page-break-inside:avoid;">
-    <div style="font-weight:800;font-size:0.82rem;color:#0A1628;margin-bottom:0.35rem;">${esc(p.name)}${copyTxt}</div>
-    <img src="${barcodeImgUrl(code)}" alt="${esc(code)}" style="max-width:100%;height:52px;object-fit:contain;" onerror="this.style.display='none'" />
-    <div style="font-family:monospace;font-size:0.75rem;font-weight:700;margin-top:0.25rem;letter-spacing:0.05em;">${esc(code)}</div>
-    <div style="font-size:0.72rem;color:#C9A227;font-weight:800;">${money(p.price)}</div>
-  </div>`;
+  const unitLine =
+    totalUnits > 1 && copyIndex != null
+      ? '<div style="font-size:9px;color:#64748B;">Unit ' +
+        (copyIndex + 1) +
+        ' of ' +
+        totalUnits +
+        '</div>'
+      : '';
+  return (
+    '<div class="bc-label" style="width:200px;border:1px solid #333;border-radius:6px;padding:8px 6px;text-align:center;background:#fff;page-break-inside:avoid;margin:4px;">' +
+    '<div style="font-size:9px;font-weight:800;letter-spacing:1px;color:#0A1628;">FUTURE TECH SHOP</div>' +
+    '<div style="font-weight:800;font-size:11px;color:#0A1628;margin:4px 0;line-height:1.2;">' +
+    esc(p.name || '') +
+    '</div>' +
+    '<img src="' +
+    barcodeImgUrl(code) +
+    '" alt="' +
+    esc(code) +
+    '" style="max-width:180px;height:48px;object-fit:contain;" ' +
+    'onerror="this.onerror=null;this.src=\'' +
+    barcodeImgUrlFallback(code) +
+    '\'" />' +
+    '<div style="font-family:monospace;font-size:11px;font-weight:800;letter-spacing:1px;margin-top:2px;">' +
+    esc(code) +
+    '</div>' +
+    '<div style="font-size:12px;font-weight:800;color:#B45309;">' +
+    money(p.price) +
+    '</div>' +
+    unitLine +
+    '</div>'
+  );
 }
 
-/** One product → qty labels (same barcode, print for each unit) */
-/** Units jitni → utni barcode labels (har pcs pe 1 sticker) */
+/** Units for labels = stock (Amazon: 10 pens → 10 stickers). labelQty override allowed. */
 function unitCount(p) {
-  const n = Number(p.labelQty || p.stock || p.qty || p.copies || 0);
+  const n = Number(
+    p.labelQty != null && p.labelQty !== ''
+      ? p.labelQty
+      : p.stock != null
+        ? p.stock
+        : p.qty || p.copies || 1
+  );
   return Math.max(1, Math.floor(n) || 1);
 }
+
 function labelsForProduct(p, forceQty) {
-  const qty = forceQty != null ? Math.max(1, forceQty) : unitCount(p);
+  const qty = forceQty != null ? Math.max(1, Number(forceQty) || 1) : unitCount(p);
   let html = '';
-  for (let i = 0; i < qty; i++) {
-    html += barcodeLabelHtml(p, i);
-  }
+  for (let i = 0; i < qty; i++) html += barcodeLabelHtml(p, i, qty);
   return html;
 }
+
 function openLabelPrintWindow(title, body, total) {
-  const w = window.open('', '_blank', 'width=900,height=700');
+  const w = window.open('', '_blank', 'width=960,height=720');
   if (!w) {
-    alert('Popup blocked — allow popups for print');
+    alert('Popup blocked — browser mein popups allow karein');
     return;
   }
+  w.document.open();
   w.document.write(
-    '<!DOCTYPE html><html><head><title>' + title + '</title>' +
-    '<style>' +
-    'body{font-family:system-ui,sans-serif;padding:10px;margin:0;}' +
-    '.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}' +
-    '.bc-label{border:1px dashed #333;border-radius:6px;padding:8px;text-align:center;page-break-inside:avoid;}' +
-    '@media print{body{padding:0;}.no-print{display:none;}.grid{gap:4px;}}' +
-    '</style></head><body>' +
-    '<p class="no-print" style="font-size:13px;">Total stickers: <b>' + total + '</b> — har pcs / unit pe 1 label chipkayein. ' +
-    '<button onclick="window.print()">Print</button></p>' +
-    '<div class="grid">' + body + '</div>' +
-    '<script>setTimeout(function(){window.print();},800);</script></body></html>'
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' +
+      esc(title) +
+      '</title><style>' +
+      'body{font-family:system-ui,sans-serif;padding:12px;margin:0;background:#f8fafc;}' +
+      '.grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;}' +
+      '.bc-label{box-shadow:0 1px 3px rgba(0,0,0,.08);}' +
+      '@media print{body{padding:0;background:#fff;}.no-print{display:none!important;}.grid{gap:4px;}}' +
+      '</style></head><body>' +
+      '<div class="no-print" style="margin-bottom:12px;padding:10px;background:#0A1628;color:#E8D48B;border-radius:8px;">' +
+      '<b>Total labels: ' +
+      total +
+      '</b> — Amazon style: har pcs / unit pe 1 sticker. ' +
+      '<button onclick="window.print()" style="margin-left:12px;padding:6px 14px;font-weight:700;cursor:pointer;border-radius:6px;border:none;background:#C9A227;">Print</button>' +
+      '</div>' +
+      '<div class="grid">' +
+      body +
+      '</div>' +
+      '<script>setTimeout(function(){window.print();},900);</script></body></html>'
   );
   w.document.close();
 }
 
-
 async function ensureProductBarcode(p) {
-  if (p.sku || p.barcode) return p;
+  if (p.sku || p.barcode) {
+    if (!p.sku) p.sku = p.barcode;
+    if (!p.barcode) p.barcode = p.sku;
+    return p;
+  }
   p.sku = generateBarcodeCode();
   p.barcode = p.sku;
   p.updatedAt = Date.now();
@@ -153,7 +211,6 @@ document.getElementById('btn-gen-barcode')?.addEventListener('click', () => {
   if (el) el.value = generateBarcodeCode();
 });
 
-// POS: scan barcode → Enter adds to cart
 async function addToCartByBarcode(code) {
   code = String(code || '').trim();
   if (!code) return false;
@@ -164,7 +221,7 @@ async function addToCartByBarcode(code) {
       String(x.barcode || '').toLowerCase() === code.toLowerCase()
   );
   if (!p) {
-    alert('Barcode not found: ' + code);
+    alert('Barcode not found: ' + code + '\n\nPehle Products tab se product + barcode save karein.');
     return false;
   }
   if (Number(p.stock || 0) <= 0) {
@@ -189,35 +246,39 @@ async function addToCartByBarcode(code) {
     });
   renderCart();
   const last = document.getElementById('pos-last-scan');
-  if (last) last.textContent = '✓ Added: ' + p.name + '  ·  ' + money(p.price) + '  ·  barcode ' + code;
+  if (last)
+    last.textContent =
+      '✓ ' + p.name + ' · ' + money(p.price) + ' · ' + (p.sku || code);
   return true;
 }
 
 const posBarcode = document.getElementById('pos-barcode');
 if (posBarcode) {
   posBarcode.addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const code = posBarcode.value.trim();
-      if (!code) return;
-      const ok = await addToCartByBarcode(code);
-      posBarcode.value = '';
-      posBarcode.focus();
-      if (ok) {
-        posBarcode.style.borderColor = '#059669';
-        setTimeout(() => { posBarcode.style.borderColor = '#C9A227'; }, 350);
-        try {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.connect(g); g.connect(ctx.destination);
-          o.frequency.value = 880; g.gain.value = 0.08;
-          o.start(); o.stop(ctx.currentTime + 0.08);
-        } catch (_) {}
-      } else {
-        posBarcode.style.borderColor = '#B91C1C';
-        setTimeout(() => { posBarcode.style.borderColor = '#C9A227'; }, 500);
-      }
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    e.stopPropagation();
+    const code = posBarcode.value.trim();
+    if (!code) return;
+    const ok = await addToCartByBarcode(code);
+    posBarcode.value = '';
+    posBarcode.focus();
+    posBarcode.style.borderColor = ok ? '#059669' : '#B91C1C';
+    setTimeout(() => {
+      posBarcode.style.borderColor = '#C9A227';
+    }, 400);
+    if (ok) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.frequency.value = 880;
+        g.gain.value = 0.08;
+        o.start();
+        o.stop(ctx.currentTime + 0.08);
+      } catch (_) {}
     }
   });
 }
@@ -233,22 +294,36 @@ async function renderBarcodeGrid() {
           const code = p.sku || p.barcode || '';
           const units = unitCount(p);
           if (!code) {
-            return `<div style="border:1px solid #FECACA;border-radius:10px;padding:0.65rem;text-align:center;background:#FEF2F2;">
-              <div style="font-weight:700;font-size:0.85rem;">${esc(p.name)}</div>
-              <div class="muted" style="font-size:0.75rem;margin:0.35rem 0;">No barcode · stock ${units}</div>
-              <button type="button" class="mini-btn edit" data-gen-one="${p.id}">Generate</button>
-            </div>`;
+            return (
+              '<div style="border:1px solid #FECACA;border-radius:10px;padding:0.65rem;text-align:center;background:#FEF2F2;">' +
+              '<div style="font-weight:700;font-size:0.85rem;">' +
+              esc(p.name) +
+              '</div>' +
+              '<div class="muted" style="font-size:0.75rem;margin:0.35rem 0;">No barcode · stock ' +
+              (p.stock ?? 0) +
+              '</div>' +
+              '<button type="button" class="mini-btn edit" data-gen-one="' +
+              p.id +
+              '">Generate barcode</button></div>'
+            );
           }
-          return `<div>
-            ${barcodeLabelHtml(p)}
-            <div style="text-align:center;margin-top:4px;font-size:0.7rem;color:#64748B;">${units} unit label(s)</div>
-            <div style="text-align:center;margin-top:4px;">
-              <button type="button" class="mini-btn edit" data-print-one="${p.id}">Print ${units} labels</button>
-            </div>
-          </div>`;
+          return (
+            '<div style="text-align:center;">' +
+            barcodeLabelHtml(p, 0, units) +
+            '<div style="font-size:0.72rem;color:#64748B;margin:4px 0;">Stock ' +
+            (p.stock ?? 0) +
+            ' → <b>' +
+            units +
+            ' labels</b></div>' +
+            '<button type="button" class="mini-btn edit" data-print-one="' +
+            p.id +
+            '">Print ' +
+            units +
+            ' labels</button></div>'
+          );
         })
         .join('')
-    : '<p class="muted">No products.</p>';
+    : '<p class="muted">No products — Products tab se add karein.</p>';
 
   grid.querySelectorAll('[data-gen-one]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -281,7 +356,7 @@ document.getElementById('btn-print-barcodes')?.addEventListener('click', async (
   const list = await getProducts();
   const withCode = list.filter((p) => p.sku || p.barcode);
   if (!withCode.length) {
-    alert('Pehle barcodes generate karein');
+    alert('Pehle Products pe barcode generate karein');
     return;
   }
   let body = '';
@@ -291,7 +366,7 @@ document.getElementById('btn-print-barcodes')?.addEventListener('click', async (
     total += q;
     body += labelsForProduct(p, q);
   }
-  openLabelPrintWindow('All barcode labels (' + total + ')', body, total);
+  openLabelPrintWindow('All labels (' + total + ' stickers)', body, total);
 });
 
 document.getElementById('barcode-grid')?.addEventListener('click', async (e) => {
@@ -304,23 +379,16 @@ document.getElementById('barcode-grid')?.addEventListener('click', async (e) => 
   }
   const def = unitCount(p);
   const raw = prompt(
-    p.name + '
-
-Kitni units / pcs hain?
-Utni hi barcode labels print hongi (har pcs pe 1 sticker).',
+    (p.name || 'Product') +
+      '\n\nKitni units / pcs? (Amazon style: 10 pens = 10 labels)\nHar pcs pe 1 sticker lagegi.',
     String(def)
   );
   if (raw === null) return;
   const q = Math.max(1, parseInt(raw, 10) || def);
-  // save preference
   p.labelQty = q;
-  if (!p.stock || Number(p.stock) < q) {
-    /* keep stock as is — labels can be for upcoming stock */
-  }
   await saveLocal('shopProducts', p);
   openLabelPrintWindow(p.name + ' — ' + q + ' labels', labelsForProduct(p, q), q);
 });
-
 
 
 function printSaleReceipt(sale) {
