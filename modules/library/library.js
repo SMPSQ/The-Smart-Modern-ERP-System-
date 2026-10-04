@@ -206,12 +206,25 @@ if (issueForm) {
     const bookId = val('issue-book');
     const book = bookId ? await getLocal('library', bookId) : null;
     const bookTitle = book?.title || book?.name || document.getElementById('issue-book')?.selectedOptions?.[0]?.dataset?.title || '';
-    if (!bookTitle || !val('issue-student')) return;
+    const linkedMan = requireLinkedStudent(
+      getSelectedStudentFull('issue-student-select'),
+      val('issue-student')
+    );
+    if (!linkedMan.ok) {
+      alert(linkedMan.msg);
+      return;
+    }
+    if (!bookTitle) return;
+    // force name/class from linked record
+    const _ls = linkedMan.student;
+    const forcedName = _ls.name;
+    const forcedClass = _ls.className || _ls.class || val('issue-class');
     await saveLocal('libraryIssues', {
       bookId: bookId || null,
       bookTitle,
       studentId: (document.getElementById('issue-student-select') || {}).value || null,
-      studentName: val('issue-student') || (getSelectedStudentFull('issue-student-select') || {}).name || '',
+      studentName: (typeof forcedName !== 'undefined' ? forcedName : val('issue-student')) || '',
+      studentId: (linkedMan && linkedMan.student && linkedMan.student.id) || (document.getElementById('issue-student-select') || {}).value || null,
       className: val('issue-class') || (getSelectedStudentFull('issue-student-select') || {}).className || '',
       rollNo: (getSelectedStudentFull('issue-student-select') || {}).rollNo || '',
       studentPhone: (getSelectedStudentFull('issue-student-select') || {}).phone || '',
@@ -510,16 +523,16 @@ async function autoIssueByBarcode(code) {
     return;
   }
   let studentRec = getSelectedStudentFull('auto-student-select');
-  let student = studentRec ? studentRec.name : '';
-  let className = studentRec ? (studentRec.className || studentRec.class || '') : '';
-  if (!student) {
-    student = prompt('Student name (list se select behtar hai):', '') || '';
-  }
-  if (!student) {
-    setScanFeedback('Student select karein (full details ke sath)', false);
+  const check = requireLinkedStudent(studentRec, null);
+  if (!check.ok) {
+    setScanFeedback(check.msg, false);
     beep(false);
+    alert(check.msg);
     return;
   }
+  studentRec = check.student;
+  const student = studentRec.name;
+  const className = studentRec.className || studentRec.class || '';
   const title = book.title || book.name || '';
   // check already issued same book open?
   const open = (await getIssues()).filter(
@@ -697,22 +710,86 @@ let _libStudentsCache = [];
 async function loadLibStudents() {
   try {
     const all = await getAllLocal('students');
-    // Prefer school module students; include all if needed
-    _libStudentsCache = all.filter(s => s.name).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    let fromAdmissions = [];
+    try {
+      const adms = await getAllLocal('admissions');
+      fromAdmissions = (adms || [])
+        .filter(a => a && a.name && (a.status || 'Approved') !== 'Rejected')
+        .map(a => ({
+          id: a.id,
+          name: a.name,
+          className: a.className || a.class || a.course || '',
+          class: a.className || a.class || a.course || '',
+          rollNo: a.rollNo || '',
+          phone: a.phone || a.fatherPhone || '',
+          fatherName: a.fatherName || a.guardianName || '',
+          module: a.module || 'school',
+          fromAdmission: true
+        }));
+    } catch (_) {}
+    const byKey = new Map();
+    [...all, ...fromAdmissions].forEach(s => {
+      if (!s || !s.name) return;
+      const mod = (s.module || s.source || 'school').toString().toLowerCase();
+      const linked =
+        !s.module && !s.source
+          ? true
+          : mod.includes('school') ||
+            mod.includes('educat') ||
+            mod.includes('academy') ||
+            mod.includes('trading') ||
+            mod.includes('forex') ||
+            mod === 'student';
+      if (!linked) return;
+      const key = (s.id || s.name + '|' + (s.className || s.class || '')).toString();
+      if (!byKey.has(key)) byKey.set(key, s);
+    });
+    _libStudentsCache = [...byKey.values()].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '')
+    );
   } catch (_) {
     _libStudentsCache = [];
   }
   fillStudentSelects();
+  const hint = document.getElementById('auto-feedback');
+  if (hint && !_libStudentsCache.length) {
+    hint.style.color = '#B45309';
+    hint.textContent =
+      'Koi linked student nahi — School / Academy / Trading mein student add karein.';
+  }
+}
+
+/** Student must exist in linked modules — otherwise block issue */
+function requireLinkedStudent(studentRec, typedName) {
+  if (studentRec && studentRec.id && studentRec.name) {
+    return { ok: true, student: studentRec };
+  }
+  // Try resolve typed name against linked list only
+  const name = (typedName || '').trim().toLowerCase();
+  if (name) {
+    const hit = _libStudentsCache.find(
+      s => (s.name || '').toLowerCase() === name
+    );
+    if (hit) return { ok: true, student: hit };
+  }
+  return {
+    ok: false,
+    msg:
+      'Book issue nahi ho sakti: student School / Educational Academy / Trading Academy se linked nahi. ' +
+      'Pehle us module mein student add karein, phir yahan select karein.'
+  };
 }
 
 function studentLabel(s) {
   const cls = s.className || s.class || '';
   const roll = s.rollNo || s.roll || '';
   const id = s.idNumber || s.studentId || '';
+  const mod = (s.module || 'school').toString();
   let t = s.name || '';
   if (cls) t += ' · ' + cls;
   if (roll) t += ' · Roll ' + roll;
   if (id) t += ' · ' + id;
+  t += ' [' + mod + ']';
   return t;
 }
 
