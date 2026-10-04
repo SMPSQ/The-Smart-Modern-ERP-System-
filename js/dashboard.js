@@ -2,13 +2,17 @@
 import {
   getAllLocal,
   getLocal,
-  getStudentsByModule,
-  getPendingFees,
-  getTodayCollection,
-  getTotalPendingAmount,
   saveLocal,
-  deleteLocal
+  deleteLocal,
+  getTodayCollection as _getTodayCollection,
+  getTotalPendingAmount as _getTotalPendingAmount
 } from './db.js';
+async function getTodayCollection() {
+  try { return await _getTodayCollection(); } catch (_) { return 0; }
+}
+async function getTotalPendingAmount() {
+  try { return await _getTotalPendingAmount(); } catch (_) { return 0; }
+}
 import {
   getStaffSession,
   canManageUsers,
@@ -22,51 +26,73 @@ function formatMoney(n) {
 }
 
 async function loadKPIs() {
+  const setTxt = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v;
+  };
   try {
-    const students = await getAllLocal('students');
-    const batches = await getAllLocal('batches');
-    const classes = await getAllLocal('classes');
-    const pendingAmount = await getTotalPendingAmount();
-    const todayCollection = await getTodayCollection();
+    let students = [];
+    let batches = [];
+    let classes = [];
+    let adms = [];
+    try { students = await getAllLocal('students') || []; } catch (e) { console.warn(e); }
+    try { batches = await getAllLocal('batches') || []; } catch (_) {}
+    try { classes = await getAllLocal('classes') || []; } catch (_) {}
+    try { adms = await getAllLocal('admissions') || []; } catch (_) {}
 
-    // Module-wise counts — data never mixes across modules
+    // Also count approved admissions as students if student record missing (tracking fix)
     const schoolCount = students.filter(s => !s.module || s.module === 'school').length;
     const tradingCount = students.filter(s => s.module === 'trading' || s.module === 'trading-academy').length;
     const academyCount = students.filter(s => s.module === 'academy' || s.module === 'educational-academy').length;
-    let admSchool = 0, admTrade = 0, admAcad = 0;
-    try {
-      const adms = await getAllLocal('admissions');
-      admSchool = adms.filter(a => !a.module || a.module === 'school').length;
-      admTrade = adms.filter(a => a.module === 'trading' || a.module === 'trading-academy').length;
-      admAcad = adms.filter(a => a.module === 'academy' || a.module === 'educational-academy').length;
-    } catch (_) {}
+    const admSchool = adms.filter(a => !a.module || a.module === 'school').length;
+    const admTrade = adms.filter(a => a.module === 'trading' || a.module === 'trading-academy').length;
+    const admAcad = adms.filter(a => a.module === 'academy' || a.module === 'educational-academy').length;
+
+    // Effective totals: max(students, approved admissions) per module for visibility
+    const schoolEff = Math.max(
+      schoolCount,
+      adms.filter(a => (!a.module || a.module === 'school') && (a.status === 'approved' || a.status === 'Approved')).length
+    );
+    const tradingEff = Math.max(
+      tradingCount,
+      adms.filter(a => (a.module === 'trading' || a.module === 'trading-academy') && (a.status === 'approved' || a.status === 'Approved')).length
+    );
+    const academyEff = Math.max(
+      academyCount,
+      adms.filter(a => (a.module === 'academy' || a.module === 'educational-academy') && (a.status === 'approved' || a.status === 'Approved')).length
+    );
+    const totalEff = schoolEff + tradingEff + academyEff || students.length;
+
+    setTxt('kpi-students', totalEff);
+    setTxt('kpi-school-students', schoolEff);
+    setTxt('kpi-trading-students', tradingEff);
+    setTxt('kpi-academy-students', academyEff);
+    setTxt('kpi-school-adm', admSchool);
+    setTxt('kpi-trading-adm', admTrade);
+    setTxt('kpi-academy-adm', admAcad);
+    setTxt('kpi-batches', (batches.length + classes.length) || 0);
 
     const elStudents = document.getElementById('kpi-students');
-    const elBatches = document.getElementById('kpi-batches');
-    const elCollection = document.getElementById('kpi-collection');
-    const elPending = document.getElementById('kpi-pending');
-
-    if (elStudents) {
-      elStudents.textContent = students.length;
-      const sub = elStudents.parentElement?.querySelector('.sub');
-      if (sub) {
-        sub.innerHTML =
-          'School <b>' + schoolCount + '</b> · Trading <b>' + tradingCount +
-          '</b> · Academy <b>' + academyCount + '</b>';
-      }
+    const sub = elStudents?.parentElement?.querySelector('.sub');
+    if (sub) {
+      sub.innerHTML =
+        'School <b>' + schoolEff + '</b> · Trading <b>' + tradingEff +
+        '</b> · Academy <b>' + academyEff + '</b>';
     }
-    const setMod = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
-    setMod('kpi-school-students', schoolCount);
-    setMod('kpi-trading-students', tradingCount);
-    setMod('kpi-academy-students', academyCount);
-    setMod('kpi-school-adm', admSchool);
-    setMod('kpi-trading-adm', admTrade);
-    setMod('kpi-academy-adm', admAcad);
-    if (elBatches) elBatches.textContent = (batches.length + classes.length) || 0;
-    if (elCollection) elCollection.textContent = formatMoney(todayCollection);
-    if (elPending) elPending.textContent = formatMoney(pendingAmount);
+
+    let pendingAmount = 0;
+    let todayCollection = 0;
+    try { pendingAmount = await getTotalPendingAmount(); } catch (_) {}
+    try { todayCollection = await getTodayCollection(); } catch (_) {}
+    setTxt('kpi-collection', formatMoney(todayCollection));
+    setTxt('kpi-pending', formatMoney(pendingAmount));
   } catch (err) {
     console.warn('KPI load failed:', err);
+    // still show zeros not dashes
+    ['kpi-students','kpi-school-students','kpi-trading-students','kpi-academy-students',
+     'kpi-school-adm','kpi-trading-adm','kpi-academy-adm','kpi-batches'].forEach(id => setTxt(id, 0));
+    setTxt('kpi-collection', formatMoney(0));
+    setTxt('kpi-pending', formatMoney(0));
   }
 }
 
@@ -163,6 +189,9 @@ document.getElementById('visitor-filter-status')?.addEventListener('change', ren
 
 // Init
 loadKPIs();
+setTimeout(() => loadKPIs(), 400);
+setTimeout(() => loadKPIs(), 1500);
+setTimeout(() => loadKPIs(), 4000);
 renderVisitors();
 const dd = document.getElementById('dash-date');
 if (dd) dd.textContent = new Date().toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });

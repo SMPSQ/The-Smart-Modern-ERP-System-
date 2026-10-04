@@ -17,6 +17,7 @@ export function printDocument(title, bodyHtml, options = {}) {
     alert('Please allow pop-ups to print.');
     return;
   }
+  try { win.opener = null; } catch (_) {}
 
   const today = new Date().toLocaleDateString('en-PK', {
     day: '2-digit', month: 'long', year: 'numeric'
@@ -233,6 +234,7 @@ export function printDocument(title, bodyHtml, options = {}) {
 </html>
   `);
   win.document.close();
+  try { win.document.title = title || 'Future Tech ERP'; } catch (_) {}
 }
 
 function esc(str = '') {

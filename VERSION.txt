@@ -1,3 +1,2 @@
-v6.5.3
-Future Tech ERP — automatic cache updates
-Bump this file + CACHE_VERSION on every deploy
+v6.5.4
+Dashboard KPI tracking + clean titles
