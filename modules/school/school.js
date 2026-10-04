@@ -183,35 +183,81 @@ if (admissionForm) {
 
   admissionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const data = {
-      id: editingAdmissionId || undefined,
-      name: val('adm-name'),
-      dob: val('adm-dob'),
-      gender: val('adm-gender'),
-      bform: val('adm-bform'),
-      className: val('adm-class'),
-      section: val('adm-section'),
-      admissionDate: val('adm-date'),
-      session: val('adm-session'),
-      fatherName: val('adm-father'),
-      fatherCnic: val('adm-father-cnic'),
-      fatherPhone: val('adm-father-phone'),
-      fatherOcc: val('adm-father-occ'),
-      address: val('adm-address'),
-      city: val('adm-city'),
-      phone: val('adm-phone'),
-      rollNo: val('adm-roll'),
-      bloodGroup: val('adm-blood'),
-      previousSchool: val('adm-prev-school'),
-      status: editingAdmissionId
-        ? ((await getLocal('admissions', editingAdmissionId))?.status || 'pending')
-        : 'pending',
-      module: MODULE
-    };
-    await saveLocal('admissions', data);
-    clearAdmissionForm();
-    await renderAdmissions();
-    runSync();
+    e.stopPropagation();
+    try {
+      const name = val('adm-name');
+      const className = val('adm-class');
+      const fatherName = val('adm-father');
+      if (!name) { alert('Student name zaroori hai'); document.getElementById('adm-name')?.focus(); return; }
+      if (!className) { alert('Class zaroori hai'); document.getElementById('adm-class')?.focus(); return; }
+      if (!fatherName) { alert('Father name zaroori hai'); document.getElementById('adm-father')?.focus(); return; }
+
+      const data = {
+        id: editingAdmissionId || undefined,
+        name,
+        dob: val('adm-dob'),
+        gender: val('adm-gender'),
+        bform: val('adm-bform'),
+        className,
+        section: val('adm-section'),
+        admissionDate: val('adm-date') || new Date().toISOString().slice(0, 10),
+        session: val('adm-session'),
+        fatherName,
+        fatherCnic: val('adm-father-cnic'),
+        fatherPhone: val('adm-father-phone'),
+        fatherOcc: val('adm-father-occ'),
+        address: val('adm-address'),
+        city: val('adm-city'),
+        phone: val('adm-phone') || val('adm-father-phone'),
+        rollNo: val('adm-roll'),
+        bloodGroup: val('adm-blood'),
+        previousSchool: val('adm-prev-school'),
+        status: editingAdmissionId
+          ? ((await getLocal('admissions', editingAdmissionId))?.status || 'pending')
+          : 'pending',
+        module: MODULE,
+        updatedAt: Date.now()
+      };
+
+      const saved = await saveLocal('admissions', data);
+      // Optional auto-enroll as student if checkbox checked
+      const autoEnroll = document.getElementById('adm-auto-enroll');
+      if (autoEnroll && autoEnroll.checked && saved) {
+        await saveLocal('students', {
+          name: saved.name,
+          className: saved.className,
+          section: saved.section || '',
+          rollNo: saved.rollNo || '',
+          guardianName: saved.fatherName,
+          phone: saved.phone || saved.fatherPhone,
+          fatherName: saved.fatherName,
+          fatherPhone: saved.fatherPhone,
+          dob: saved.dob,
+          gender: saved.gender,
+          address: saved.address,
+          city: saved.city,
+          session: saved.session,
+          module: MODULE,
+          admissionId: saved.id,
+          status: 'active'
+        });
+        saved.status = 'approved';
+        await saveLocal('admissions', saved);
+      }
+
+      clearAdmissionForm();
+      await renderAdmissions();
+      if (typeof renderStudents === 'function') await renderStudents();
+      try { runSync(); } catch (_) {}
+      alert(
+        autoEnroll && autoEnroll.checked
+          ? 'Admission saved + student enrolled: ' + name
+          : 'Admission saved: ' + name + '\n\nQueue mein dikhega. Approve se student banega.'
+      );
+    } catch (err) {
+      console.error('Admission save failed', err);
+      alert('Admission save failed: ' + (err.message || err) + '\n\nBrowser refresh karke dobara try karein.');
+    }
   });
 
   admissionForm.addEventListener('reset', () => {

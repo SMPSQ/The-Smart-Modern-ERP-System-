@@ -30,9 +30,16 @@ async function loadKPIs() {
     const todayCollection = await getTodayCollection();
 
     // Module-wise counts — data never mixes across modules
-    const schoolCount = students.filter(s => s.module === 'school').length;
-    const tradingCount = students.filter(s => s.module === 'trading').length;
-    const academyCount = students.filter(s => s.module === 'academy').length;
+    const schoolCount = students.filter(s => !s.module || s.module === 'school').length;
+    const tradingCount = students.filter(s => s.module === 'trading' || s.module === 'trading-academy').length;
+    const academyCount = students.filter(s => s.module === 'academy' || s.module === 'educational-academy').length;
+    let admSchool = 0, admTrade = 0, admAcad = 0;
+    try {
+      const adms = await getAllLocal('admissions');
+      admSchool = adms.filter(a => !a.module || a.module === 'school').length;
+      admTrade = adms.filter(a => a.module === 'trading' || a.module === 'trading-academy').length;
+      admAcad = adms.filter(a => a.module === 'academy' || a.module === 'educational-academy').length;
+    } catch (_) {}
 
     const elStudents = document.getElementById('kpi-students');
     const elBatches = document.getElementById('kpi-batches');
@@ -42,8 +49,19 @@ async function loadKPIs() {
     if (elStudents) {
       elStudents.textContent = students.length;
       const sub = elStudents.parentElement?.querySelector('.sub');
-      if (sub) sub.textContent = `School ${schoolCount} · Trading ${tradingCount} · Academy ${academyCount}`;
+      if (sub) {
+        sub.innerHTML =
+          'School <b>' + schoolCount + '</b> · Trading <b>' + tradingCount +
+          '</b> · Academy <b>' + academyCount + '</b>';
+      }
     }
+    const setMod = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+    setMod('kpi-school-students', schoolCount);
+    setMod('kpi-trading-students', tradingCount);
+    setMod('kpi-academy-students', academyCount);
+    setMod('kpi-school-adm', admSchool);
+    setMod('kpi-trading-adm', admTrade);
+    setMod('kpi-academy-adm', admAcad);
     if (elBatches) elBatches.textContent = (batches.length + classes.length) || 0;
     if (elCollection) elCollection.textContent = formatMoney(todayCollection);
     if (elPending) elPending.textContent = formatMoney(pendingAmount);

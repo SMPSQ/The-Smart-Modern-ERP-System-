@@ -121,6 +121,9 @@ if (admissionForm) {
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
   admissionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    try {
+    const _admName = document.getElementById('adm-name')?.value?.trim();
+    if (!_admName) { alert('Name required'); return; }
     await saveLocal('admissions', {
       name: document.getElementById('adm-name').value.trim(),
       phone: document.getElementById('adm-phone').value.trim(),
@@ -138,7 +141,12 @@ if (admissionForm) {
     admissionForm.reset();
     if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
     await renderAdmissions();
-    runSync();
+    try { runSync(); } catch (_) {}
+    alert('Admission saved: ' + _admName);
+    } catch (err) {
+      console.error(err);
+      alert('Save failed: ' + (err.message || err));
+    }
   });
 }
 
