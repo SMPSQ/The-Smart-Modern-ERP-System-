@@ -210,8 +210,12 @@ if (issueForm) {
     await saveLocal('libraryIssues', {
       bookId: bookId || null,
       bookTitle,
-      studentName: val('issue-student'),
-      className: val('issue-class'),
+      studentId: (document.getElementById('issue-student-select') || {}).value || null,
+      studentName: val('issue-student') || (getSelectedStudentFull('issue-student-select') || {}).name || '',
+      className: val('issue-class') || (getSelectedStudentFull('issue-student-select') || {}).className || '',
+      rollNo: (getSelectedStudentFull('issue-student-select') || {}).rollNo || '',
+      studentPhone: (getSelectedStudentFull('issue-student-select') || {}).phone || '',
+      guardian: (getSelectedStudentFull('issue-student-select') || {}).fatherName || (getSelectedStudentFull('issue-student-select') || {}).guardianName || '',
       issueDate: val('issue-date') || todayStr(),
       dueDate: val('issue-due'),
       note: val('issue-note'),
@@ -262,7 +266,9 @@ async function renderIssued() {
           (i) => `<li>
       <strong>${esc(i.bookTitle)}</strong>
       <span class="tag">Issued</span>
-      <span class="muted">${esc(i.studentName)} ${i.className ? '· ' + esc(i.className) : ''}</span>
+      <span class="muted"><b>${esc(i.studentName)}</b>${i.className ? ' · ' + esc(i.className) : ''}${i.rollNo ? ' · Roll ' + esc(i.rollNo) : ''}</span>
+      ${i.studentPhone ? '<span class="muted">📞 ' + esc(i.studentPhone) + '</span>' : ''}
+      ${i.guardian ? '<span class="muted">Guardian: ' + esc(i.guardian) + '</span>' : ''}
       <span class="muted">${esc(i.issueDate)}${i.dueDate ? ' → due ' + esc(i.dueDate) : ''}</span>
     </li>`
         )
@@ -281,7 +287,8 @@ async function renderHistory() {
           (i) => `<li>
       <strong>${esc(i.bookTitle)}</strong>
       <span class="tag">${esc(i.status || 'Issued')}</span>
-      <span class="muted">${esc(i.studentName)}</span>
+      <span class="muted"><b>${esc(i.studentName)}</b>${i.className ? ' · ' + esc(i.className) : ''}${i.rollNo ? ' · R' + esc(i.rollNo) : ''}</span>
+      ${i.studentPhone ? '<span class="muted">' + esc(i.studentPhone) + '</span>' : ''}
       <span class="muted">${esc(i.issueDate)}${i.returnDate ? ' → returned ' + esc(i.returnDate) : ''}</span>
       <span class="actions"><button type="button" class="mini-btn danger" data-del-iss="${i.id}">Delete</button></span>
     </li>`
@@ -502,16 +509,17 @@ async function autoIssueByBarcode(code) {
     beep(false);
     return;
   }
-  let student = (document.getElementById('auto-student')?.value || '').trim();
+  let studentRec = getSelectedStudentFull('auto-student-select');
+  let student = studentRec ? studentRec.name : '';
+  let className = studentRec ? (studentRec.className || studentRec.class || '') : '';
   if (!student) {
-    student = prompt('Student name (issue ke liye):', '') || '';
+    student = prompt('Student name (list se select behtar hai):', '') || '';
   }
   if (!student) {
-    setScanFeedback('Student name zaroori hai', false);
+    setScanFeedback('Student select karein (full details ke sath)', false);
     beep(false);
     return;
   }
-  const className = (document.getElementById('auto-class')?.value || '').trim();
   const title = book.title || book.name || '';
   // check already issued same book open?
   const open = (await getIssues()).filter(
@@ -527,8 +535,12 @@ async function autoIssueByBarcode(code) {
   await saveLocal('libraryIssues', {
     bookId: book.id,
     bookTitle: title,
+    studentId: studentRec ? studentRec.id : null,
     studentName: student,
-    className,
+    className: className || (studentRec && (studentRec.className || studentRec.class)) || '',
+    rollNo: studentRec ? (studentRec.rollNo || studentRec.roll || '') : '',
+    studentPhone: studentRec ? (studentRec.phone || '') : '',
+    guardian: studentRec ? (studentRec.fatherName || studentRec.guardianName || '') : '',
     issueDate: todayStr(),
     dueDate: '',
     status: 'Issued',
@@ -538,7 +550,7 @@ async function autoIssueByBarcode(code) {
   });
   setScanFeedback('✓ ISSUED: ' + title + ' → ' + student, true);
   beep(true);
-  if (document.getElementById('auto-student')) document.getElementById('auto-student').value = student;
+  /* student kept in select */
   await refresh();
   await fillIssueSelects();
   await renderIssued();
@@ -676,3 +688,122 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
     }
   } catch (_) {}
 })();
+
+
+
+// ========== STUDENTS FULL LINK ==========
+let _libStudentsCache = [];
+
+async function loadLibStudents() {
+  try {
+    const all = await getAllLocal('students');
+    // Prefer school module students; include all if needed
+    _libStudentsCache = all.filter(s => s.name).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  } catch (_) {
+    _libStudentsCache = [];
+  }
+  fillStudentSelects();
+}
+
+function studentLabel(s) {
+  const cls = s.className || s.class || '';
+  const roll = s.rollNo || s.roll || '';
+  const id = s.idNumber || s.studentId || '';
+  let t = s.name || '';
+  if (cls) t += ' · ' + cls;
+  if (roll) t += ' · Roll ' + roll;
+  if (id) t += ' · ' + id;
+  return t;
+}
+
+function fillStudentSelects(filterQ) {
+  const q = (filterQ || '').toLowerCase().trim();
+  let list = _libStudentsCache;
+  if (q) {
+    list = list.filter(s =>
+      (s.name || '').toLowerCase().includes(q) ||
+      (s.className || s.class || '').toLowerCase().includes(q) ||
+      (s.rollNo || s.roll || '').toLowerCase().includes(q) ||
+      String(s.idNumber || s.studentId || s.id || '').toLowerCase().includes(q) ||
+      (s.phone || '').includes(q) ||
+      (s.fatherName || s.guardianName || '').toLowerCase().includes(q)
+    );
+  }
+  const opts =
+    '<option value="">— Select student —</option>' +
+    list
+      .map(
+        s =>
+          `<option value="${s.id}" data-name="${esc(s.name)}" data-class="${esc(s.className || s.class || '')}">${esc(studentLabel(s))}</option>`
+      )
+      .join('');
+
+  const autoSel = document.getElementById('auto-student-select');
+  if (autoSel) {
+    const prev = autoSel.value;
+    autoSel.innerHTML = opts;
+    if (prev) autoSel.value = prev;
+  }
+  const manSel = document.getElementById('issue-student-select');
+  if (manSel) {
+    const prev = manSel.value;
+    manSel.innerHTML = opts.replace('— Select student —', 'Select student *');
+    if (prev) manSel.value = prev;
+  }
+  const dl = document.getElementById('student-names');
+  if (dl) {
+    dl.innerHTML = _libStudentsCache
+      .map(s => `<option value="${esc(s.name)}"></option>`)
+      .join('');
+  }
+}
+
+function showStudentDetail(studentId) {
+  const box = document.getElementById('auto-student-detail');
+  if (!box) return;
+  const s = _libStudentsCache.find(x => String(x.id) === String(studentId));
+  if (!s) {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+  box.style.display = 'block';
+  box.innerHTML =
+    '<strong>' +
+    esc(s.name) +
+    '</strong>' +
+    (s.className || s.class
+      ? ' <span class="tag">' + esc(s.className || s.class) + '</span>'
+      : '') +
+    '<br>' +
+    (s.rollNo || s.roll ? 'Roll: ' + esc(s.rollNo || s.roll) + ' · ' : '') +
+    (s.idNumber || s.studentId ? 'ID: ' + esc(s.idNumber || s.studentId) + ' · ' : '') +
+    (s.phone ? 'Phone: ' + esc(s.phone) + ' · ' : '') +
+    (s.fatherName || s.guardianName
+      ? 'Guardian: ' + esc(s.fatherName || s.guardianName)
+      : '');
+}
+
+function getSelectedStudentFull(selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel || !sel.value) return null;
+  return _libStudentsCache.find(x => String(x.id) === String(sel.value)) || null;
+}
+
+document.getElementById('auto-student-select')?.addEventListener('change', e => {
+  showStudentDetail(e.target.value);
+});
+document.getElementById('auto-student-search')?.addEventListener('input', e => {
+  fillStudentSelects(e.target.value);
+});
+document.getElementById('issue-student-select')?.addEventListener('change', e => {
+  const s = getSelectedStudentFull('issue-student-select');
+  if (s) {
+    const nameEl = document.getElementById('issue-student');
+    const clsEl = document.getElementById('issue-class');
+    if (nameEl) nameEl.value = s.name || '';
+    if (clsEl) clsEl.value = s.className || s.class || '';
+  }
+});
+
+loadLibStudents();

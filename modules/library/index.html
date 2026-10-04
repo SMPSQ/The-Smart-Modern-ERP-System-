@@ -154,10 +154,13 @@
         style="width:100%;padding:1rem 1.1rem;border:3px solid #14B8A6;border-radius:14px;font-size:1.2rem;font-weight:800;background:#F0FDFA;letter-spacing:0.05em;margin:0.35rem 0 0.5rem;" />
       <div id="auto-feedback" style="min-height:2rem;font-weight:700;padding:0.4rem 0;color:#0F766E;"></div>
       <div id="auto-issue-extra" style="display:block;">
-        <input type="text" id="auto-student" placeholder="Student name (issue se pehle / baad mein)" list="student-names"
-          style="width:100%;padding:0.55rem 0.75rem;border:1px solid #E2E6ED;border-radius:8px;margin-bottom:0.4rem;" />
-        <datalist id="student-names"></datalist>
-        <input type="text" id="auto-class" placeholder="Class (optional)" style="width:100%;padding:0.55rem 0.75rem;border:1px solid #E2E6ED;border-radius:8px;" />
+        <label style="font-size:0.72rem;font-weight:700;color:#0F766E;">Student (full record se select)</label>
+        <select id="auto-student-select" style="width:100%;padding:0.55rem 0.75rem;border:2px solid #14B8A6;border-radius:8px;margin-bottom:0.4rem;font-weight:600;">
+          <option value="">— Select student —</option>
+        </select>
+        <div id="auto-student-detail" style="display:none;padding:0.65rem 0.75rem;background:#F0FDFA;border:1px solid #99F6E4;border-radius:10px;margin-bottom:0.4rem;font-size:0.82rem;line-height:1.5;">
+        </div>
+        <input type="search" id="auto-student-search" placeholder="Search student name / class / ID…" style="width:100%;padding:0.45rem 0.65rem;border:1px solid #E2E6ED;border-radius:8px;margin-bottom:0.35rem;" />
       </div>
       <div id="auto-add-extra" style="display:none;margin-top:0.5rem;">
         <input type="text" id="auto-title" placeholder="Book title (nayi book)" style="width:100%;padding:0.55rem;border:1px solid #E2E6ED;border-radius:8px;margin-bottom:0.35rem;" />
@@ -168,8 +171,12 @@
       <h3>Manual Issue (backup)</h3>
       <form id="issue-form" class="inline-form">
         <select id="issue-book" required><option value="">Select book *</option></select>
-        <input type="text" id="issue-student" placeholder="Student name *" required list="student-names" />
-        <input type="text" id="issue-class" placeholder="Class" />
+        <select id="issue-student-select" required style="flex:1.5;min-width:160px;">
+          <option value="">Select student *</option>
+        </select>
+        <input type="text" id="issue-student" placeholder="Or type name" list="student-names" />
+        <input type="text" id="issue-class" placeholder="Class (auto)" />
+        <datalist id="student-names"></datalist>
         <input type="date" id="issue-date" required />
         <input type="date" id="issue-due" title="Due date" />
         <button type="submit">Issue Book</button>
