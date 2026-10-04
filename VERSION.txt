@@ -1,1 +1,3 @@
-Future Tech ERP v6.5.2 — Admission save + DB mirror + Firestore rules
+v6.5.3
+Future Tech ERP — automatic cache updates
+Bump this file + CACHE_VERSION on every deploy

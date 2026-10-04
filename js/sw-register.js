@@ -1,68 +1,33 @@
 /**
- * Service Worker register + automatic app version updates
- * - Registers SW
- * - Checks for updates every 30s + on focus/visibility
- * - Fetches VERSION.txt (network) and compares with local APP_VERSION
- * - Shows "Update now" banner when new version is available
- * - Auto-reloads once after SW activates (optional soft)
+ * Future Tech ERP — Service Worker + AUTOMATIC cache/version updates
+ * Every deploy: bump sw.js CACHE_VERSION + VERSION.txt + APP_VERSION below (same number)
  */
 (function () {
   if (!('serviceWorker' in navigator)) return;
 
-  // Keep in sync with sw.js CACHE_VERSION (without leading "v")
-  const APP_VERSION = '6.5.2';
-  const VERSION_KEY = 'ft_app_version_seen';
+  // === MUST match sw.js CACHE_VERSION without leading "v" ===
+  const APP_VERSION = '6.5.3';
+  const CHECK_MS = 20000; // 20 seconds
+  let _reloading = false;
+  let _bannerShown = false;
 
-  function showUpdateBanner(ver) {
-    if (document.getElementById('ft-update-banner')) return;
-    const bar = document.createElement('div');
-    bar.id = 'ft-update-banner';
-    bar.setAttribute(
-      'style',
-      [
-        'position:fixed',
-        'bottom:16px',
-        'left:50%',
-        'transform:translateX(-50%)',
-        'z-index:99999',
-        'background:linear-gradient(135deg,#020B1A,#0B3D6E)',
-        'color:#F0D78C',
-        'padding:14px 20px',
-        'border-radius:14px',
-        'border:2px solid #D4AF37',
-        'box-shadow:0 16px 48px rgba(0,0,0,0.4)',
-        'display:flex',
-        'align-items:center',
-        'gap:14px',
-        'font-family:Inter,system-ui,sans-serif',
-        'font-size:14px',
-        'font-weight:600',
-        'max-width:94vw'
-      ].join(';')
-    );
-    const label = ver || APP_VERSION;
-    bar.innerHTML =
-      '<span>🔄 New version available (v' +
-      label +
-      ')</span>' +
-      '<button type="button" id="ft-update-reload" style="background:#D4AF37;color:#020B1A;border:none;padding:9px 16px;border-radius:10px;font-weight:800;cursor:pointer;font-family:inherit;font-size:13px;">Update now</button>' +
-      '<button type="button" id="ft-update-dismiss" style="background:transparent;color:#94A3B8;border:none;padding:6px 8px;cursor:pointer;font-size:18px;line-height:1;">×</button>';
-    document.body.appendChild(bar);
-    document.getElementById('ft-update-reload').onclick = () => {
-      try {
-        if (navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
-        }
-      } catch (_) {}
-      // Bust cache on reload
-      const u = new URL(window.location.href);
-      u.searchParams.set('_v', String(Date.now()));
-      window.location.replace(u.toString());
-    };
-    document.getElementById('ft-update-dismiss').onclick = () => bar.remove();
+  window.__FT_APP_VERSION = APP_VERSION;
+
+  function versionUrls() {
+    const path = window.location.pathname || '/';
+    // Strip file name to folder
+    const base = path.replace(/\/[^/]*$/, '/');
+    const origin = window.location.origin;
+    return [
+      origin + base + 'VERSION.txt',
+      origin + '/The-Smart-Modern-ERP-System-/VERSION.txt',
+      origin + path.split('/').slice(0, -1).join('/') + '/VERSION.txt',
+      new URL('VERSION.txt', window.location.href).href,
+      new URL('../VERSION.txt', window.location.href).href,
+      new URL('../../VERSION.txt', window.location.href).href
+    ];
   }
 
-  /** Parse version number from VERSION.txt first line or "v6.5.2" style */
   function parseVersion(text) {
     if (!text) return null;
     const m = String(text).match(/v?(\d+\.\d+\.\d+)/i);
@@ -82,106 +47,162 @@
     return false;
   }
 
-  async function checkVersionFile() {
+  function doReload() {
+    if (_reloading) return;
+    _reloading = true;
     try {
-      const base = document.querySelector('script[src*="sw-register"]')?.src || window.location.href;
-      const versionUrl = new URL('VERSION.txt', new URL('./', base).href);
-      // Also try root VERSION.txt
-      const urls = [
-        new URL('VERSION.txt', window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/')).href,
-        versionUrl.href,
-        new URL('VERSION.txt', window.location.href).href
-      ];
-      let remote = null;
-      for (const u of urls) {
-        try {
-          const res = await fetch(u + '?t=' + Date.now(), { cache: 'no-store' });
-          if (res.ok) {
-            const text = await res.text();
-            remote = parseVersion(text);
-            if (remote) break;
-          }
-        } catch (_) {}
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
       }
-      if (remote && isNewer(remote, APP_VERSION)) {
-        showUpdateBanner(remote);
-        return true;
-      }
-      // Same or unknown — still ask SW to update
-      return false;
-    } catch (_) {
-      return false;
+    } catch (_) {}
+    const u = new URL(window.location.href);
+    u.searchParams.set('_v', String(Date.now()));
+    setTimeout(() => {
+      window.location.replace(u.toString());
+    }, 200);
+  }
+
+  function showUpdateBanner(ver, auto) {
+    if (_bannerShown && document.getElementById('ft-update-banner')) return;
+    _bannerShown = true;
+    let bar = document.getElementById('ft-update-banner');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'ft-update-banner';
+      bar.setAttribute(
+        'style',
+        'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;' +
+          'background:linear-gradient(135deg,#020B1A,#0B3D6E);color:#F0D78C;padding:14px 20px;' +
+          'border-radius:14px;border:2px solid #D4AF37;box-shadow:0 16px 48px rgba(0,0,0,0.4);' +
+          'display:flex;align-items:center;gap:14px;font-family:Inter,system-ui,sans-serif;' +
+          'font-size:14px;font-weight:600;max-width:94vw'
+      );
+      document.body.appendChild(bar);
     }
+    const label = ver || APP_VERSION;
+    bar.innerHTML =
+      '<span>🔄 New version v' +
+      label +
+      (auto ? ' — auto updating…' : '') +
+      '</span>' +
+      '<button type="button" id="ft-update-reload" style="background:#D4AF37;color:#020B1A;border:none;padding:9px 16px;border-radius:10px;font-weight:800;cursor:pointer;font-family:inherit;font-size:13px;">Update now</button>';
+    const btn = document.getElementById('ft-update-reload');
+    if (btn) btn.onclick = doReload;
+
+    // Automatic reload after 2.5s when new version detected
+    if (auto) {
+      setTimeout(doReload, 2500);
+    }
+  }
+
+  async function checkVersionFile() {
+    const urls = versionUrls();
+    for (const u of urls) {
+      try {
+        const res = await fetch(u + (u.includes('?') ? '&' : '?') + 't=' + Date.now(), {
+          cache: 'no-store',
+          credentials: 'same-origin'
+        });
+        if (!res.ok) continue;
+        const text = await res.text();
+        const remote = parseVersion(text);
+        if (remote && isNewer(remote, APP_VERSION)) {
+          console.info('[FT] New version on server:', remote, 'local:', APP_VERSION);
+          showUpdateBanner(remote, true); // auto update
+          return true;
+        }
+        if (remote) {
+          console.info('[FT] Version OK', remote);
+          return false;
+        }
+      } catch (_) {}
+    }
+    return false;
   }
 
   function checkSWUpdate(reg) {
     if (!reg) return;
     try {
-      reg.update();
+      reg.update().catch(() => {});
     } catch (_) {}
   }
 
-  window.addEventListener('load', () => {
-    const swUrl = new URL('sw.js', document.baseURI || window.location.href).href;
+  async function fullCheck(reg) {
+    checkSWUpdate(reg);
+    await checkVersionFile();
+  }
 
-    navigator.serviceWorker
-      .register(swUrl)
-      .then((reg) => {
-        // Immediate + periodic update checks
-        checkSWUpdate(reg);
-        setInterval(() => checkSWUpdate(reg), 30 * 1000);
+  // Register SW (root scope)
+  const swUrl = new URL('../../sw.js', window.location.href);
+  // Try multiple paths: page in modules/school/ → ../../sw.js; dashboard → ./sw.js
+  const candidates = [
+    new URL('sw.js', window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/')).href,
+    new URL('../sw.js', window.location.href).href,
+    new URL('../../sw.js', window.location.href).href,
+    window.location.origin + '/The-Smart-Modern-ERP-System-/sw.js',
+    window.location.origin + '/sw.js'
+  ];
 
-        // VERSION.txt check every 45s
-        checkVersionFile();
-        setInterval(() => checkVersionFile(), 45 * 1000);
-
-        // When tab becomes visible again
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') {
-            checkSWUpdate(reg);
-            checkVersionFile();
-          }
-        });
-        window.addEventListener('focus', () => {
-          checkSWUpdate(reg);
-          checkVersionFile();
-        });
-
-        reg.addEventListener('updatefound', () => {
-          const nw = reg.installing;
-          if (!nw) return;
-          nw.addEventListener('statechange', () => {
-            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              showUpdateBanner(APP_VERSION);
-            }
-            // First install: no banner
-          });
-        });
-
-        // If waiting worker already exists
-        if (reg.waiting && navigator.serviceWorker.controller) {
-          showUpdateBanner(APP_VERSION);
-        }
-      })
-      .catch((err) => console.warn('SW register failed', err));
-
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // New SW active — one-time reload if user already clicked update
-      if (sessionStorage.getItem('ft_pending_reload') === '1') {
-        sessionStorage.removeItem('ft_pending_reload');
-        window.location.reload();
+  async function registerSW() {
+    let reg = null;
+    for (const url of candidates) {
+      try {
+        reg = await navigator.serviceWorker.register(url, { updateViaCache: 'none' });
+        console.info('[FT] SW registered', url, 'app', APP_VERSION);
+        break;
+      } catch (e) {
+        console.warn('[FT] SW register fail', url, e.message || e);
       }
+    }
+    if (!reg) return null;
+
+    // New worker waiting → activate + reload
+    if (reg.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    reg.addEventListener('updatefound', () => {
+      const nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener('statechange', () => {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateBanner(APP_VERSION, true);
+        }
+      });
+    });
+
+    // Controller changed → reload once
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      doReload();
     });
 
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data && event.data.type === 'SW_UPDATED') {
-        showUpdateBanner(event.data.version || APP_VERSION);
+        showUpdateBanner(event.data.version || APP_VERSION, true);
       }
     });
 
-    // Show current version in console for debug
-    console.info('[Future Tech ERP] App version', APP_VERSION);
-  });
+    // Periodic + focus checks
+    setInterval(() => fullCheck(reg), CHECK_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') fullCheck(reg);
+    });
+    window.addEventListener('focus', () => fullCheck(reg));
 
-  window.__FT_APP_VERSION = APP_VERSION;
+    // First check soon
+    setTimeout(() => fullCheck(reg), 1500);
+    setTimeout(() => fullCheck(reg), 8000);
+
+    return reg;
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => registerSW());
+  } else {
+    registerSW();
+  }
+
+  console.info('[Future Tech ERP] App version', APP_VERSION, '— auto cache updates ON');
 })();
