@@ -103,6 +103,34 @@ async function openDatabase() {
   }
 }
 
+
+const LS_MIRROR_STORES = new Set(['admissions', 'students', 'shopProducts', 'library', 'libraryIssues', 'courses']);
+
+function mirrorToLocalStorage(storeName, record) {
+  if (!LS_MIRROR_STORES.has(storeName) || !record || !record.id) return;
+  try {
+    const key = 'ft_mirror_' + storeName;
+    const raw = localStorage.getItem(key);
+    const arr = raw ? JSON.parse(raw) : [];
+    const i = arr.findIndex((x) => x && x.id === record.id);
+    if (i >= 0) arr[i] = record;
+    else arr.push(record);
+    localStorage.setItem(key, JSON.stringify(arr));
+  } catch (e) {
+    console.warn('[DB] localStorage mirror failed', e);
+  }
+}
+
+function readMirror(storeName) {
+  try {
+    const raw = localStorage.getItem('ft_mirror_' + storeName);
+    return raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+
 export function uid() {
   return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
 }
@@ -220,6 +248,8 @@ export async function saveLocal(storeName, record) {
     r.onerror = () => rej(r.error || new Error('IndexedDB put failed'));
   });
 
+  mirrorToLocalStorage(storeName, full);
+
   try {
     await queueSync(storeName, id, 'upsert', full);
   } catch (qErr) {
@@ -249,17 +279,28 @@ export async function saveLocalSafe(storeName, record) {
 }
 
 export async function getAllLocal(storeName) {
+  let fromIdb = [];
   try {
     const store = await storeOf(storeName, 'readonly');
-    return await new Promise((resolve, reject) => {
+    fromIdb = await new Promise((resolve, reject) => {
       const r = store.getAll();
       r.onsuccess = () => resolve(r.result || []);
       r.onerror = () => reject(r.error);
     });
   } catch (err) {
     console.warn('[DB] getAllLocal', storeName, err);
-    return [];
   }
+  if (!LS_MIRROR_STORES.has(storeName)) return fromIdb;
+  const mirrored = readMirror(storeName);
+  if (!mirrored.length) return fromIdb;
+  const map = new Map();
+  fromIdb.forEach((r) => { if (r && r.id) map.set(r.id, r); });
+  mirrored.forEach((r) => {
+    if (!r || !r.id) return;
+    const existing = map.get(r.id);
+    if (!existing || (r.updatedAt || 0) >= (existing.updatedAt || 0)) map.set(r.id, r);
+  });
+  return [...map.values()];
 }
 
 export async function getLocal(storeName, id) {

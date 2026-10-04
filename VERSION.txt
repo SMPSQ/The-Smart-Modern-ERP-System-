@@ -1,1 +1,1 @@
-Future Tech ERP v6.5.1 — DB fix (IndexedDB stores + save)
+Future Tech ERP v6.5.2 — Admission save + DB mirror + Firestore rules

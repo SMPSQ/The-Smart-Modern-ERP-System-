@@ -177,6 +177,7 @@ async function renderAdmissions() {
   });
 }
 
+
 if (admissionForm) {
   const dateInput = document.getElementById('adm-date');
   if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
@@ -184,13 +185,24 @@ if (admissionForm) {
   admissionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    const statusEl = document.getElementById('adm-save-status');
+    const setStatus = (msg, ok) => {
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.color = ok ? '#059669' : '#B91C1C';
+        statusEl.textContent = msg;
+      }
+    };
+    const btn = admissionForm.querySelector('button[type="submit"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
     try {
       const name = val('adm-name');
       const className = val('adm-class');
       const fatherName = val('adm-father');
-      if (!name) { alert('Student name zaroori hai'); document.getElementById('adm-name')?.focus(); return; }
-      if (!className) { alert('Class zaroori hai'); document.getElementById('adm-class')?.focus(); return; }
-      if (!fatherName) { alert('Father name zaroori hai'); document.getElementById('adm-father')?.focus(); return; }
+      if (!name) { setStatus('Student name zaroori hai', false); alert('Student name zaroori hai'); if (btn) { btn.disabled = false; btn.textContent = 'Submit Admission'; } return; }
+      if (!className) { setStatus('Class zaroori hai', false); alert('Class zaroori hai'); if (btn) { btn.disabled = false; btn.textContent = 'Submit Admission'; } return; }
+      if (!fatherName) { setStatus('Father name zaroori hai', false); alert('Father name zaroori hai'); if (btn) { btn.disabled = false; btn.textContent = 'Submit Admission'; } return; }
 
       const data = {
         id: editingAdmissionId || undefined,
@@ -212,51 +224,84 @@ if (admissionForm) {
         rollNo: val('adm-roll'),
         bloodGroup: val('adm-blood'),
         previousSchool: val('adm-prev-school'),
-        status: editingAdmissionId
-          ? ((await getLocal('admissions', editingAdmissionId))?.status || 'pending')
-          : 'pending',
+        status: 'pending',
         module: MODULE,
         updatedAt: Date.now()
       };
+      if (editingAdmissionId) {
+        try {
+          const prev = await getLocal('admissions', editingAdmissionId);
+          if (prev && prev.status) data.status = prev.status;
+        } catch (_) {}
+      }
 
-      const saved = await saveLocal('admissions', data);
-      // Optional auto-enroll as student if checkbox checked
+      let saved;
+      try {
+        saved = await saveLocal('admissions', data);
+      } catch (idbErr) {
+        // Absolute fallback: localStorage only
+        const id = data.id || ('adm_' + Date.now());
+        saved = { ...data, id, updatedAt: Date.now() };
+        try {
+          const key = 'ft_mirror_admissions';
+          const arr = JSON.parse(localStorage.getItem(key) || '[]');
+          const ix = arr.findIndex(x => x.id === id);
+          if (ix >= 0) arr[ix] = saved; else arr.push(saved);
+          localStorage.setItem(key, JSON.stringify(arr));
+        } catch (lsErr) {
+          throw idbErr;
+        }
+        console.warn('Admission saved via localStorage fallback', idbErr);
+      }
+
+      let enrolled = false;
       const autoEnroll = document.getElementById('adm-auto-enroll');
       if (autoEnroll && autoEnroll.checked && saved) {
-        await saveLocal('students', {
-          name: saved.name,
-          className: saved.className,
-          section: saved.section || '',
-          rollNo: saved.rollNo || '',
-          guardianName: saved.fatherName,
-          phone: saved.phone || saved.fatherPhone,
-          fatherName: saved.fatherName,
-          fatherPhone: saved.fatherPhone,
-          dob: saved.dob,
-          gender: saved.gender,
-          address: saved.address,
-          city: saved.city,
-          session: saved.session,
-          module: MODULE,
-          admissionId: saved.id,
-          status: 'active'
-        });
-        saved.status = 'approved';
-        await saveLocal('admissions', saved);
+        try {
+          await saveLocal('students', {
+            name: saved.name,
+            className: saved.className,
+            section: saved.section || '',
+            rollNo: saved.rollNo || '',
+            guardianName: saved.fatherName,
+            fatherName: saved.fatherName,
+            fatherPhone: saved.fatherPhone,
+            phone: saved.phone || saved.fatherPhone,
+            dob: saved.dob,
+            gender: saved.gender,
+            address: saved.address,
+            city: saved.city,
+            session: saved.session,
+            module: MODULE,
+            admissionId: saved.id,
+            status: 'active',
+            updatedAt: Date.now()
+          });
+          saved.status = 'approved';
+          try { await saveLocal('admissions', saved); } catch (_) {}
+          enrolled = true;
+        } catch (enrollErr) {
+          console.warn('Auto-enroll failed (admission still saved)', enrollErr);
+        }
       }
 
       clearAdmissionForm();
-      await renderAdmissions();
-      if (typeof renderStudents === 'function') await renderStudents();
+      try { await renderAdmissions(); } catch (_) {}
+      try { if (typeof renderStudents === 'function') await renderStudents(); } catch (_) {}
       try { runSync(); } catch (_) {}
-      alert(
-        autoEnroll && autoEnroll.checked
-          ? 'Admission saved + student enrolled: ' + name
-          : 'Admission saved: ' + name + '\n\nQueue mein dikhega. Approve se student banega.'
-      );
+
+      const msg = enrolled
+        ? 'Saved + enrolled: ' + name
+        : 'Admission saved: ' + name + ' (queue mein dekho)';
+      setStatus('✓ ' + msg, true);
+      alert(msg);
     } catch (err) {
       console.error('Admission save failed', err);
-      alert('Admission save failed: ' + (err.message || err) + '\n\nBrowser refresh karke dobara try karein.');
+      const m = 'Save FAILED: ' + (err && err.message ? err.message : String(err));
+      setStatus(m, false);
+      alert(m + '\n\nCtrl+Shift+R karke dobara try karein. Agar phir fail: browser site data clear karein.');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Submit Admission'; }
     }
   });
 
@@ -264,6 +309,7 @@ if (admissionForm) {
     setTimeout(clearAdmissionForm, 0);
   });
 }
+
 
 // ========== FEE STRUCTURE ==========
 const fsForm = document.getElementById('fee-structure-form');

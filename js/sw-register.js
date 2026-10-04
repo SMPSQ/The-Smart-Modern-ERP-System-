@@ -10,7 +10,7 @@
   if (!('serviceWorker' in navigator)) return;
 
   // Keep in sync with sw.js CACHE_VERSION (without leading "v")
-  const APP_VERSION = '6.5.1';
+  const APP_VERSION = '6.5.2';
   const VERSION_KEY = 'ft_app_version_seen';
 
   function showUpdateBanner(ver) {
@@ -62,7 +62,7 @@
     document.getElementById('ft-update-dismiss').onclick = () => bar.remove();
   }
 
-  /** Parse version number from VERSION.txt first line or "v6.5.1" style */
+  /** Parse version number from VERSION.txt first line or "v6.5.2" style */
   function parseVersion(text) {
     if (!text) return null;
     const m = String(text).match(/v?(\d+\.\d+\.\d+)/i);
